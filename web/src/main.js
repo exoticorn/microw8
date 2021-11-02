@@ -8,6 +8,14 @@ async function loadWasm(url, imports) {
     return new WebAssembly.Instance(compiled_module, imports);
 }
 
+function setMessage(size, error) {
+    let html = size ? `${size} bytes` : 'Insert cart';
+    if(error) {
+        html += ` - <span class="error">${error.replaceAll('<', '&lt;')}</span>`
+    }
+    document.getElementById('message').innerHTML = html;
+}
+
 let cancelFunction;
 
 async function runModule(data) {
@@ -16,69 +24,99 @@ async function runModule(data) {
         cancelFunction = null;
     }
 
-    document.getElementById('message').innerText = '' + data.byteLength + ' bytes';
+    let cartridgeSize = data.byteLength;
 
-    let loaderImport = {
-        uw8: {
-            ram: new WebAssembly.Memory({ initial: 8 })
-        }
-    };
-    let loadMem = loaderImport.uw8.ram.buffer;
-    let loader = await loadWasm(loaderUrl, loaderImport);
-
-    new Uint8Array(loadMem).set(new Uint8Array(data));
-
-    let baseModule = await (await fetch(baseUrl)).arrayBuffer();
-    new Uint8Array(loadMem).set(new Uint8Array(baseModule), data.byteLength);
-
-    let destOffset = data.byteLength + baseModule.byteLength;
-    let endOffset = loader.exports.load_uw8(0, data.byteLength, data.byteLength, destOffset);
-
-    data = new ArrayBuffer(endOffset - destOffset);
-    new Uint8Array(data).set(new Uint8Array(loadMem).slice(destOffset, endOffset));
-
-    let importObject = {
-        uw8: {
-            ram: new WebAssembly.Memory({ initial: 8, maximum: 8 }),
-            time: new WebAssembly.Global({value: 'i32', mutable: true}, 0),
-        }
-    };
-
-    let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
-
-    let canvasCtx = document.getElementById('screen').getContext('2d');
-    let imageData = canvasCtx.createImageData(320, 256);
-
-    let buffer = imageData.data;
-    for(let i = 0; i < 320*256; ++i) {
-        buffer[i * 4 + 3] = 255;
+    setMessage(cartridgeSize);
+    if(cartridgeSize == 0) {
+        return;
     }
 
-    let startTime = Date.now();
+    let dataU8Array = new Uint8Array(data);
 
-    let keepRunning = true;
-    cancelFunction = () => keepRunning = false;
-
-    function mainloop() {
-        if(!keepRunning) {
-            return;
+    let newURL = window.location.pathname;
+    if(cartridgeSize <= 1024) {
+        let dataString = '';
+        for(let byte of dataU8Array) {
+            dataString += String.fromCharCode(byte);
         }
-        importObject.uw8.time.value = Date.now() - startTime;
+        newURL += '#' + btoa(dataString);
+    }
+    if(newURL != window.location.href) {
+        history.replaceState(null, null, newURL);
+        history.pushState(null, null, newURL);
+    }
 
-        instance.exports.tic();
+    try {
 
-        let framebuffer = new Uint8Array(importObject.uw8.ram.buffer.slice(120, 120 + 320*256));
+        let loaderImport = {
+            uw8: {
+                ram: new WebAssembly.Memory({ initial: 8 })
+            }
+        };
+        let loadMem = loaderImport.uw8.ram.buffer;
+        let loader = await loadWasm(loaderUrl, loaderImport);
+    
+        let baseModule = await (await fetch(baseUrl)).arrayBuffer();
+    
+        if(dataU8Array[0] != 0) {
+            new Uint8Array(loadMem).set(dataU8Array);
+            new Uint8Array(loadMem).set(new Uint8Array(baseModule), data.byteLength);
+    
+            let destOffset = data.byteLength + baseModule.byteLength;
+            let endOffset = loader.exports.load_uw8(0, data.byteLength, data.byteLength, destOffset);
+    
+            data = new ArrayBuffer(endOffset - destOffset);
+            new Uint8Array(data).set(new Uint8Array(loadMem).slice(destOffset, endOffset));
+        }
+    
+        let importObject = {
+            uw8: {
+                ram: new WebAssembly.Memory({ initial: 8, maximum: 8 }),
+            }
+        };
+    
+        let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
+    
+        let canvasCtx = document.getElementById('screen').getContext('2d');
+        let imageData = canvasCtx.createImageData(320, 256);
+    
+        let buffer = imageData.data;
         for(let i = 0; i < 320*256; ++i) {
-            buffer[i * 4] = framebuffer[i];
-            buffer[i * 4 + 1] = framebuffer[i];
-            buffer[i * 4 + 2] = framebuffer[i];
+            buffer[i * 4 + 3] = 255;
         }
-        canvasCtx.putImageData(imageData, 0, 0);
+    
+        let startTime = Date.now();
+    
+        let keepRunning = true;
+        cancelFunction = () => keepRunning = false;
 
-        window.requestAnimationFrame(mainloop);
+
+        function mainloop() {
+            if(!keepRunning) {
+                return;
+            }
+
+            try {
+                instance.exports.tic(Date.now() - startTime);
+    
+                let framebuffer = new Uint8Array(importObject.uw8.ram.buffer.slice(120, 120 + 320*256));
+                for(let i = 0; i < 320*256; ++i) {
+                    buffer[i * 4] = framebuffer[i];
+                    buffer[i * 4 + 1] = framebuffer[i];
+                    buffer[i * 4 + 2] = framebuffer[i];
+                }
+                canvasCtx.putImageData(imageData, 0, 0);
+        
+                window.requestAnimationFrame(mainloop);
+            } catch(err) {
+                setMessage(cartridgeSize, err.toString());
+            }
+        }
+    
+        mainloop();
+    } catch(err) {
+        setMessage(cartridgeSize, err.toString());
     }
-
-    mainloop();
 }
 
 async function runModuleFromURL(url) {
@@ -86,8 +124,18 @@ async function runModuleFromURL(url) {
 }
 
 function runModuleFromHash() {
-    runModuleFromURL('data:;base64,' + window.location.hash.slice(1));
+    let base64Data = window.location.hash.slice(1);
+    if(base64Data.length > 0) {
+        runModuleFromURL('data:;base64,' + base64Data);
+    }
 }
+
+let fileInput = document.getElementById('cart');
+fileInput.onchange = () => {
+    if(fileInput.files.length > 0) {
+        runModuleFromURL(URL.createObjectURL(fileInput.files[0]));
+    }
+};
 
 window.onhashchange = runModuleFromHash;
 runModuleFromHash();
