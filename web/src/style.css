@@ -1,0 +1,22 @@
+html {
+    font-family: 'Josefin Sans', sans-serif;
+    background-color: #202024;
+    color: #808070;
+    height: 100%;
+}
+
+body {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    margin: 8px;
+    box-shadow: 5px 5px 20px black;
+}
+
+.error {
+    color: red;
+}

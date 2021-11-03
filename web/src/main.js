@@ -16,6 +16,14 @@ function setMessage(size, error) {
     document.getElementById('message').innerHTML = html;
 }
 
+let framebufferCanvas = document.createElement("canvas");
+framebufferCanvas.width = 320;
+framebufferCanvas.height = 256;
+let framebufferCanvasCtx = framebufferCanvas.getContext("2d");
+let imageData = framebufferCanvasCtx.createImageData(320, 256);
+let canvasCtx = document.getElementById('screen').getContext('2d');
+canvasCtx.imageSmoothingEnabled = false;
+
 let cancelFunction;
 
 async function runModule(data) {
@@ -41,19 +49,18 @@ async function runModule(data) {
         }
         newURL += '#' + btoa(dataString);
     }
-    if(newURL != window.location.href) {
-        history.replaceState(null, null, newURL);
+    if(newURL != window.location.pathname + window.location.hash) {
         history.pushState(null, null, newURL);
     }
 
     try {
 
         let loaderImport = {
-            uw8: {
-                ram: new WebAssembly.Memory({ initial: 8 })
+            env: {
+                memory: new WebAssembly.Memory({ initial: 8 })
             }
         };
-        let loadMem = loaderImport.uw8.ram.buffer;
+        let loadMem = loaderImport.env.memory.buffer;
         let loader = await loadWasm(loaderUrl, loaderImport);
     
         let baseModule = await (await fetch(baseUrl)).arrayBuffer();
@@ -70,26 +77,19 @@ async function runModule(data) {
         }
     
         let importObject = {
-            uw8: {
-                ram: new WebAssembly.Memory({ initial: 8, maximum: 8 }),
+            env: {
+                memory: new WebAssembly.Memory({ initial: 8, maximum: 8 }),
             }
         };
     
         let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
     
-        let canvasCtx = document.getElementById('screen').getContext('2d');
-        let imageData = canvasCtx.createImageData(320, 256);
-    
         let buffer = imageData.data;
-        for(let i = 0; i < 320*256; ++i) {
-            buffer[i * 4 + 3] = 255;
-        }
     
         let startTime = Date.now();
     
         let keepRunning = true;
         cancelFunction = () => keepRunning = false;
-
 
         function mainloop() {
             if(!keepRunning) {
@@ -99,13 +99,15 @@ async function runModule(data) {
             try {
                 instance.exports.tic(Date.now() - startTime);
     
-                let framebuffer = new Uint8Array(importObject.uw8.ram.buffer.slice(120, 120 + 320*256));
+                let framebuffer = new Uint8Array(importObject.env.memory.buffer.slice(120, 120 + 320*256));
                 for(let i = 0; i < 320*256; ++i) {
                     buffer[i * 4] = framebuffer[i];
                     buffer[i * 4 + 1] = framebuffer[i];
                     buffer[i * 4 + 2] = framebuffer[i];
+                    buffer[i * 4 + 3] = 255;
                 }
-                canvasCtx.putImageData(imageData, 0, 0);
+                framebufferCanvasCtx.putImageData(imageData, 0, 0);
+                canvasCtx.drawImage(framebufferCanvas, 0, 0, 640, 512);
         
                 window.requestAnimationFrame(mainloop);
             } catch(err) {
@@ -127,6 +129,8 @@ function runModuleFromHash() {
     let base64Data = window.location.hash.slice(1);
     if(base64Data.length > 0) {
         runModuleFromURL('data:;base64,' + base64Data);
+    } else {
+        runModule(new ArrayBuffer(0));
     }
 }
 
