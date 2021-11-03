@@ -1,5 +1,10 @@
+html, body, canvas {
+    padding: 0;
+    margin: 0;
+}
+
 html {
-    font-family: 'Josefin Sans', sans-serif;
+    font-family: 'Josefin Sans', Verdana, 'Arial Black', sans-serif;
     background-color: #202024;
     color: #808070;
     height: 100%;
@@ -7,16 +12,55 @@ html {
 
 body {
     height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: grid;
+    grid-template-rows: 1fr 0fr;
+}
+
+#centered {
+    align-self: center;
+    justify-self: center;
+}
+
+.footer {
+    color: #202420;
+}
+
+a {
+    color: #303630;
+}
+
+a:hover {
+    color: #405040;
 }
 
 canvas {
-    margin: 8px;
+    background-color: #202428;
+    margin-bottom: 8px;
+    border: 4px solid #303040;
     box-shadow: 5px 5px 20px black;
 }
 
+#message {
+    margin-bottom: 8px;
+}
+
 .error {
-    color: red;
+    color: #e04030;
+}
+
+button {
+    font-family: inherit;
+    background-color: #303440;
+    color: #808070;
+    padding: 4px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+}
+
+button:hover {
+    background-color: #202010;
+}
+
+button:active {
+    background-color: #504450;
 }

@@ -12,7 +12,11 @@
         <div id="centered">
             <canvas id="screen" width="640" height="512"></canvas>
             <div id="message"></div>
-            <input id="cart" type="file" accept=".wasm,.uw8,application/wasm">
+            <button onclick="document.getElementById('cart').click()">Load cart...</button>
+            <input id="cart" style="visibility: hidden" type="file" accept=".wasm,.uw8,application/wasm">
+        </div>
+        <div id="footer">
+            <a href="http://unlicense.org/" ref="license">Unlicense</a>
         </div>
     </body>
     <script type="module">

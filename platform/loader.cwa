@@ -1,0 +1,64 @@
+import "env.memory" memory(8);
+
+export fn load_uw8(module_start: i32, module_end: i32, base_start: i32, base_end: i32) -> i32 {
+    if ?module_start == 0 {
+        let defer length = module_end - module_start;
+        copy(base_end, module_start, length);
+        return base_end + length;
+    }
+
+    copy(base_end, base_start, 8);
+    base_start = base_start + 8;
+    let dest = base_end + 8;
+    let src = module_start + 1;
+
+    loop sections {
+        if src < module_end & (base_start >= base_end | ?src <= ?base_start) {
+            let defer length2 = copy_section(dest, src);
+            dest = dest + length2;
+            if base_start < base_end & ?src == ?base_start {
+                base_start = base_start + section_size(base_start);
+            }
+            src = src + length2;
+            branch sections;
+        }
+
+        if base_start < base_end {
+            let defer length3 = copy_section(dest, base_start);
+            dest = dest + length3;
+            base_start = base_start + length3;
+            branch sections;
+        }
+    }
+
+    dest
+}
+
+fn section_size(ptr: i32) -> i32 {
+    let p = ptr + 1;
+    let l = 0;
+    let shift = 0;
+    loop size {
+        let defer b = ?p;
+        l = l | ((b & 127) << shift);
+        shift = shift + 7;
+        p = p + 1;
+        branch_if b & 128: size;
+    }
+    p - ptr + l
+}
+
+fn copy_section(dest: i32, src: i32) -> i32 {
+    let defer length = section_size(src);
+    copy(dest, src, length);
+    length
+}
+
+fn copy(dest: i32, src: i32, len: i32) {
+    if len > 0 {
+        loop bytes {
+            ?(dest + (len := len - 1)) = ?(src + len);
+            branch_if len: bytes
+        }
+    }
+}

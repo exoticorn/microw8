@@ -1,5 +1,5 @@
-import loaderUrl from "data-url:./uw8loader.wasm";
-import baseUrl from "data-url:./base.wasm";
+import loaderUrl from "data-url:../../platform/loader.wasm";
+import baseUrl from "data-url:../../platform/base.wasm";
 
 async function loadWasm(url, imports) {
     let wasm_module = await (await fetch(url)).arrayBuffer();
@@ -21,8 +21,8 @@ framebufferCanvas.width = 320;
 framebufferCanvas.height = 256;
 let framebufferCanvasCtx = framebufferCanvas.getContext("2d");
 let imageData = framebufferCanvasCtx.createImageData(320, 256);
-let canvasCtx = document.getElementById('screen').getContext('2d');
-canvasCtx.imageSmoothingEnabled = false;
+let screen = document.getElementById('screen');
+let canvasCtx = screen.getContext('2d');
 
 let cancelFunction;
 
@@ -53,6 +53,8 @@ async function runModule(data) {
         history.pushState(null, null, newURL);
     }
 
+    screen.width = screen.width;
+
     try {
 
         let loaderImport = {
@@ -79,6 +81,10 @@ async function runModule(data) {
         let importObject = {
             env: {
                 memory: new WebAssembly.Memory({ initial: 8, maximum: 8 }),
+            },
+            math: {
+                sin: Math.sin,
+                cos: Math.cos
             }
         };
     
@@ -107,6 +113,7 @@ async function runModule(data) {
                     buffer[i * 4 + 3] = 255;
                 }
                 framebufferCanvasCtx.putImageData(imageData, 0, 0);
+                canvasCtx.imageSmoothingEnabled = false;
                 canvasCtx.drawImage(framebufferCanvas, 0, 0, 640, 512);
         
                 window.requestAnimationFrame(mainloop);
