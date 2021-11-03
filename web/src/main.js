@@ -80,13 +80,14 @@ async function runModule(data) {
     
         let importObject = {
             env: {
-                memory: new WebAssembly.Memory({ initial: 8, maximum: 8 }),
+                memory: new WebAssembly.Memory({ initial: 4, maximum: 4 }),
             },
-            math: {
-                sin: Math.sin,
-                cos: Math.cos
-            }
+            math: {}
         };
+
+        for(let n of ['acos','asin','atan','atan2','cos','exp','log','sin','tan']) {
+            importObject.math[n] = Math[n];
+        }
     
         let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
     
@@ -141,12 +142,17 @@ function runModuleFromHash() {
     }
 }
 
-let fileInput = document.getElementById('cart');
-fileInput.onchange = () => {
-    if(fileInput.files.length > 0) {
-        runModuleFromURL(URL.createObjectURL(fileInput.files[0]));
-    }
-};
-
 window.onhashchange = runModuleFromHash;
 runModuleFromHash();
+
+document.getElementById('cartButton').onclick = () => {
+    let fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.wasm,.uw8,application/wasm';
+    fileInput.onchange = () => {
+        if(fileInput.files.length > 0) {
+            runModuleFromURL(URL.createObjectURL(fileInput.files[0]));
+        }
+    };
+    fileInput.click();
+};
