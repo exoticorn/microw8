@@ -1,5 +1,5 @@
 import loaderUrl from "data-url:../../platform/loader.wasm";
-import baseUrl from "data-url:../../platform/base.wasm";
+import baseUrl from "data-url:../../uw8-tool/base1.wasm";
 
 async function loadWasm(url, imports) {
     let wasm_module = await (await fetch(url)).arrayBuffer();
@@ -82,11 +82,16 @@ async function runModule(data) {
             env: {
                 memory: new WebAssembly.Memory({ initial: 4, maximum: 4 }),
             },
-            math: {}
+            math: {},
+            uw8: {}
         };
 
-        for(let n of ['acos','asin','atan','atan2','cos','exp','log','sin','tan']) {
+        for(let n of ['acos','asin','atan','atan2','cos','exp','log','sin','tan','pow']) {
             importObject.math[n] = Math[n];
+        }
+
+        for(let i = 9; i < 64; ++i) {
+            importObject.uw8['reserved' + i] = () => {};
         }
     
         let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);

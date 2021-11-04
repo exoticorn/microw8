@@ -10,13 +10,13 @@ use std::io::prelude::*;
 
 pub struct BaseModule {
     pub types: Vec<FunctionType>,
-    pub function_imports: Vec<(&'static str, &'static str, u32)>,
+    pub function_imports: Vec<(&'static str, String, u32)>,
     pub functions: Vec<u32>,
     pub exports: Vec<(&'static str, u32)>,
     pub memory: u32
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionType {
     pub params: Vec<ValType>,
     pub result: Option<ValType>
@@ -58,6 +58,10 @@ impl BaseModule {
         add_function(&mut functions, &type_map, "math", "pow", &[F32, F32], Some(F32));
         add_function(&mut functions, &type_map, "math", "log", &[F32], Some(F32));
 
+        for i in functions.len()..64 {
+            add_function(&mut functions, &type_map, "uw8", &format!("reserved{}", i), &[], None);
+        }
+
         let first_function = functions.len() as u32;
 
         Ok(BaseModule {
@@ -85,7 +89,7 @@ impl BaseModule {
                 let mut imports = ImportSection::new();
 
                 for (module, name, type_) in &m.function_imports {
-                    imports.import(*module, Some(*name), EntityType::Function(*type_));
+                    imports.import(*module, Some(name.as_str()), EntityType::Function(*type_));
                 }
 
                 imports.import("env", Some("memory"), MemoryType {
@@ -139,8 +143,8 @@ impl BaseModule {
     }
 }
 
-fn add_function(functions: &mut Vec<(&'static str, &'static str, u32)>, type_map: &HashMap<FunctionType, u32>, module: &'static str, name: &'static str, params: &[ValType], result: Option<ValType>) {
-    functions.push((module, name, lookup_type(type_map, params, result)));
+fn add_function(functions: &mut Vec<(&'static str, String, u32)>, type_map: &HashMap<FunctionType, u32>, module: &'static str, name: &str, params: &[ValType], result: Option<ValType>) {
+    functions.push((module, name.to_string(), lookup_type(type_map, params, result)));
 }
 
 fn lookup_type(type_map: &HashMap<FunctionType, u32>, params: &[ValType], result: Option<ValType>) -> u32 {
