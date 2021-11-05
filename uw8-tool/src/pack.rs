@@ -14,158 +14,14 @@ pub fn pack(source: &Path, dest: &Path, version: u32) -> Result<()> {
     let mut source_data = vec![];
     File::open(source)?.read_to_end(&mut source_data)?;
 
-    let parsed_module = dbg!(ParsedModule::parse(&source_data)?);
+    let parsed_module = ParsedModule::parse(&source_data)?;
     let result = parsed_module.pack(&base)?;
-
-    /*
-    let module = enc::Module::new();
-
-    let mut context = Context {
-        base,
-        module,
-        type_mapping: HashMap::new(),
-        function_mapping: HashMap::new(),
-        next_function_index: 0,
-    };
-
-    for payload in wasmparser::Parser::new(0).parse_all(&source_data) {
-        let payload = payload?;
-
-        use wasmparser::Payload::*;
-
-        let _copy = match payload {
-            Version { .. } => false,
-            TypeSection(reader) => process_type_section(&mut context, reader)?,
-            ImportSection(reader) => process_import_section(&mut context, reader)?,
-            _ => true,
-        };
-    }
-    */
 
     let mut dest_data = vec![version as u8];
     dest_data.extend_from_slice(&result[8..]);
     File::create(dest)?.write_all(&dest_data)?;
 
     Ok(())
-}
-
-struct Context {
-    base: BaseModule,
-    module: enc::Module,
-    type_mapping: HashMap<u32, u32>,
-    function_mapping: HashMap<u32, u32>,
-    next_function_index: u32,
-}
-
-fn process_type_section(
-    context: &mut Context,
-    mut reader: wasmparser::TypeSectionReader,
-) -> Result<bool> {
-    use wasmparser::TypeDef;
-
-    let base_function_types: HashMap<base_module::FunctionType, u32> = context
-        .base
-        .types
-        .iter()
-        .enumerate()
-        .map(|(i, t)| (t.clone(), i as u32))
-        .collect();
-
-    for src_index in 0..reader.get_count() {
-        match reader.read()? {
-            TypeDef::Func(fnc) => {
-                let params: Vec<ValType> = to_val_type_vec(&fnc.params)?;
-                if fnc.returns.len() > 1 {
-                    bail!("Multi-value not yet supported, sorry.");
-                }
-                let result = to_val_type_vec(&fnc.returns)?.into_iter().next();
-
-                let func_type = base_module::FunctionType { params, result };
-                if let Some(index) = base_function_types.get(&func_type) {
-                    context.type_mapping.insert(src_index, *index);
-                } else {
-                    bail!("Function type not found in base: {:?}", func_type);
-                }
-            }
-            TypeDef::Instance(_) | TypeDef::Module(_) => {
-                bail!("Instance and module types are not supported")
-            }
-        }
-    }
-
-    Ok(false)
-}
-
-fn process_import_section(
-    context: &mut Context,
-    mut reader: wasmparser::ImportSectionReader,
-) -> Result<bool> {
-    let mut found_memory = false;
-
-    let function_import_map: HashMap<(String, String), (u32, u32)> = context
-        .base
-        .function_imports
-        .iter()
-        .enumerate()
-        .map(|(index, (module, name, type_))| {
-            ((module.to_string(), name.clone()), (*type_, index as u32))
-        })
-        .collect();
-
-    for _ in 0..reader.get_count() {
-        let import = reader.read()?;
-        if let Some(field) = import.field {
-            match import.ty {
-                ImportSectionEntryType::Memory(ref mem) => {
-                    if import.module != "env" || field != "memory" {
-                        bail!("Wrong import name for memory: {}.{}", import.module, field);
-                    }
-                    if mem.memory64 || mem.shared {
-                        bail!("Bad memory options");
-                    }
-                    if mem.initial > context.base.memory as u64
-                        || mem.maximum.unwrap_or(0) > context.base.memory as u64
-                    {
-                        bail!("Import memory too large");
-                    }
-                    found_memory = true;
-                }
-                ImportSectionEntryType::Function(type_) => {
-                    if let Some((base_type, base_index)) =
-                        function_import_map.get(&(import.module.to_string(), field.to_string()))
-                    {
-                        if let Some(type_) = context.type_mapping.get(&type_) {
-                            if type_ == base_type {
-                                context
-                                    .function_mapping
-                                    .insert(context.next_function_index, *base_index);
-                                context.next_function_index += 1;
-                            } else {
-                                bail!("Import function {}.{} has wrong type", import.module, field);
-                            }
-                        } else {
-                            bail!("Malformed input (Type {} does not exist)", type_);
-                        }
-                    } else {
-                        bail!(
-                            "Import function {}.{} does not exist in base",
-                            import.module,
-                            field
-                        );
-                    }
-                }
-                _ => bail!("Unsupported import type {:?}", import.ty),
-            }
-        } else {
-            bail!("Found import without field: {}", import.module);
-        }
-    }
-
-    if !found_memory {
-        bail!("No memory import found");
-    }
-
-    Ok(false)
 }
 
 fn to_val_type(type_: &wasmparser::Type) -> Result<ValType> {
@@ -238,8 +94,6 @@ impl<'a> ParsedModule<'a> {
                 Payload::End => break,
                 other => bail!("Unsupported section: {:?}", other),
             }
-
-            dbg!(consumed);
 
             offset += consumed;
         }
