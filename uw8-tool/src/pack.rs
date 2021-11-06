@@ -440,10 +440,10 @@ fn remap_function(
             De::BrTable { .. } => todo!(),
             De::Return => En::Return,
             De::Call { function_index } => En::Call(
-                dbg!(*function_map
+                *function_map
                     .get(&function_index)
                     .ok_or_else(|| anyhow!("Function index out of range: {}", function_index))?,
-            )),
+            ),
             De::CallIndirect { .. }
             | De::ReturnCall { .. }
             | De::ReturnCallIndirect { .. }
