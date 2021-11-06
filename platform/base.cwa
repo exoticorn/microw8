@@ -1,3 +1,0 @@
-import "env.memory" memory(2);
-
-export fn tic(time: i32) {}
