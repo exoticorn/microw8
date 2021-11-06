@@ -5,8 +5,8 @@ A nightly rust compiler is needed for the unstable sqrtf32
 intrinsic.
 
 Simply compiling with rustc as shown in build.sh results in a
-339 byte tunnel.wasm. Using wasm-opt this can be reduced to
-244 bytes.
+342 byte tunnel.wasm. Using wasm-opt this can be reduced to
+243 bytes.
 
 When you disassemble this wasm file using wasm2wat you can see
 these globals and exports:
@@ -21,5 +21,5 @@ values that are not simple scalars (i32, f32, etc.). Since our
 code doesn't actually use any of that, we can just delete them
 in a text editor and assemble the code again with wat2wasm.
 
-This gives us a 200 byte wasm file. Running this through
+This gives us a 199 byte wasm file. Running this through
 uw8-tool pack brings us to the final size of 137 bytes.

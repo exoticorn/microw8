@@ -1,25 +1,25 @@
 use std::{collections::HashMap, fs::File, path::Path};
 
+use anyhow::{bail, Result};
+use std::io::prelude::*;
 use wasm_encoder::{
-    CodeSection, EntityType, Export, ExportSection, Function, FunctionSection,
-    ImportSection, Instruction, MemoryType, Module, TypeSection, ValType,
+    CodeSection, EntityType, Export, ExportSection, Function, FunctionSection, ImportSection,
+    Instruction, MemoryType, Module, TypeSection, ValType,
 };
 use ValType::*;
-use anyhow::{Result, bail};
-use std::io::prelude::*;
 
 pub struct BaseModule {
     pub types: Vec<FunctionType>,
     pub function_imports: Vec<(&'static str, String, u32)>,
     pub functions: Vec<u32>,
     pub exports: Vec<(&'static str, u32)>,
-    pub memory: u32
+    pub memory: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionType {
     pub params: Vec<ValType>,
-    pub result: Option<ValType>
+    pub result: Option<ValType>,
 }
 
 impl BaseModule {
@@ -48,18 +48,24 @@ impl BaseModule {
         }
 
         let mut functions = vec![];
-        add_function(&mut functions, &type_map, "math","sin", &[F32], Some(F32));
-        add_function(&mut functions, &type_map, "math", "cos", &[F32], Some(F32));
-        add_function(&mut functions, &type_map, "math", "tan", &[F32], Some(F32));
-        add_function(&mut functions, &type_map, "math", "asin", &[F32], Some(F32));
-        add_function(&mut functions, &type_map, "math", "acos", &[F32], Some(F32));
-        add_function(&mut functions, &type_map, "math", "atan", &[F32], Some(F32));
-        add_function(&mut functions, &type_map, "math", "atan2", &[F32, F32], Some(F32));
-        add_function(&mut functions, &type_map, "math", "pow", &[F32, F32], Some(F32));
-        add_function(&mut functions, &type_map, "math", "log", &[F32], Some(F32));
+        add_function(&mut functions, &type_map, "sin", &[F32], Some(F32));
+        add_function(&mut functions, &type_map, "cos", &[F32], Some(F32));
+        add_function(&mut functions, &type_map, "tan", &[F32], Some(F32));
+        add_function(&mut functions, &type_map, "asin", &[F32], Some(F32));
+        add_function(&mut functions, &type_map, "acos", &[F32], Some(F32));
+        add_function(&mut functions, &type_map, "atan", &[F32], Some(F32));
+        add_function(&mut functions, &type_map, "atan2", &[F32, F32], Some(F32));
+        add_function(&mut functions, &type_map, "pow", &[F32, F32], Some(F32));
+        add_function(&mut functions, &type_map, "log", &[F32], Some(F32));
 
         for i in functions.len()..64 {
-            add_function(&mut functions, &type_map, "uw8", &format!("reserved{}", i), &[], None);
+            add_function(
+                &mut functions,
+                &type_map,
+                &format!("reserved{}", i),
+                &[],
+                None,
+            );
         }
 
         let first_function = functions.len() as u32;
@@ -69,7 +75,7 @@ impl BaseModule {
             function_imports: functions,
             functions: vec![lookup_type(&type_map, &[I32], None)],
             exports: vec![("tic", first_function)],
-            memory: 4
+            memory: 4,
         })
     }
 
@@ -92,11 +98,15 @@ impl BaseModule {
                     imports.import(*module, Some(name.as_str()), EntityType::Function(*type_));
                 }
 
-                imports.import("env", Some("memory"), MemoryType {
-                    minimum: m.memory as u64,
-                    maximum: None,
-                    memory64: false
-                });
+                imports.import(
+                    "env",
+                    Some("memory"),
+                    MemoryType {
+                        minimum: m.memory as u64,
+                        maximum: None,
+                        memory64: false,
+                    },
+                );
 
                 module.section(&imports);
             }
@@ -143,14 +153,28 @@ impl BaseModule {
     }
 }
 
-fn add_function(functions: &mut Vec<(&'static str, String, u32)>, type_map: &HashMap<FunctionType, u32>, module: &'static str, name: &str, params: &[ValType], result: Option<ValType>) {
-    functions.push((module, name.to_string(), lookup_type(type_map, params, result)));
+fn add_function(
+    functions: &mut Vec<(&'static str, String, u32)>,
+    type_map: &HashMap<FunctionType, u32>,
+    name: &str,
+    params: &[ValType],
+    result: Option<ValType>,
+) {
+    functions.push((
+        "env".into(),
+        name.to_string(),
+        lookup_type(type_map, params, result),
+    ));
 }
 
-fn lookup_type(type_map: &HashMap<FunctionType, u32>, params: &[ValType], result: Option<ValType>) -> u32 {
+fn lookup_type(
+    type_map: &HashMap<FunctionType, u32>,
+    params: &[ValType],
+    result: Option<ValType>,
+) -> u32 {
     let key = FunctionType {
         params: params.to_vec(),
-        result
+        result,
     };
     *type_map.get(&key).unwrap()
 }

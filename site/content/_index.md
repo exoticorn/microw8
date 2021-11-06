@@ -14,19 +14,18 @@ at offset 120 in memory.
 
 The memory has to be imported as `"env" "memory"` and has a maximum size of 256kb (4 pages).
 
-Other imports provided by the platform:
+Other imports provided by the platform, also all in module `env`:
 
-* in module `math`:
-* * `fn acos(f32) -> f32`
-* * `fn asin(f32) -> f32`
-* * `fn atan(f32) -> f32`
-* * `fn atan2(f32, f32) -> f32`
-* * `fn cos(f32) -> f32`
-* * `fn exp(f32, f32) -> f32`
-* * `fn log(f32) -> f32`
-* * `fn sin(f32) -> f32`
-* * `fn tan(f32) -> f32`
-* * `fn pow(f32) -> f32`
+* `fn acos(f32) -> f32`
+* `fn asin(f32) -> f32`
+* `fn atan(f32) -> f32`
+* `fn atan2(f32, f32) -> f32`
+* `fn cos(f32) -> f32`
+* `fn exp(f32, f32) -> f32`
+* `fn log(f32) -> f32`
+* `fn sin(f32) -> f32`
+* `fn tan(f32) -> f32`
+* `fn pow(f32) -> f32`
 
 ## `.uw8` format
 

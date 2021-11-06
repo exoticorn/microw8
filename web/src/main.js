@@ -10,7 +10,7 @@ async function loadWasm(url, imports) {
 
 function setMessage(size, error) {
     let html = size ? `${size} bytes` : 'Insert cart';
-    if(error) {
+    if (error) {
         html += ` - <span class="error">${error.replaceAll('<', '&lt;')}</span>`
     }
     document.getElementById('message').innerHTML = html;
@@ -27,7 +27,7 @@ let canvasCtx = screen.getContext('2d');
 let cancelFunction;
 
 async function runModule(data) {
-    if(cancelFunction) {
+    if (cancelFunction) {
         cancelFunction();
         cancelFunction = null;
     }
@@ -35,21 +35,21 @@ async function runModule(data) {
     let cartridgeSize = data.byteLength;
 
     setMessage(cartridgeSize);
-    if(cartridgeSize == 0) {
+    if (cartridgeSize == 0) {
         return;
     }
 
     let dataU8Array = new Uint8Array(data);
 
     let newURL = window.location.pathname;
-    if(cartridgeSize <= 1024) {
+    if (cartridgeSize <= 1024) {
         let dataString = '';
-        for(let byte of dataU8Array) {
+        for (let byte of dataU8Array) {
             dataString += String.fromCharCode(byte);
         }
         newURL += '#' + btoa(dataString);
     }
-    if(newURL != window.location.pathname + window.location.hash) {
+    if (newURL != window.location.pathname + window.location.hash) {
         history.pushState(null, null, newURL);
     }
 
@@ -64,55 +64,53 @@ async function runModule(data) {
         };
         let loadMem = loaderImport.env.memory.buffer;
         let loader = await loadWasm(loaderUrl, loaderImport);
-    
+
         let baseModule = await (await fetch(baseUrl)).arrayBuffer();
-    
-        if(dataU8Array[0] != 0) {
+
+        if (dataU8Array[0] != 0) {
             new Uint8Array(loadMem).set(dataU8Array);
             new Uint8Array(loadMem).set(new Uint8Array(baseModule), data.byteLength);
-    
+
             let destOffset = data.byteLength + baseModule.byteLength;
             let endOffset = loader.exports.load_uw8(0, data.byteLength, data.byteLength, destOffset);
-    
+
             data = new ArrayBuffer(endOffset - destOffset);
             new Uint8Array(data).set(new Uint8Array(loadMem).slice(destOffset, endOffset));
         }
-    
+
         let importObject = {
             env: {
                 memory: new WebAssembly.Memory({ initial: 4, maximum: 4 }),
             },
-            math: {},
-            uw8: {}
         };
 
-        for(let n of ['acos','asin','atan','atan2','cos','exp','log','sin','tan','pow']) {
-            importObject.math[n] = Math[n];
+        for (let n of ['acos', 'asin', 'atan', 'atan2', 'cos', 'exp', 'log', 'sin', 'tan', 'pow']) {
+            importObject.env[n] = Math[n];
         }
 
-        for(let i = 9; i < 64; ++i) {
-            importObject.uw8['reserved' + i] = () => {};
+        for (let i = 9; i < 64; ++i) {
+            importObject.env['reserved' + i] = () => { };
         }
-    
+
         let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
-    
+
         let buffer = imageData.data;
-    
+
         let startTime = Date.now();
-    
+
         let keepRunning = true;
         cancelFunction = () => keepRunning = false;
 
         function mainloop() {
-            if(!keepRunning) {
+            if (!keepRunning) {
                 return;
             }
 
             try {
                 instance.exports.tic(Date.now() - startTime);
-    
-                let framebuffer = new Uint8Array(importObject.env.memory.buffer.slice(120, 120 + 320*256));
-                for(let i = 0; i < 320*256; ++i) {
+
+                let framebuffer = new Uint8Array(importObject.env.memory.buffer.slice(120, 120 + 320 * 256));
+                for (let i = 0; i < 320 * 256; ++i) {
                     buffer[i * 4] = framebuffer[i];
                     buffer[i * 4 + 1] = framebuffer[i];
                     buffer[i * 4 + 2] = framebuffer[i];
@@ -121,15 +119,15 @@ async function runModule(data) {
                 framebufferCanvasCtx.putImageData(imageData, 0, 0);
                 canvasCtx.imageSmoothingEnabled = false;
                 canvasCtx.drawImage(framebufferCanvas, 0, 0, 640, 512);
-        
+
                 window.requestAnimationFrame(mainloop);
-            } catch(err) {
+            } catch (err) {
                 setMessage(cartridgeSize, err.toString());
             }
         }
-    
+
         mainloop();
-    } catch(err) {
+    } catch (err) {
         setMessage(cartridgeSize, err.toString());
     }
 }
@@ -140,7 +138,7 @@ async function runModuleFromURL(url) {
 
 function runModuleFromHash() {
     let base64Data = window.location.hash.slice(1);
-    if(base64Data.length > 0) {
+    if (base64Data.length > 0) {
         runModuleFromURL('data:;base64,' + base64Data);
     } else {
         runModule(new ArrayBuffer(0));
@@ -155,7 +153,7 @@ document.getElementById('cartButton').onclick = () => {
     fileInput.type = 'file';
     fileInput.accept = '.wasm,.uw8,application/wasm';
     fileInput.onchange = () => {
-        if(fileInput.files.length > 0) {
+        if (fileInput.files.length > 0) {
             runModuleFromURL(URL.createObjectURL(fileInput.files[0]));
         }
     };
