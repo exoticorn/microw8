@@ -1,7 +1,12 @@
 use crate::base_module::{self, BaseModule, FunctionType};
 use anyhow::{anyhow, bail, Result};
 use enc::ValType;
-use std::{collections::HashMap, fs::File, io::prelude::*, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::prelude::*,
+    path::Path,
+};
 use wasm_encoder as enc;
 use wasmparser::{
     ExportSectionReader, ExternalKind, FunctionBody, FunctionSectionReader, ImportSectionEntryType,
@@ -192,25 +197,46 @@ impl<'a> ParsedModule<'a> {
             function_count += self.imports.data.functions.len();
         }
 
-        // TODO: re-order functions to put tic first
-        for i in 0..self.functions.data.len() as u32 {
-            function_map.insert(
-                self.imports.data.functions.len() as u32 + i,
-                function_count as u32,
-            );
-            function_count += 1;
-        }
-
-        if self.functions.data.len() != base.functions.len()
-            || self
-                .functions
+        let functions = {
+            let mut sorted_functions: Vec<usize> = (0..self.functions.data.len()).collect();
+            let exported_functions: HashSet<usize> = self
+                .exports
                 .data
                 .iter()
+                .map(|(_, idx)| *idx as usize - self.imports.data.functions.len())
+                .collect();
+            sorted_functions.sort_by_key(|idx| {
+                if exported_functions.contains(idx) {
+                    0
+                } else {
+                    1
+                }
+            });
+
+            let functions: Vec<_> = sorted_functions
+                .iter()
+                .map(|i| (&self.functions.data[*i], &self.function_bodies[*i]))
+                .collect();
+
+            for i in sorted_functions {
+                function_map.insert(
+                    self.imports.data.functions.len() as u32 + i as u32,
+                    function_count as u32,
+                );
+                function_count += 1;
+            }
+
+            functions
+        };
+
+        if functions.len() != base.functions.len()
+            || functions
+                .iter()
                 .zip(base.functions.iter())
-                .any(|(a, b)| type_map.get(a) != Some(b))
+                .any(|(a, b)| type_map.get(a.0) != Some(b))
         {
             let mut function_section = enc::FunctionSection::new();
-            for type_ in &self.functions.data {
+            for (type_, _) in &functions {
                 function_section.function(
                     *type_map
                         .get(type_)
@@ -247,7 +273,7 @@ impl<'a> ParsedModule<'a> {
         {
             let mut code_section = enc::CodeSection::new();
 
-            for function in &self.function_bodies {
+            for (_, function) in &functions {
                 code_section.function(&remap_function(function, &type_map, &function_map)?);
             }
 
