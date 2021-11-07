@@ -13,15 +13,20 @@ fn main() -> Result<()> {
     if let Some(cmd) = args.subcommand()? {
         match cmd.as_str() {
             "make-base" => {
-                let version: u32 = args.free_from_str()?;
+                let version: u8 = args.free_from_str()?;
                 BaseModule::for_format_version(version)?
                     .write_to_file(format!("base{}.wasm", version))?;
             }
             "pack" => {
-                let version: u32 = args.opt_value_from_str(["-v", "--version"])?.unwrap_or(1);
+                let version: u8 = args.opt_value_from_str(["-v", "--version"])?.unwrap_or(1);
                 let source: PathBuf = args.free_from_str()?;
                 let dest: PathBuf = args.free_from_str()?;
-                pack::pack(&source, &dest, version)?;
+                pack::pack_file(&source, &dest, version)?;
+            }
+            "unpack" => {
+                let source: PathBuf = args.free_from_str()?;
+                let dest: PathBuf = args.free_from_str()?;
+                pack::unpack_file(&source, &dest)?;
             }
             _ => {
                 eprintln!("Unknown subcommand '{}'", cmd);
@@ -32,7 +37,6 @@ fn main() -> Result<()> {
         print_help();
     }
 
-    BaseModule::for_format_version(1)?.write_to_file("base.wasm")?;
     Ok(())
 }
 

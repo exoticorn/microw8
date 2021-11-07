@@ -1,4 +1,4 @@
-use crate::base_module::{self, BaseModule, FunctionType};
+use crate::base_module::{self, BaseModule, FunctionType, GlobalType};
 use anyhow::{anyhow, bail, Result};
 use enc::ValType;
 use std::{
@@ -9,11 +9,11 @@ use std::{
 };
 use wasm_encoder as enc;
 use wasmparser::{
-    ExportSectionReader, ExternalKind, FunctionBody, FunctionSectionReader, ImportSectionEntryType,
-    ImportSectionReader, TypeSectionReader,
+    BinaryReader, ExportSectionReader, ExternalKind, FunctionBody, FunctionSectionReader,
+    ImportSectionEntryType, ImportSectionReader, TypeSectionReader,
 };
 
-pub fn pack(source: &Path, dest: &Path, version: u32) -> Result<()> {
+pub fn pack_file(source: &Path, dest: &Path, version: u8) -> Result<()> {
     let base = BaseModule::for_format_version(version)?;
 
     let mut source_data = vec![];
@@ -27,6 +27,60 @@ pub fn pack(source: &Path, dest: &Path, version: u32) -> Result<()> {
     File::create(dest)?.write_all(&dest_data)?;
 
     Ok(())
+}
+
+pub fn unpack_file(source: &Path, dest: &Path) -> Result<()> {
+    let mut source_data = vec![];
+    File::open(source)?.read_to_end(&mut source_data)?;
+    let unpacked = unpack(source_data)?;
+    File::create(dest)?.write_all(&unpacked)?;
+    Ok(())
+}
+
+pub fn unpack(data: Vec<u8>) -> Result<Vec<u8>> {
+    let version = data[0];
+    if version == 0 {
+        return Ok(data);
+    }
+
+    let base_data = BaseModule::for_format_version(version)?.to_wasm();
+
+    let mut data = &data[1..];
+    let mut base_data = base_data.as_slice();
+
+    let mut dest = base_data[..8].to_vec();
+    base_data = &base_data[8..];
+
+    fn section_length(data: &[u8]) -> Result<usize> {
+        let mut reader = BinaryReader::new_with_offset(&data[1..], 1);
+        let inner_len = reader.read_var_u32()? as usize;
+        let header_len = reader.original_position();
+        let len = header_len + inner_len;
+        dbg!(len);
+        if len > data.len() {
+            bail!("Section length greater than size of the rest of the file");
+        }
+        Ok(len)
+    }
+
+    fn copy_section<'a>(dest: &mut Vec<u8>, source: &'a [u8]) -> Result<&'a [u8]> {
+        let len = section_length(source)?;
+        dest.extend_from_slice(&source[..len]);
+        Ok(&source[len..])
+    }
+
+    while !data.is_empty() || !base_data.is_empty() {
+        if !data.is_empty() && (base_data.is_empty() || data[0] <= base_data[0]) {
+            if !base_data.is_empty() && data[0] == base_data[0] {
+                base_data = &base_data[section_length(base_data)?..];
+            }
+            data = copy_section(&mut dest, data)?;
+        } else {
+            base_data = copy_section(&mut dest, base_data)?;
+        }
+    }
+
+    Ok(dest)
 }
 
 fn to_val_type(type_: &wasmparser::Type) -> Result<ValType> {
@@ -49,6 +103,7 @@ struct ParsedModule<'a> {
     data: &'a [u8],
     types: Section<Vec<base_module::FunctionType>>,
     imports: Section<ImportSection>,
+    globals: Option<Section<u32>>,
     functions: Section<Vec<u32>>,
     exports: Section<Vec<(String, u32)>>,
     function_bodies: Vec<wasmparser::FunctionBody<'a>>,
@@ -60,6 +115,7 @@ impl<'a> ParsedModule<'a> {
 
         let mut type_section = None;
         let mut import_section = None;
+        let mut global_section = None;
         let mut function_section = None;
         let mut export_section = None;
         let mut function_bodies = Vec::new();
@@ -87,6 +143,9 @@ impl<'a> ParsedModule<'a> {
                 Payload::ImportSection(reader) => {
                     import_section = Some(Section::new(range, ImportSection::parse(reader)?));
                 }
+                Payload::GlobalSection(reader) => {
+                    global_section = Some(Section::new(range, reader.get_count()));
+                }
                 Payload::FunctionSection(reader) => {
                     function_section = Some(Section::new(range, read_function_section(reader)?));
                 }
@@ -107,6 +166,7 @@ impl<'a> ParsedModule<'a> {
             data,
             types: type_section.ok_or_else(|| anyhow!("No type section found"))?,
             imports: import_section.ok_or_else(|| anyhow!("No import section found"))?,
+            globals: global_section,
             functions: function_section.ok_or_else(|| anyhow!("No function section found"))?,
             exports: export_section.ok_or_else(|| anyhow!("No export section found"))?,
             function_bodies,
@@ -146,6 +206,8 @@ impl<'a> ParsedModule<'a> {
 
         let mut function_map = HashMap::new();
         let mut function_count = 0;
+        let mut global_map = HashMap::new();
+        let mut global_count = 0;
 
         if uses_base_types {
             if self.imports.data.memory > base.memory {
@@ -185,16 +247,54 @@ impl<'a> ParsedModule<'a> {
                     );
                 }
             }
-
             function_count += base.function_imports.len();
+
+            let base_global_import_map: HashMap<(String, String), (GlobalType, u32)> = base
+                .global_imports
+                .iter()
+                .enumerate()
+                .map(|(idx, (module, field, type_))| {
+                    (
+                        (module.to_string(), field.clone()),
+                        (type_.clone(), idx as u32),
+                    )
+                })
+                .collect();
+
+            for (idx, glb) in self.imports.data.globals.iter().enumerate() {
+                if let Some((base_type, base_idx)) =
+                    base_global_import_map.get(&(glb.module.clone(), glb.field.clone()))
+                {
+                    if base_type == &glb.type_ {
+                        global_map.insert(idx as u32, *base_idx);
+                    } else {
+                        bail!(
+                            "Import global {}.{} has incompatible type",
+                            glb.module,
+                            glb.field
+                        );
+                    }
+                } else {
+                    bail!(
+                        "Import global {}.{} not found in base",
+                        glb.module,
+                        glb.field
+                    );
+                }
+            }
+            global_count += base.global_imports.len();
         } else {
+            copy_section(&mut module, &self.data[self.imports.range.clone()])?;
+
             function_map = (0..self.imports.data.functions.len() as u32)
                 .map(|i| (i, i))
                 .collect();
-
-            copy_section(&mut module, &self.data[self.imports.range.clone()])?;
-
             function_count += self.imports.data.functions.len();
+
+            global_map = (0..self.imports.data.globals.len() as u32)
+                .map(|i| (i, i))
+                .collect();
+            global_count += self.imports.data.globals.len();
         }
 
         let functions = {
@@ -246,6 +346,17 @@ impl<'a> ParsedModule<'a> {
             module.section(&function_section);
         }
 
+        if let Some(ref globals) = self.globals {
+            copy_section(&mut module, &self.data[globals.range.clone()])?;
+            for i in 0..globals.data {
+                global_map.insert(
+                    self.imports.data.globals.len() as u32 + i,
+                    global_count as u32,
+                );
+                global_count += 1;
+            }
+        }
+
         {
             let mut base_exports = base.exports.clone();
             base_exports.sort();
@@ -274,7 +385,12 @@ impl<'a> ParsedModule<'a> {
             let mut code_section = enc::CodeSection::new();
 
             for (_, function) in &functions {
-                code_section.function(&remap_function(function, &type_map, &function_map)?);
+                code_section.function(&remap_function(
+                    function,
+                    &type_map,
+                    &function_map,
+                    &global_map,
+                )?);
             }
 
             module.section(&code_section);
@@ -292,10 +408,7 @@ fn copy_section(module: &mut wasm_encoder::Module, data: &[u8]) -> Result<()> {
     let data = &data[reader.current_position()..];
     assert!(data.len() == size as usize);
 
-    module.section(&wasm_encoder::RawSection {
-        id,
-        data: &data[reader.current_position()..],
-    });
+    module.section(&wasm_encoder::RawSection { id, data });
 
     Ok(())
 }
@@ -336,12 +449,14 @@ impl<T> Section<T> {
 struct ImportSection {
     memory: u32,
     functions: Vec<FunctionImport>,
+    globals: Vec<GlobalImport>,
 }
 
 impl ImportSection {
     fn parse(reader: ImportSectionReader) -> Result<ImportSection> {
         let mut memory = 0;
         let mut functions = vec![];
+        let mut globals = vec![];
 
         for import in reader {
             let import = import?;
@@ -367,6 +482,16 @@ impl ImportSection {
                         }
                         memory = mem.maximum.unwrap_or(mem.initial) as u32;
                     }
+                    ImportSectionEntryType::Global(glbl) => {
+                        globals.push(GlobalImport {
+                            module: import.module.to_string(),
+                            field: field.to_string(),
+                            type_: GlobalType {
+                                type_: to_val_type(&glbl.content_type)?,
+                                mutable: glbl.mutable,
+                            },
+                        });
+                    }
                     _ => bail!("Unsupported import item {:?}", import.ty),
                 }
             } else {
@@ -381,7 +506,11 @@ impl ImportSection {
             bail!("No memory import found");
         }
 
-        Ok(ImportSection { memory, functions })
+        Ok(ImportSection {
+            memory,
+            functions,
+            globals,
+        })
     }
 }
 
@@ -390,6 +519,13 @@ struct FunctionImport {
     module: String,
     field: String,
     type_: u32,
+}
+
+#[derive(Debug)]
+struct GlobalImport {
+    module: String,
+    field: String,
+    type_: GlobalType,
 }
 
 fn read_function_section(reader: FunctionSectionReader) -> Result<Vec<u32>> {
@@ -418,6 +554,7 @@ fn remap_function(
     reader: &FunctionBody,
     type_map: &HashMap<u32, u32>,
     function_map: &HashMap<u32, u32>,
+    global_map: &HashMap<u32, u32>,
 ) -> Result<enc::Function> {
     let mut locals = Vec::new();
     for local in reader.get_locals_reader()? {
@@ -438,6 +575,12 @@ fn remap_function(
                     .ok_or_else(|| anyhow!("Function type index out of range: {}", ty))?,
             ),
         })
+    };
+
+    let global_idx = |idx: u32| -> Result<u32> {
+        Ok(*global_map
+            .get(&idx)
+            .ok_or_else(|| anyhow!("Global index out of range: {}", idx))?)
     };
 
     fn mem(m: wasmparser::MemoryImmediate) -> enc::MemArg {
@@ -481,8 +624,8 @@ fn remap_function(
             De::LocalGet { local_index } => En::LocalGet(local_index),
             De::LocalSet { local_index } => En::LocalSet(local_index),
             De::LocalTee { local_index } => En::LocalTee(local_index),
-            De::GlobalGet { global_index } => En::GlobalGet(global_index),
-            De::GlobalSet { global_index } => En::GlobalSet(global_index),
+            De::GlobalGet { global_index } => En::GlobalGet(global_idx(global_index)?),
+            De::GlobalSet { global_index } => En::GlobalSet(global_idx(global_index)?),
             De::I32Load { memarg } => En::I32Load(mem(memarg)),
             De::I64Load { memarg } => En::I64Load(mem(memarg)),
             De::F32Load { memarg } => En::F32Load(mem(memarg)),

@@ -92,6 +92,10 @@ async function runModule(data) {
             importObject.env['reserved' + i] = () => { };
         }
 
+        for (let i = 0; i < 16; ++i) {
+            importObject.env['g_reserved' + i] = 0;
+        }
+
         let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
 
         let buffer = imageData.data;

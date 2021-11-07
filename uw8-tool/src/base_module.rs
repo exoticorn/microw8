@@ -11,9 +11,16 @@ use ValType::*;
 pub struct BaseModule {
     pub types: Vec<FunctionType>,
     pub function_imports: Vec<(&'static str, String, u32)>,
+    pub global_imports: Vec<(&'static str, String, GlobalType)>,
     pub functions: Vec<u32>,
     pub exports: Vec<(&'static str, u32)>,
     pub memory: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GlobalType {
+    pub type_: ValType,
+    pub mutable: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -23,7 +30,7 @@ pub struct FunctionType {
 }
 
 impl BaseModule {
-    pub fn for_format_version(version: u32) -> Result<BaseModule> {
+    pub fn for_format_version(version: u8) -> Result<BaseModule> {
         if version != 1 {
             bail!("Unsupported format version ({})", version);
         }
@@ -68,88 +75,110 @@ impl BaseModule {
             );
         }
 
+        let mut global_imports = vec![];
+        for i in 0..16 {
+            global_imports.push((
+                "env",
+                format!("g_reserved{}", i),
+                GlobalType {
+                    type_: I32,
+                    mutable: false,
+                },
+            ));
+        }
+
         let first_function = functions.len() as u32;
 
         Ok(BaseModule {
             types,
             function_imports: functions,
+            global_imports,
             functions: vec![lookup_type(&type_map, &[I32], None)],
             exports: vec![("tic", first_function)],
             memory: 4,
         })
     }
 
-    pub fn write_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        fn inner(m: &BaseModule, path: &Path) -> Result<()> {
-            let mut module = Module::new();
+    pub fn to_wasm(&self) -> Vec<u8> {
+        let mut module = Module::new();
 
-            {
-                let mut types = TypeSection::new();
-                for type_ in &m.types {
-                    types.function(type_.params.iter().cloned(), type_.result.iter().cloned());
-                }
-                module.section(&types);
+        {
+            let mut types = TypeSection::new();
+            for type_ in &self.types {
+                types.function(type_.params.iter().cloned(), type_.result.iter().cloned());
             }
-
-            {
-                let mut imports = ImportSection::new();
-
-                for (module, name, type_) in &m.function_imports {
-                    imports.import(*module, Some(name.as_str()), EntityType::Function(*type_));
-                }
-
-                imports.import(
-                    "env",
-                    Some("memory"),
-                    MemoryType {
-                        minimum: m.memory as u64,
-                        maximum: None,
-                        memory64: false,
-                    },
-                );
-
-                module.section(&imports);
-            }
-
-            {
-                let mut functions = FunctionSection::new();
-
-                for type_ in &m.functions {
-                    functions.function(*type_);
-                }
-
-                module.section(&functions);
-            }
-
-            {
-                let mut exports = ExportSection::new();
-
-                for (name, fnc) in &m.exports {
-                    exports.export(*name, Export::Function(*fnc));
-                }
-
-                module.section(&exports);
-            }
-
-            {
-                let mut code = CodeSection::new();
-
-                for _ in &m.functions {
-                    let mut function = Function::new([]);
-                    function.instruction(&Instruction::End);
-                    code.function(&function);
-                }
-
-                module.section(&code);
-            }
-
-            let data = module.finish();
-
-            File::create(path)?.write_all(&data)?;
-
-            Ok(())
+            module.section(&types);
         }
-        inner(self, path.as_ref())
+
+        {
+            let mut imports = ImportSection::new();
+
+            for (module, name, type_) in &self.function_imports {
+                imports.import(*module, Some(name.as_str()), EntityType::Function(*type_));
+            }
+
+            for (module, name, import) in &self.global_imports {
+                imports.import(
+                    *module,
+                    Some(name.as_str()),
+                    EntityType::Global(wasm_encoder::GlobalType {
+                        val_type: import.type_,
+                        mutable: import.mutable,
+                    }),
+                );
+            }
+
+            imports.import(
+                "env",
+                Some("memory"),
+                MemoryType {
+                    minimum: self.memory as u64,
+                    maximum: None,
+                    memory64: false,
+                },
+            );
+
+            module.section(&imports);
+        }
+
+        {
+            let mut functions = FunctionSection::new();
+
+            for type_ in &self.functions {
+                functions.function(*type_);
+            }
+
+            module.section(&functions);
+        }
+
+        {
+            let mut exports = ExportSection::new();
+
+            for (name, fnc) in &self.exports {
+                exports.export(*name, Export::Function(*fnc));
+            }
+
+            module.section(&exports);
+        }
+
+        {
+            let mut code = CodeSection::new();
+
+            for _ in &self.functions {
+                let mut function = Function::new([]);
+                function.instruction(&Instruction::End);
+                code.function(&function);
+            }
+
+            module.section(&code);
+        }
+
+        module.finish()
+    }
+
+    pub fn write_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        File::create(path)?.write_all(&self.to_wasm())?;
+        Ok(())
     }
 }
 
