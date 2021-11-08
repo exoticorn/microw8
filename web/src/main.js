@@ -59,7 +59,7 @@ async function runModule(data) {
 
         let loaderImport = {
             env: {
-                memory: new WebAssembly.Memory({ initial: 8 })
+                memory: new WebAssembly.Memory({ initial: 9 })
             }
         };
         let loadMem = loaderImport.env.memory.buffer;
