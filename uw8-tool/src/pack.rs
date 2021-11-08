@@ -106,7 +106,9 @@ struct ParsedModule<'a> {
     globals: Option<Section<u32>>,
     functions: Section<Vec<u32>>,
     exports: Section<Vec<(String, u32)>>,
+    start_section: Option<u32>,
     function_bodies: Vec<wasmparser::FunctionBody<'a>>,
+    data_section: Option<Section<()>>,
 }
 
 impl<'a> ParsedModule<'a> {
@@ -118,7 +120,9 @@ impl<'a> ParsedModule<'a> {
         let mut global_section = None;
         let mut function_section = None;
         let mut export_section = None;
+        let mut start_section = None;
         let mut function_bodies = Vec::new();
+        let mut data_section = None;
 
         let mut offset = 0;
 
@@ -152,6 +156,12 @@ impl<'a> ParsedModule<'a> {
                 Payload::ExportSection(reader) => {
                     export_section = Some(Section::new(range, read_export_section(reader)?));
                 }
+                Payload::StartSection { func, .. } => {
+                    start_section = Some(func);
+                }
+                Payload::DataSection(_) => {
+                    data_section = Some(Section::new(range, ()));
+                }
                 Payload::CodeSectionStart { .. } => (),
                 Payload::CodeSectionEntry(body) => function_bodies.push(body),
                 Payload::CustomSection { .. } => (),
@@ -169,7 +179,9 @@ impl<'a> ParsedModule<'a> {
             globals: global_section,
             functions: function_section.ok_or_else(|| anyhow!("No function section found"))?,
             exports: export_section.ok_or_else(|| anyhow!("No export section found"))?,
+            start_section,
             function_bodies,
+            data_section,
         })
     }
 
@@ -378,7 +390,14 @@ impl<'a> ParsedModule<'a> {
                 for (name, fnc) in my_exports {
                     export_section.export(&name, enc::Export::Function(fnc));
                 }
+                module.section(&export_section);
             }
+        }
+
+        if let Some(start_function) = self.start_section {
+            module.section(&enc::StartSection {
+                function_index: start_function,
+            });
         }
 
         {
@@ -394,6 +413,10 @@ impl<'a> ParsedModule<'a> {
             }
 
             module.section(&code_section);
+        }
+
+        if let Some(ref data_section) = self.data_section {
+            copy_section(&mut module, &self.data[data_section.range.clone()])?;
         }
 
         Ok(module.finish())
@@ -544,7 +567,7 @@ fn read_export_section(reader: ExportSectionReader) -> Result<Vec<(String, u32)>
             ExternalKind::Function => {
                 function_exports.push((export.field.to_string(), export.index));
             }
-            _ => bail!("Only function exports supported, found {:?}", export.kind),
+            _ => (), // just ignore all other kinds since MicroW8 doesn't expect any exports other than functions
         }
     }
     Ok(function_exports)
