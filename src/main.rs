@@ -61,6 +61,8 @@ fn main() -> Result<()> {
 
     let mut loader = Loader::new(&engine)?;
 
+    let platform_module = wasmtime::Module::new(&engine, include_bytes!("../platform/platform.wasm"))?;
+
     let module = wasmtime::Module::new(&engine, loader.load(&uw8_module)?)?;
 
     let mut store = wasmtime::Store::new(&engine, ());
@@ -91,6 +93,12 @@ fn main() -> Result<()> {
                 0.into(),
             )?,
         )?;
+    }
+
+    let platform_instance = linker.instantiate(&mut store, &platform_module)?;
+
+    for export in platform_instance.exports(&mut store) {
+        linker.define("env", export.name(), export.into_func().expect("platform surely only exports functions"))?;
     }
 
     let instance = linker.instantiate(&mut store, &module)?;

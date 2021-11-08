@@ -65,6 +65,9 @@ impl BaseModule {
         add_function(&mut functions, &type_map, "pow", &[F32, F32], Some(F32));
         add_function(&mut functions, &type_map, "log", &[F32], Some(F32));
 
+        add_function(&mut functions, &type_map, "random", &[], Some(I32));
+        add_function(&mut functions, &type_map, "randomSeed", &[I32], None);
+
         for i in functions.len()..64 {
             add_function(
                 &mut functions,

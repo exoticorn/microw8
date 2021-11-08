@@ -1,4 +1,5 @@
 import loaderUrl from "data-url:../../platform/loader.wasm";
+import platformUrl from "data-url:../../platform/platform.wasm";
 import baseUrl from "data-url:../../uw8-tool/base1.wasm";
 
 async function loadWasm(url, imports) {
@@ -94,6 +95,12 @@ async function runModule(data) {
 
         for (let i = 0; i < 16; ++i) {
             importObject.env['g_reserved' + i] = 0;
+        }
+
+        let platform_instance = await loadWasm(platformUrl, importObject);
+
+        for(let name in platform_instance.exports) {
+            importObject.env[name] = platform_instance.exports[name]
         }
 
         let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);

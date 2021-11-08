@@ -1,0 +1,16 @@
+import "env.memory" memory(4);
+
+global mut randomState: i32 = 37;
+
+export fn random() -> i32 {
+    let state: i32;
+    randomState = (state := (
+                          state := randomState ^ (randomState << 13)
+                      ) ^ (state >> 17)
+                  ) ^ (state << 5);
+    randomState * 625341585
+}
+
+export fn randomSeed(s: i32) {
+    randomState = (((s + !(s >> 31)) as i64 * 8445297036689579347i64) >> 31i64) as i32;
+}
