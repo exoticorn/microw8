@@ -61,7 +61,8 @@ fn main() -> Result<()> {
 
     let mut loader = Loader::new(&engine)?;
 
-    let platform_module = wasmtime::Module::new(&engine, include_bytes!("../platform/platform.wasm"))?;
+    let platform_module =
+        wasmtime::Module::new(&engine, include_bytes!("../platform/platform.wasm"))?;
 
     let module = wasmtime::Module::new(&engine, loader.load(&uw8_module)?)?;
 
@@ -98,7 +99,13 @@ fn main() -> Result<()> {
     let platform_instance = linker.instantiate(&mut store, &platform_module)?;
 
     for export in platform_instance.exports(&mut store) {
-        linker.define("env", export.name(), export.into_func().expect("platform surely only exports functions"))?;
+        linker.define(
+            "env",
+            export.name(),
+            export
+                .into_func()
+                .expect("platform surely only exports functions"),
+        )?;
     }
 
     let instance = linker.instantiate(&mut store, &module)?;
@@ -114,9 +121,13 @@ fn main() -> Result<()> {
         tic.call(&mut store, start_time.elapsed().as_millis() as i32)?;
 
         let framebuffer = &memory.data(&store)[120..];
+        let palette = &framebuffer[320 * 256..];
         for i in 0..320 * 256 {
-            let c = framebuffer[i];
-            buffer[i] = (c as u32) * 0x01010101;
+            let offset = framebuffer[i] as usize * 4;
+            buffer[i] = 0xff000000
+                | ((palette[offset + 2] as u32) << 16)
+                | ((palette[offset + 1] as u32) << 8)
+                | palette[offset] as u32;
         }
 
         window.update_with_buffer(&buffer, 320, 256)?;

@@ -26,15 +26,15 @@ export fn randomSeed(s: i32) {
 }
 
 export fn fmod(a: f32, b: f32) -> f32 {
-    let lazy t = a / b;
-    (t - floor(t)) * b
+    a - floor(a / b) * b
 }
 
 export fn cls(col: i32) {
     let i: i32;
+    col = (col & 255) * 0x1010101;
     loop pixels {
-        i?120 = col;
-        branch_if (i := i + 1) < 320*256: pixels;
+        i!120 = col;
+        branch_if (i := i + 4) < 320*256: pixels;
     }
 }
 
@@ -104,5 +104,13 @@ export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
             y = y + 1;
             branch lines;
         }
+    }
+}
+
+start fn setup() {
+    let i: i32;
+    loop colors {
+        (i*4)!(120+320*256) = i * 0x10101;
+        branch_if (i := i + 1) < 256: colors
     }
 }

@@ -105,7 +105,7 @@ async function runModule(data) {
 
         let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
 
-        let buffer = imageData.data;
+        let buffer = new Uint32Array(imageData.data.buffer);
 
         let startTime = Date.now();
 
@@ -121,11 +121,9 @@ async function runModule(data) {
                 instance.exports.tic(Date.now() - startTime);
 
                 let framebuffer = new Uint8Array(importObject.env.memory.buffer.slice(120, 120 + 320 * 256));
+                let palette = new Uint32Array(importObject.env.memory.buffer.slice(82040, 82040 + 1024));
                 for (let i = 0; i < 320 * 256; ++i) {
-                    buffer[i * 4] = framebuffer[i];
-                    buffer[i * 4 + 1] = framebuffer[i];
-                    buffer[i * 4 + 2] = framebuffer[i];
-                    buffer[i * 4 + 3] = 255;
+                    buffer[i] = palette[framebuffer[i]] | 0xff000000;
                 }
                 framebufferCanvasCtx.putImageData(imageData, 0, 0);
                 canvasCtx.imageSmoothingEnabled = false;

@@ -4,13 +4,14 @@
 ## Versions
 
 * [v0.1pre1](v0.1pre1)
+* [v0.1pre2](v0.1pre2)
 
 ## Spec
 
 MicroW8 loads WebAssembly modules with a maximum size of 256kb. You module needs to export
 a function `fn tic(time: i32)` which will be called once per frame.
 After calling `tic` MicroW8 will display the 320x256 8bpp framebuffer located
-at offset 120 in memory.
+at offset 120 in memory with the 32bpp palette located at 82040.
 
 The memory has to be imported as `"env" "memory"` and has a maximum size of 256kb (4 pages).
 
@@ -26,6 +27,18 @@ Other imports provided by the platform, also all in module `env`:
 * `fn sin(f32) -> f32`
 * `fn tan(f32) -> f32`
 * `fn pow(f32) -> f32`
+* `fn fmod(f32, f32) -> f32`
+
+* `fn random() -> i32`
+* `fn randomf() -> f32`
+* `fn randomSeed(i32)`
+
+* `fn cls(color: i32)`
+* `fn setPixel(x: i32, y: i32, color: i32)`
+* `fn getPixel(x: i32, y: i32) -> i32`
+* `fn hline(left: i32, right: i32, y: i32, color: i32)`
+* `fn rectangle(x1: f32, y1: f32, x2: f32, y2: f32, color: i32)`
+* `fn circle(cx: f32, cy: f32, radius: f32, color: i32)`
 
 ## `.uw8` format
 
@@ -70,5 +83,6 @@ possible but no examples are provided, yet.
 
 ## Examples
 
-* [Technotunnel](v0.1pre1#AQrDAQHAAQIBfwp9A0AgAUEAsiABQcACb7JDmhkgQ5MiBCAEIASUIAFBwAJtQYABa7IiBSAFlJKRIgaVIgcgByAAskHQD7KVIgIQAEPNzEw/lCIDlCAHIAeUIAOUIAOUQQGykiADIAOUk5GSIgiUIAOTQQqylCACkiIJqCAFIAaVIAiUQQqylCACkiIKqHMgCEEyspQgBpUiCyACkkEUspSocUEFcbJBArIgC5OUQRaylJeoOgB4IAFBAWoiAUGAgAVIDQALCw==) (199 bytes): A port of my [entry](https://tic80.com/play?cart=1873) in the Outline'21 bytebattle quater final
-* [XorScroll](v0.1pre1#AQovAS0BAX8DQCABIAFBwAJvIABBCm1qIAFBwAJtczoAeCABQQFqIgFBgIAFSA0ACws=) (50 bytes): A simple scrolling XOR pattern. Fun fact: This is the pre-loaded effect when entering a bytebattle.
+* [Technotunnel](v0.1pre2#AQrDAQHAAQIBfwp9A0AgAUEAsiABQcACb7JDmhkgQ5MiBCAEIASUIAFBwAJtQYABa7IiBSAFlJKRIgaVIgcgByAAskHQD7KVIgIQAEPNzEw/lCIDlCAHIAeUIAOUIAOUQQGykiADIAOUk5GSIgiUIAOTQQqylCACkiIJqCAFIAaVIAiUQQqylCACkiIKqHMgCEEyspQgBpUiCyACkkEUspSocUEFcbJBArIgC5OUQRaylJeoOgB4IAFBAWoiAUGAgAVIDQALCw==) (199 bytes): A port of my [entry](https://tic80.com/play?cart=1873) in the Outline'21 bytebattle quater final
+* [XorScroll](v0.1pre2#AQovAS0BAX8DQCABIAFBwAJvIABBCm1qIAFBwAJtczoAeCABQQFqIgFBgIAFSA0ACws=) (50 bytes): A simple scrolling XOR pattern. Fun fact: This is the pre-loaded effect when entering a bytebattle.
+* [CircleWorm](v0.1pre2#AQp7AXkCAX8CfUEgEA0DQCABskEEspUiAkECspUgALJBiCeylSIDQQWylJIQAEEBspJBoAGylCACQQOylSADQQSylJIQAEEBspJBgAGylCADQRGylCACQQKylJIQAEECspJBELKUIAFBAmxBP2oQEiABQQFqIgFBP0gNAAsL) (126 bytes): Just a test for the circle fill function.
