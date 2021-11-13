@@ -1,16 +1,108 @@
 import "env.memory" memory(4);
 
-global mut randomState: i32 = 37;
+global mut randomState: i64 = 37i64;
 
 export fn random() -> i32 {
-    let state: i32;
+    (random64() >> 32i64) as i32
+}
+
+export fn random64() -> i64 {
+    let state: i64;
     randomState = (state := (
-                          state := randomState ^ (randomState << 13)
-                      ) ^ (state >> 17)
-                  ) ^ (state << 5);
-    randomState * 625341585
+                          state := randomState ^ (randomState #>> 12i64)
+                      ) ^ (state << 25i64)
+                  ) ^ (state #>> 27i64);
+    randomState * 0x2545f4914f6cdd1di64
+}
+
+export fn randomf() -> f32 {
+    f32.reinterpret_i32(0x3f800000 | (random() #>> 9)) - 1 as f32
 }
 
 export fn randomSeed(s: i32) {
-    randomState = (((s + !(s >> 31)) as i64 * 8445297036689579347i64) >> 31i64) as i32;
+    randomState = (s as i64 << 32i64) ^ ((63 - s) as i64);
+    randomState = random64();
+    randomState = random64();
+}
+
+export fn fmod(a: f32, b: f32) -> f32 {
+    let lazy t = a / b;
+    (t - floor(t)) * b
+}
+
+export fn cls(col: i32) {
+    let i: i32;
+    loop pixels {
+        i?120 = col;
+        branch_if (i := i + 1) < 320*256: pixels;
+    }
+}
+
+export fn setPixel(x: i32, y: i32, col: i32) {
+    if x #< 320 & y #< 256 {
+        (x + y * 320)?120 = col
+    }
+}
+
+export fn getPixel(x: i32, y: i32) -> i32 {
+    if x #< 320 & y #< 256 {
+        (x + y * 320)?120
+    } else {
+        0
+    }
+}
+
+fn clamp(v: i32, min: i32, max: i32) -> i32 {
+    select(v < min, min, select(v > max, max, v))
+}
+
+export fn hline(x1: i32, x2: i32, y: i32, col: i32) {
+    x1 = clamp(x1, 0, 320);
+    x2 = clamp(x2, 0, 320);
+    if x1 < x2 & y #< 256 {
+        let ptr = y * 320 + x1;
+        let end = ptr + x2 - x1;
+        loop pixels {
+            ptr?120 = col;
+            branch_if (ptr := ptr + 1) < end: pixels;
+        }
+    }
+}
+
+export fn rectangle(x: f32, y: f32, w: f32, h: f32, col: i32) {
+    if abs(w) == w & abs(h) == h {
+        let x1 = nearest(x) as i32;
+        let y1 = clamp(nearest(y) as i32, 0, 256);
+        let x2 = nearest(x + w) as i32;
+        let y2 = clamp(nearest(y + h) as i32, 0, 256);
+        block done {
+            loop lines {
+                branch_if y1 >= y2: done;
+                hline(x1, y1, x2, col);
+                y1 = y1 + 1;
+                branch lines;
+            }
+        }
+    }
+}
+
+export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
+    let y = clamp(nearest(cy - radius) as i32, 0, 256);
+    let maxY = clamp(nearest(cy + radius) as i32, 0, 256);
+    
+    block done {
+        loop lines {
+            branch_if y >= maxY: done;
+
+            let lazy dy = y as f32 - cy + 0.5;
+            let lazy q = radius * radius - dy * dy;
+            if abs(q) == q {
+                let lazy w = sqrt(q);
+                hline(nearest(cx - w) as i32, nearest(cx + w) as i32, y, col);
+            }
+
+            y = y + 1;
+            branch lines;
+        }
+    }
 }
