@@ -133,13 +133,13 @@ impl MicroW8 {
             )?;
 
             let framebuffer = &instance.memory.data(&instance.store)[120..];
-            let palette = &framebuffer[320 * 256..];
+            let palette = &framebuffer[320 * 240..];
             for i in 0..320 * 240 {
                 let offset = framebuffer[i] as usize * 4;
                 self.window_buffer[i] = 0xff000000
-                    | ((palette[offset + 2] as u32) << 16)
+                    | ((palette[offset + 0] as u32) << 16)
                     | ((palette[offset + 1] as u32) << 8)
-                    | palette[offset] as u32;
+                    | palette[offset + 2] as u32;
             }
 
             self.instance = Some(instance);

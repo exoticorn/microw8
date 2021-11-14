@@ -34,18 +34,18 @@ export fn cls(col: i32) {
     col = (col & 255) * 0x1010101;
     loop pixels {
         i!120 = col;
-        branch_if (i := i + 4) < 320*256: pixels;
+        branch_if (i := i + 4) < 320*240: pixels;
     }
 }
 
 export fn setPixel(x: i32, y: i32, col: i32) {
-    if x #< 320 & y #< 256 {
+    if x #< 320 & y #< 240 {
         (x + y * 320)?120 = col
     }
 }
 
 export fn getPixel(x: i32, y: i32) -> i32 {
-    if x #< 320 & y #< 256 {
+    if x #< 320 & y #< 240 {
         (x + y * 320)?120
     } else {
         0
@@ -59,7 +59,7 @@ fn clamp(v: i32, min: i32, max: i32) -> i32 {
 export fn hline(x1: i32, x2: i32, y: i32, col: i32) {
     x1 = clamp(x1, 0, 320);
     x2 = clamp(x2, 0, 320);
-    if x1 < x2 & y #< 256 {
+    if x1 < x2 & y #< 240 {
         let ptr = y * 320 + x1;
         let end = ptr + x2 - x1;
         loop pixels {
@@ -72,13 +72,13 @@ export fn hline(x1: i32, x2: i32, y: i32, col: i32) {
 export fn rectangle(x: f32, y: f32, w: f32, h: f32, col: i32) {
     if abs(w) == w & abs(h) == h {
         let x1 = nearest(x) as i32;
-        let y1 = clamp(nearest(y) as i32, 0, 256);
+        let y1 = clamp(nearest(y) as i32, 0, 240);
         let x2 = nearest(x + w) as i32;
-        let y2 = clamp(nearest(y + h) as i32, 0, 256);
+        let y2 = clamp(nearest(y + h) as i32, 0, 240);
         block done {
             loop lines {
                 branch_if y1 >= y2: done;
-                hline(x1, y1, x2, col);
+                hline(x1, x2, y1, col);
                 y1 = y1 + 1;
                 branch lines;
             }
@@ -87,8 +87,8 @@ export fn rectangle(x: f32, y: f32, w: f32, h: f32, col: i32) {
 }
 
 export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
-    let y = clamp(nearest(cy - radius) as i32, 0, 256);
-    let maxY = clamp(nearest(cy + radius) as i32, 0, 256);
+    let y = clamp(nearest(cy - radius) as i32, 0, 240);
+    let maxY = clamp(nearest(cy + radius) as i32, 0, 240);
     
     block done {
         loop lines {
@@ -110,7 +110,7 @@ export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
 start fn setup() {
     let i: i32;
     loop colors {
-        (i*4)!(120+320*256) = i * 0x10101;
+        (i*4)!(120+320*240) = i * 0x10101;
         branch_if (i := i + 1) < 256: colors
     }
     randomSeed(random());

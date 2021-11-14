@@ -19,9 +19,9 @@ function setMessage(size, error) {
 
 let framebufferCanvas = document.createElement("canvas");
 framebufferCanvas.width = 320;
-framebufferCanvas.height = 256;
+framebufferCanvas.height = 240;
 let framebufferCanvasCtx = framebufferCanvas.getContext("2d");
-let imageData = framebufferCanvasCtx.createImageData(320, 256);
+let imageData = framebufferCanvasCtx.createImageData(320, 240);
 let screen = document.getElementById('screen');
 let canvasCtx = screen.getContext('2d');
 
@@ -120,14 +120,14 @@ async function runModule(data) {
             try {
                 instance.exports.tic(Date.now() - startTime);
 
-                let framebuffer = new Uint8Array(importObject.env.memory.buffer.slice(120, 120 + 320 * 256));
-                let palette = new Uint32Array(importObject.env.memory.buffer.slice(82040, 82040 + 1024));
-                for (let i = 0; i < 320 * 256; ++i) {
+                let framebuffer = new Uint8Array(importObject.env.memory.buffer.slice(120, 120 + 320 * 240));
+                let palette = new Uint32Array(importObject.env.memory.buffer.slice(76920, 76920 + 1024));
+                for (let i = 0; i < 320 * 240; ++i) {
                     buffer[i] = palette[framebuffer[i]] | 0xff000000;
                 }
                 framebufferCanvasCtx.putImageData(imageData, 0, 0);
                 canvasCtx.imageSmoothingEnabled = false;
-                canvasCtx.drawImage(framebufferCanvas, 0, 0, 640, 512);
+                canvasCtx.drawImage(framebufferCanvas, 0, 0, 640, 480);
 
                 window.requestAnimationFrame(mainloop);
             } catch (err) {
