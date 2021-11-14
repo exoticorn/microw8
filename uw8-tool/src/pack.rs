@@ -396,7 +396,7 @@ impl<'a> ParsedModule<'a> {
 
         if let Some(start_function) = self.start_section {
             module.section(&enc::StartSection {
-                function_index: start_function,
+                function_index: *function_map.get(&start_function).unwrap(),
             });
         }
 
