@@ -44,6 +44,7 @@ fn print_help() {
     println!(
         "Usage:
     uw8-tool make-base <version>
-    uw8-tool pack <wasm file> <uw8 file>"
+    uw8-tool pack <wasm file> <uw8 file>
+    uw8-tool unpack <uw8 file> <wasm file>"
     );
 }

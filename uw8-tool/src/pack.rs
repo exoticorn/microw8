@@ -370,21 +370,20 @@ impl<'a> ParsedModule<'a> {
         }
 
         {
-            let mut base_exports = base.exports.clone();
-            base_exports.sort();
+            let base_exports = base.exports.clone();
 
-            let mut my_exports: Vec<(String, u32)> = self
+            let my_exports: Vec<(String, u32)> = self
                 .exports
                 .data
                 .iter()
                 .map(|(name, func)| (name.clone(), *function_map.get(func).unwrap()))
                 .collect();
-            my_exports.sort();
 
-            if base_exports
-                .iter()
-                .zip(my_exports.iter())
-                .any(|((n1, t1), (n2, t2))| n1 != n2 && t1 != t2)
+            if base_exports.len() != my_exports.len()
+                || base_exports
+                    .iter()
+                    .zip(my_exports.iter())
+                    .any(|((n1, t1), (n2, t2))| n1 != n2 || t1 != t2)
             {
                 let mut export_section = enc::ExportSection::new();
                 for (name, fnc) in my_exports {
