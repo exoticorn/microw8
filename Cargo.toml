@@ -11,3 +11,4 @@ anyhow = "1"
 minifb = "0.19"
 notify = "4"
 pico-args = "0.4"
+curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "d62bc8bf86cff65145d5aea045b81122bc15d709" }

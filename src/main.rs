@@ -1,13 +1,16 @@
-use std::path::PathBuf;
+use std::fs::File;
 use std::sync::mpsc;
 use std::time::Duration;
+use std::{
+    path::{Path, PathBuf},
+    process::exit,
+};
+use std::io::prelude::*;
 
 use anyhow::{bail, Result};
-use microw8::MicroW8;
+use uw8::MicroW8;
 use notify::{DebouncedEvent, Watcher};
 use pico_args::Arguments;
-
-mod microw8;
 
 fn main() -> Result<()> {
     let mut args = Arguments::from_env();
@@ -25,18 +28,18 @@ fn main() -> Result<()> {
         watcher.watch(&filename, notify::RecursiveMode::NonRecursive)?;
     }
 
-    if let Err(err) = uw8.load_from_file(&filename) {
-        if !watch_mode {
-            return Err(err);
-        }
+    if let Err(err) = load_cart(&filename, &mut uw8) {
         eprintln!("Load error: {}", err);
+        if !watch_mode {
+            exit(1);
+        }
     }
 
     while uw8.is_open() {
         match rx.try_recv() {
             Ok(DebouncedEvent::Create(_) | DebouncedEvent::Write(_)) => {
-                if let Err(err) = uw8.load_from_file(&filename) {
-                    eprintln!("Load error: {}", err)
+                if let Err(err) = load_cart(&filename, &mut uw8) {
+                    eprintln!("Load error: {}", err);
                 }
             }
             Err(mpsc::TryRecvError::Disconnected) => bail!("File watcher disconnected"),
@@ -47,4 +50,21 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn load_cart(filename: &Path, uw8: &mut MicroW8) -> Result<()> {
+    let mut cart = vec![];
+    File::open(filename)?.read_to_end(&mut cart)?;
+
+    if cart[0] >= 10 {
+        let src = String::from_utf8(cart)?;
+        cart = curlywas::compile_str(&src)?;
+    }
+
+    if let Err(err) = uw8.load_from_memory(&cart) {
+        eprintln!("Load error: {}", err);
+        Err(err)
+    } else {
+        Ok(())
+    }
 }
