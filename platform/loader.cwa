@@ -1,8 +1,8 @@
-import "env.memory" memory(8);
+import "env.memory" memory(9);
 
 export fn load_uw8(module_start: i32, module_end: i32, base_start: i32, base_end: i32) -> i32 {
     if ?module_start == 0 {
-        let defer length = module_end - module_start;
+        let lazy length = module_end - module_start;
         copy(base_end, module_start, length);
         return base_end + length;
     }
@@ -14,7 +14,7 @@ export fn load_uw8(module_start: i32, module_end: i32, base_start: i32, base_end
 
     loop sections {
         if src < module_end & (base_start >= base_end | ?src <= ?base_start) {
-            let defer length2 = copy_section(dest, src);
+            let lazy length2 = copy_section(dest, src);
             dest = dest + length2;
             if base_start < base_end & ?src == ?base_start {
                 base_start = base_start + section_size(base_start);
@@ -24,7 +24,7 @@ export fn load_uw8(module_start: i32, module_end: i32, base_start: i32, base_end
         }
 
         if base_start < base_end {
-            let defer length3 = copy_section(dest, base_start);
+            let lazy length3 = copy_section(dest, base_start);
             dest = dest + length3;
             base_start = base_start + length3;
             branch sections;
@@ -39,7 +39,7 @@ fn section_size(ptr: i32) -> i32 {
     let l = 0;
     let shift = 0;
     loop size {
-        let defer b = ?p;
+        let lazy b = ?p;
         l = l | ((b & 127) << shift);
         shift = shift + 7;
         p = p + 1;
@@ -49,7 +49,7 @@ fn section_size(ptr: i32) -> i32 {
 }
 
 fn copy_section(dest: i32, src: i32) -> i32 {
-    let defer length = section_size(src);
+    let lazy length = section_size(src);
     copy(dest, src, length);
     length
 }
@@ -61,4 +61,114 @@ fn copy(dest: i32, src: i32, len: i32) {
             branch_if len: bytes
         }
     }
+}
+
+// upkr unpacker
+
+global mut upkr_src_ptr: i32 = 0;
+global mut upkr_code: i64 = 0i64;
+global mut upkr_low: i64 = 0i64;
+global mut upkr_range: i64 = 0i64;
+
+// uncompress upkr compressed data at `src` into the buffer at `dest`
+// returns the end of the uncompressed data
+export fn uncompress(src_ptr: i32, dest_ptr: i32) -> i32 {
+    upkr_src_ptr = src_ptr;
+    upkr_code = 0i64;
+    upkr_low = 0i64;
+    upkr_range = 1i64;
+
+    let offset: i32;
+
+    let byte: i32;
+
+    let i: i32;
+    loop init_contexts {
+        i!0x80000 = 0x8000;
+        branch_if (i := i + 4) < (256 + 1 + 128) * 4: init_contexts
+    }
+
+    block finished {
+        loop unpack_loop {
+            if upkr_bit(0) {
+                if upkr_bit(256) {
+                    offset = upkr_length(257) - 1;
+                    branch_if !offset: finished
+                }
+                let length = upkr_length(257 + 64);
+                loop copy {
+                    dest_ptr?0 = (dest_ptr - offset)?0;
+                    dest_ptr = dest_ptr + 1;
+                    branch_if (length := length - 1): copy;
+                }
+            } else {
+                // literal
+                i = 0;
+                byte = 1;
+                loop literal {
+                    byte = (byte << 1) | upkr_bit(byte);
+                    branch_if (i := i + 1) < 8: literal;
+                }
+                dest_ptr?0 = byte;
+                dest_ptr = dest_ptr + 1;
+            }
+            branch unpack_loop;
+        }
+    }
+
+    dest_ptr
+}
+
+fn upkr_length(context_index: i32) -> i32 {
+    let length: i32;
+    let bit_pos: i32;
+    loop bits {
+        if upkr_bit(context_index) {
+            length = length | (upkr_bit(context_index + 1) << bit_pos);
+            context_index = context_index + 2;
+            bit_pos = bit_pos + 1;
+            branch bits;
+        }
+    }
+    length | (1 << bit_pos)
+}
+
+fn upkr_bit(context_index: i32) -> i32 {
+    let prob = ((context_index * 4)!0x80000) as i64;
+
+    loop refill {
+        if upkr_low >> 32i64 == (upkr_low + upkr_range - 1i64) >> 32i64 {
+            upkr_append_byte();
+            branch refill;
+        }
+    }
+
+    if upkr_range < (1i64 << 24i64) {
+        upkr_append_byte();
+        upkr_append_byte();
+        upkr_range = (1i64 << 40i64) - upkr_low;
+    }
+
+    let range = upkr_range / 65536i64;
+    let bit = (upkr_code - upkr_low) / range < prob;
+
+    if bit {
+        upkr_range = range * prob;
+        prob = prob + (((1i64 << 16i64) - prob) >> 4i64);
+    } else {
+        upkr_low = upkr_low + range * prob;
+        upkr_range = range * (65536i64 - prob);
+        prob = prob - (prob >> 4i64);
+    }
+
+    (context_index * 4)!0x80000 = prob as i32;
+
+    bit
+}
+
+fn upkr_append_byte() {
+    upkr_code = ((upkr_code & i64.extend_i32_u(-1)) << 8i64) | (?upkr_src_ptr) as i64;
+    upkr_src_ptr = upkr_src_ptr + 1;
+    upkr_low = (upkr_low & i64.extend_i32_u(-1)) << 8i64;
+    upkr_range = upkr_range << 8i64;
 }

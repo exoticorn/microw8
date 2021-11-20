@@ -1,10 +1,7 @@
-mod base_module;
-mod pack;
-
 use std::path::PathBuf;
 
 use anyhow::Result;
-use base_module::BaseModule;
+use uw8_tool::BaseModule;
 use pico_args::Arguments;
 
 fn main() -> Result<()> {
@@ -13,20 +10,19 @@ fn main() -> Result<()> {
     if let Some(cmd) = args.subcommand()? {
         match cmd.as_str() {
             "make-base" => {
-                let version: u8 = args.free_from_str()?;
-                BaseModule::for_format_version(version)?
-                    .write_to_file(format!("base{}.wasm", version))?;
+                let path: PathBuf = args.free_from_str()?;
+                BaseModule::create_binary(&path)?;
             }
             "pack" => {
                 let version: u8 = args.opt_value_from_str(["-v", "--version"])?.unwrap_or(1);
                 let source: PathBuf = args.free_from_str()?;
                 let dest: PathBuf = args.free_from_str()?;
-                pack::pack_file(&source, &dest, version)?;
+                uw8_tool::pack_file(&source, &dest, version)?;
             }
             "unpack" => {
                 let source: PathBuf = args.free_from_str()?;
                 let dest: PathBuf = args.free_from_str()?;
-                pack::unpack_file(&source, &dest)?;
+                uw8_tool::unpack_file(&source, &dest)?;
             }
             _ => {
                 eprintln!("Unknown subcommand '{}'", cmd);

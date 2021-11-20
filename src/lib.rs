@@ -178,12 +178,20 @@ impl Loader {
     fn load(&mut self, module_data: &[u8]) -> Result<Vec<u8>> {
         let memory = self.memory.data_mut(&mut self.store);
 
+        let compressed_base_module = include_bytes!("../uw8-tool/base.upk");
+        memory[..compressed_base_module.len()].copy_from_slice(compressed_base_module);
+
+        let base_end = self.instance.get_typed_func::<(i32, i32), i32, _>(&mut self.store, "uncompress")?.call(&mut self.store, (0, 0x84000))? as u32 as usize;
+
+        let memory = self.memory.data_mut(&mut self.store);
+    
+        let base_module = memory[0x84000..base_end].to_vec();
+
         let base_start = module_data.len();
         memory[..base_start].copy_from_slice(module_data);
 
-        let base_module = include_bytes!("../uw8-tool/base1.wasm");
         let base_end = base_start + base_module.len();
-        memory[base_start..base_end].copy_from_slice(base_module);
+        memory[base_start..base_end].copy_from_slice(&base_module);
 
         let load_uw8 = self
             .instance
