@@ -1,6 +1,5 @@
 import loaderUrl from "data-url:../../platform/loader.wasm";
 import platformUrl from "data-url:../../platform/platform.wasm";
-import baseUrl from "data-url:../../uw8-tool/base.upk";
 
 async function loadWasm(url, imports) {
     let wasm_module = await (await fetch(url)).arrayBuffer();
@@ -66,21 +65,14 @@ async function runModule(data) {
         let loadMem = loaderImport.env.memory.buffer;
         let loader = await loadWasm(loaderUrl, loaderImport);
 
-        let packedBaseModule = await (await fetch(baseUrl)).arrayBuffer();
-
         if (dataU8Array[0] != 0) {
-            new Uint8Array(loadMem).set(new Uint8Array(packedBaseModule));
-            let baseEnd = loader.exports.uncompress(0, 0x84000);
-            let baseModule = loadMem.slice(0x84000, baseEnd);
 
             new Uint8Array(loadMem).set(dataU8Array);
-            new Uint8Array(loadMem).set(new Uint8Array(baseModule), data.byteLength);
 
-            let destOffset = data.byteLength + baseModule.byteLength;
-            let endOffset = loader.exports.load_uw8(0, data.byteLength, data.byteLength, destOffset);
+            let length = loader.exports.load_uw8(data.byteLength);
 
-            data = new ArrayBuffer(endOffset - destOffset);
-            new Uint8Array(data).set(new Uint8Array(loadMem).slice(destOffset, endOffset));
+            data = new ArrayBuffer(length);
+            new Uint8Array(data).set(new Uint8Array(loadMem).slice(0, length));
         }
 
         let importObject = {

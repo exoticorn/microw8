@@ -1,16 +1,24 @@
 import "env.memory" memory(9);
 
-export fn load_uw8(module_start: i32, module_end: i32, base_start: i32, base_end: i32) -> i32 {
-    if ?module_start == 0 {
-        let lazy length = module_end - module_start;
-        copy(base_end, module_start, length);
-        return base_end + length;
+global mut base_end: i32 = 0;
+
+export fn load_uw8(module_size: i32) -> i32 {
+    let lazy version = ?0 - 1;
+    if version < 0 {
+        return module_size;
     }
 
-    copy(base_end, base_start, 8);
-    base_start = base_start + 8;
-    let dest = base_end + 8;
-    let src = module_start + 1;
+    let module_end = 0x40000 + module_size;
+    if version & 1 {
+        module_end = uncompress(1, 0x40001);
+    } else {
+        copy(0x40000, 0, module_size);
+    }
+    copy(0, 0x84000, 8);
+
+    let base_start = 0x84008;
+    let dest = 8;
+    let src = 0x40001;
 
     loop sections {
         if src < module_end & (base_start >= base_end | ?src <= ?base_start) {
@@ -171,4 +179,12 @@ fn upkr_append_byte() {
     upkr_src_ptr = upkr_src_ptr + 1;
     upkr_low = (upkr_low & i64.extend_i32_u(-1)) << 8i64;
     upkr_range = upkr_range << 8i64;
+}
+
+start fn unpack_base() {
+    base_end = uncompress(0, 0x84000);
+}
+
+data 0 {
+    file("../uw8-tool/base.upk")
 }
