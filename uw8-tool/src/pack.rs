@@ -13,20 +13,48 @@ use wasmparser::{
     ImportSectionEntryType, ImportSectionReader, TypeSectionReader,
 };
 
-pub fn pack_file(source: &Path, dest: &Path, version: u8) -> Result<()> {
-    let base = BaseModule::for_format_version(version)?;
+pub struct PackConfig {
+    compression: bool,
+}
 
+impl PackConfig {
+    pub fn with_compression(mut self) -> Self {
+        self.compression = true;
+        self
+    }
+}
+
+impl Default for PackConfig {
+    fn default() -> PackConfig {
+        PackConfig { compression: false }
+    }
+}
+
+pub fn pack_file(source: &Path, dest: &Path, config: PackConfig) -> Result<()> {
     let mut source_data = vec![];
     File::open(source)?.read_to_end(&mut source_data)?;
 
-    let parsed_module = ParsedModule::parse(&source_data)?;
-    let result = parsed_module.pack(&base)?;
-
-    let mut dest_data = vec![version as u8];
-    dest_data.extend_from_slice(&result[8..]);
+    let dest_data = pack(&source_data, config)?;
     File::create(dest)?.write_all(&dest_data)?;
 
     Ok(())
+}
+
+pub fn pack(data: &[u8], config: PackConfig) -> Result<Vec<u8>> {
+    let base = BaseModule::for_format_version(1)?;
+
+    let parsed_module = ParsedModule::parse(data)?;
+    let result = parsed_module.pack(&base)?;
+
+    if config.compression {
+        let mut uw8 = vec![2];
+        uw8.extend_from_slice(&upkr::pack(&result[8..]));
+        Ok(uw8)
+    } else {
+        let mut uw8 = vec![1];
+        uw8.extend_from_slice(&result[8..]);
+        Ok(uw8)
+    }
 }
 
 pub fn unpack_file(source: &Path, dest: &Path) -> Result<()> {
@@ -38,14 +66,16 @@ pub fn unpack_file(source: &Path, dest: &Path) -> Result<()> {
 }
 
 pub fn unpack(data: Vec<u8>) -> Result<Vec<u8>> {
-    let version = data[0];
-    if version == 0 {
-        return Ok(data);
-    }
+    let (version, data) = match data[0] {
+        0 => return Ok(data),
+        1 => (1, data[1..].to_vec()),
+        2 => (1, upkr::unpack(&data[1..])),
+        other => bail!("Uknown format version {}", other),
+    };
 
+    let mut data = data.as_slice();
     let base_data = BaseModule::for_format_version(version)?.to_wasm();
 
-    let mut data = &data[1..];
     let mut base_data = base_data.as_slice();
 
     let mut dest = base_data[..8].to_vec();
@@ -56,7 +86,6 @@ pub fn unpack(data: Vec<u8>) -> Result<Vec<u8>> {
         let inner_len = reader.read_var_u32()? as usize;
         let header_len = reader.original_position();
         let len = header_len + inner_len;
-        dbg!(len);
         if len > data.len() {
             bail!("Section length greater than size of the rest of the file");
         }

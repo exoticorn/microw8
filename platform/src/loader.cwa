@@ -10,6 +10,8 @@ export fn load_uw8(module_size: i32) -> i32 {
 
     let module_end = 0x1e000 + module_size;
     if version & 1 {
+        module_size?0 = 0;
+        module_size?1 = 0;
         module_end = uncompress(1, 0x1e001);
     } else {
         copy(0x1e000, 0, module_size);

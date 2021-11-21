@@ -1,5 +1,5 @@
 mod base_module;
-pub mod pack;
+mod pack;
 
 pub use base_module::BaseModule;
-pub use pack::{pack_file, unpack, unpack_file};
+pub use pack::{pack, pack_file, unpack, unpack_file, PackConfig};

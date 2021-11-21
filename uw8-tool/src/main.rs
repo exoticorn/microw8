@@ -14,10 +14,13 @@ fn main() -> Result<()> {
                 BaseModule::create_binary(&path)?;
             }
             "pack" => {
-                let version: u8 = args.opt_value_from_str(["-v", "--version"])?.unwrap_or(1);
+                let mut config = uw8_tool::PackConfig::default();
+                if args.contains(["-c", "--compress"]) {
+                    config = config.with_compression();
+                }
                 let source: PathBuf = args.free_from_str()?;
                 let dest: PathBuf = args.free_from_str()?;
-                uw8_tool::pack_file(&source, &dest, version)?;
+                uw8_tool::pack_file(&source, &dest, config)?;
             }
             "unpack" => {
                 let source: PathBuf = args.free_from_str()?;
