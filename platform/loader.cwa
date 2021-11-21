@@ -1,4 +1,4 @@
-import "env.memory" memory(9);
+import "env.memory" memory(4);
 
 global mut base_end: i32 = 0;
 
@@ -8,17 +8,17 @@ export fn load_uw8(module_size: i32) -> i32 {
         return module_size;
     }
 
-    let module_end = 0x40000 + module_size;
+    let module_end = 0x1e000 + module_size;
     if version & 1 {
-        module_end = uncompress(1, 0x40001);
+        module_end = uncompress(1, 0x1e001);
     } else {
-        copy(0x40000, 0, module_size);
+        copy(0x1e000, 0, module_size);
     }
-    copy(0, 0x84000, 8);
+    copy(0, 0x3c800, 8);
 
-    let base_start = 0x84008;
+    let base_start = 0x3c808;
     let dest = 8;
-    let src = 0x40001;
+    let src = 0x1e001;
 
     loop sections {
         if src < module_end & (base_start >= base_end | ?src <= ?base_start) {
@@ -92,7 +92,7 @@ export fn uncompress(src_ptr: i32, dest_ptr: i32) -> i32 {
 
     let i: i32;
     loop init_contexts {
-        i!0x80000 = 0x8000;
+        i!0x3c000 = 0x8000;
         branch_if (i := i + 4) < (256 + 1 + 128) * 4: init_contexts
     }
 
@@ -142,7 +142,7 @@ fn upkr_length(context_index: i32) -> i32 {
 }
 
 fn upkr_bit(context_index: i32) -> i32 {
-    let prob = ((context_index * 4)!0x80000) as i64;
+    let prob = ((context_index * 4)!0x3c000) as i64;
 
     loop refill {
         if upkr_low >> 32i64 == (upkr_low + upkr_range - 1i64) >> 32i64 {
@@ -169,7 +169,7 @@ fn upkr_bit(context_index: i32) -> i32 {
         prob = prob - (prob >> 4i64);
     }
 
-    (context_index * 4)!0x80000 = prob as i32;
+    (context_index * 4)!0x3c000 = prob as i32;
 
     bit
 }
@@ -182,7 +182,7 @@ fn upkr_append_byte() {
 }
 
 start fn unpack_base() {
-    base_end = uncompress(0, 0x84000);
+    base_end = uncompress(0, 0x3c800);
 }
 
 data 0 {

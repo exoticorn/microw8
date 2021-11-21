@@ -1,13 +1,6 @@
 import loaderUrl from "data-url:../../platform/loader.wasm";
 import platformUrl from "data-url:../../platform/platform.wasm";
 
-async function loadWasm(url, imports) {
-    let wasm_module = await (await fetch(url)).arrayBuffer();
-    let compiled_module = await WebAssembly.compile(wasm_module);
-
-    return new WebAssembly.Instance(compiled_module, imports);
-}
-
 function setMessage(size, error) {
     let html = size ? `${size} bytes` : 'Insert cart';
     if (error) {
@@ -26,6 +19,8 @@ let canvasCtx = screen.getContext('2d');
 
 let cancelFunction;
 
+let U8 = (d) => new Uint8Array(d);
+
 async function runModule(data) {
     if (cancelFunction) {
         cancelFunction();
@@ -39,12 +34,10 @@ async function runModule(data) {
         return;
     }
 
-    let dataU8Array = new Uint8Array(data);
-
     let newURL = window.location.pathname;
     if (cartridgeSize <= 1024) {
         let dataString = '';
-        for (let byte of dataU8Array) {
+        for (let byte of U8(data)) {
             dataString += String.fromCharCode(byte);
         }
         newURL += '#' + btoa(dataString);
@@ -56,30 +49,32 @@ async function runModule(data) {
     screen.width = screen.width;
 
     try {
-
-        let loaderImport = {
-            env: {
-                memory: new WebAssembly.Memory({ initial: 9 })
-            }
-        };
-        let loadMem = loaderImport.env.memory.buffer;
-        let loader = await loadWasm(loaderUrl, loaderImport);
-
-        if (dataU8Array[0] != 0) {
-
-            new Uint8Array(loadMem).set(dataU8Array);
-
-            let length = loader.exports.load_uw8(data.byteLength);
-
-            data = new ArrayBuffer(length);
-            new Uint8Array(data).set(new Uint8Array(loadMem).slice(0, length));
-        }
+        let memory = new WebAssembly.Memory({ initial: 4, maximum: 4 });
+        let memU8 = U8(memory.buffer);
 
         let importObject = {
             env: {
-                memory: new WebAssembly.Memory({ initial: 4, maximum: 4 }),
+                memory
             },
         };
+
+        let loader;
+
+        let loadModuleData = (data) => {
+            if (U8(data)[0] != 0) {
+                memU8.set(U8(data));
+                let length = loader.exports.load_uw8(data.byteLength);
+                data = new ArrayBuffer(length);
+                U8(data).set(memU8.slice(0, length));
+            }
+            return data;
+        }
+
+        let instantiate = async (data) => new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
+
+        let loadModuleURL = async (url) => instantiate(loadModuleData(await (await fetch(url)).arrayBuffer()));
+
+        loader = await loadModuleURL(loaderUrl);
 
         for (let n of ['acos', 'asin', 'atan', 'atan2', 'cos', 'exp', 'log', 'sin', 'tan', 'pow']) {
             importObject.env[n] = Math[n];
@@ -93,13 +88,15 @@ async function runModule(data) {
             importObject.env['g_reserved' + i] = 0;
         }
 
-        let platform_instance = await loadWasm(platformUrl, importObject);
+        data = loadModuleData(data);
+
+        let platform_instance = await loadModuleURL(platformUrl);
 
         for(let name in platform_instance.exports) {
             importObject.env[name] = platform_instance.exports[name]
         }
 
-        let instance = new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
+        let instance = await instantiate(data);
 
         let buffer = new Uint32Array(imageData.data.buffer);
 
@@ -116,10 +113,9 @@ async function runModule(data) {
             try {
                 instance.exports.tic(Date.now() - startTime);
 
-                let framebuffer = new Uint8Array(importObject.env.memory.buffer.slice(120, 120 + 320 * 240));
-                let palette = new Uint32Array(importObject.env.memory.buffer.slice(76920, 76920 + 1024));
+                let palette = new Uint32Array(memory.buffer.slice(76920, 76920 + 1024));
                 for (let i = 0; i < 320 * 240; ++i) {
-                    buffer[i] = palette[framebuffer[i]] | 0xff000000;
+                    buffer[i] = palette[memU8[i + 120]] | 0xff000000;
                 }
                 framebufferCanvasCtx.putImageData(imageData, 0, 0);
                 canvasCtx.imageSmoothingEnabled = false;

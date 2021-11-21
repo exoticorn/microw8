@@ -113,5 +113,6 @@ start fn setup() {
         (i*4)!(120+320*240) = i * 0x10101;
         branch_if (i := i + 1) < 256: colors
     }
+    cls(0);
     randomSeed(random());
 }
