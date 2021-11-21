@@ -10,8 +10,7 @@ use wasmtime::{
 
 pub struct MicroW8 {
     engine: Engine,
-    loader: Loader,
-    platform_module: Module,
+    loader_module: Module,
     window: Window,
     window_buffer: Vec<u32>,
     instance: Option<UW8Instance>,
@@ -28,18 +27,15 @@ impl MicroW8 {
     pub fn new() -> Result<MicroW8> {
         let engine = wasmtime::Engine::default();
 
-        let loader = Loader::new(&engine)?;
-
-        let platform_module =
-            wasmtime::Module::new(&engine, include_bytes!("../platform/platform.wasm"))?;
+        let loader_module =
+            wasmtime::Module::new(&engine, include_bytes!("../platform/loader.wasm"))?;
 
         let mut window = Window::new("MicroW8", 320, 240, WindowOptions::default())?;
         window.limit_update_rate(Some(std::time::Duration::from_micros(16666)));
 
         Ok(MicroW8 {
             engine,
-            loader,
-            platform_module,
+            loader_module,
             window,
             window_buffer: vec![0u32; 320 * 240],
             instance: None,
@@ -68,13 +64,25 @@ impl MicroW8 {
     pub fn load_from_memory(&mut self, module: &[u8]) -> Result<()> {
         self.reset();
 
-        let module = wasmtime::Module::new(&self.engine, self.loader.load(module)?)?;
-
         let mut store = wasmtime::Store::new(&self.engine, ());
+
         let memory = wasmtime::Memory::new(&mut store, MemoryType::new(4, Some(4)))?;
 
         let mut linker = wasmtime::Linker::new(&self.engine);
         linker.define("env", "memory", memory.clone())?;
+
+        let loader_instance = linker.instantiate(&mut store, &self.loader_module)?;
+        let load_uw8 = loader_instance.get_typed_func::<i32, i32, _>(&mut store, "load_uw8")?;
+
+        let platform_data = include_bytes!("../platform/platform.wasm");
+        memory.data_mut(&mut store)[..platform_data.len()].copy_from_slice(platform_data);
+        let platform_length = load_uw8.call(&mut store, platform_data.len() as i32)? as u32 as usize;
+        let platform_module = wasmtime::Module::new(&self.engine, &memory.data(&store)[..platform_length])?;
+
+        memory.data_mut(&mut store)[..module.len()].copy_from_slice(module);
+        let module_length = load_uw8.call(&mut store, module.len() as i32)? as u32 as usize;
+        let module = wasmtime::Module::new(&self.engine, &memory.data(&store)[..module_length])?;
+
         linker.func_wrap("env", "acos", |v: f32| v.acos())?;
         linker.func_wrap("env", "asin", |v: f32| v.asin())?;
         linker.func_wrap("env", "atan", |v: f32| v.atan())?;
@@ -100,7 +108,7 @@ impl MicroW8 {
             )?;
         }
 
-        let platform_instance = linker.instantiate(&mut store, &self.platform_module)?;
+        let platform_instance = linker.instantiate(&mut store, &platform_module)?;
 
         for export in platform_instance.exports(&mut store) {
             linker.define(
@@ -149,58 +157,5 @@ impl MicroW8 {
             .update_with_buffer(&self.window_buffer, 320, 240)?;
 
         Ok(())
-    }
-}
-
-struct Loader {
-    store: wasmtime::Store<()>,
-    memory: wasmtime::Memory,
-    instance: wasmtime::Instance,
-}
-
-impl Loader {
-    fn new(engine: &wasmtime::Engine) -> Result<Loader> {
-        let module = wasmtime::Module::new(engine, include_bytes!("../platform/loader.wasm"))?;
-        let mut store = wasmtime::Store::new(engine, ());
-
-        let mut linker = wasmtime::Linker::new(engine);
-        let memory = wasmtime::Memory::new(&mut store, MemoryType::new(9, Some(9)))?;
-        linker.define("env", "memory", memory.clone())?;
-
-        let instance = linker.instantiate(&mut store, &module)?;
-        Ok(Loader {
-            store,
-            memory,
-            instance,
-        })
-    }
-
-    fn load(&mut self, module_data: &[u8]) -> Result<Vec<u8>> {
-        let memory = self.memory.data_mut(&mut self.store);
-
-        let compressed_base_module = include_bytes!("../uw8-tool/base.upk");
-        memory[..compressed_base_module.len()].copy_from_slice(compressed_base_module);
-
-        let base_end = self.instance.get_typed_func::<(i32, i32), i32, _>(&mut self.store, "uncompress")?.call(&mut self.store, (0, 0x84000))? as u32 as usize;
-
-        let memory = self.memory.data_mut(&mut self.store);
-    
-        let base_module = memory[0x84000..base_end].to_vec();
-
-        let base_start = module_data.len();
-        memory[..base_start].copy_from_slice(module_data);
-
-        let base_end = base_start + base_module.len();
-        memory[base_start..base_end].copy_from_slice(&base_module);
-
-        let load_uw8 = self
-            .instance
-            .get_typed_func::<(i32, i32, i32, i32), i32, _>(&mut self.store, "load_uw8")?;
-        let end_offset = load_uw8.call(
-            &mut self.store,
-            (0, base_start as i32, base_start as i32, base_end as i32),
-        )? as u32 as usize;
-
-        Ok(self.memory.data(&self.store)[base_end..end_offset].to_vec())
     }
 }
