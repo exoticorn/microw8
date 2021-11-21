@@ -1,5 +1,5 @@
-import loaderUrl from "data-url:../../platform/loader.wasm";
-import platformUrl from "data-url:../../platform/platform.wasm";
+import loaderUrl from "data-url:../../platform/bin/loader.wasm";
+import platformUrl from "data-url:../../platform/bin/platform.uw8";
 
 function setMessage(size, error) {
     let html = size ? `${size} bytes` : 'Insert cart';

@@ -28,7 +28,7 @@ impl MicroW8 {
         let engine = wasmtime::Engine::default();
 
         let loader_module =
-            wasmtime::Module::new(&engine, include_bytes!("../platform/loader.wasm"))?;
+            wasmtime::Module::new(&engine, include_bytes!("../platform/bin/loader.wasm"))?;
 
         let mut window = Window::new("MicroW8", 320, 240, WindowOptions::default())?;
         window.limit_update_rate(Some(std::time::Duration::from_micros(16666)));
@@ -74,7 +74,7 @@ impl MicroW8 {
         let loader_instance = linker.instantiate(&mut store, &self.loader_module)?;
         let load_uw8 = loader_instance.get_typed_func::<i32, i32, _>(&mut store, "load_uw8")?;
 
-        let platform_data = include_bytes!("../platform/platform.wasm");
+        let platform_data = include_bytes!("../platform/bin/platform.uw8");
         memory.data_mut(&mut store)[..platform_data.len()].copy_from_slice(platform_data);
         let platform_length = load_uw8.call(&mut store, platform_data.len() as i32)? as u32 as usize;
         let platform_module = wasmtime::Module::new(&self.engine, &memory.data(&store)[..platform_length])?;
