@@ -9,13 +9,9 @@ function setMessage(size, error) {
     document.getElementById('message').innerHTML = html;
 }
 
-let framebufferCanvas = document.createElement("canvas");
-framebufferCanvas.width = 320;
-framebufferCanvas.height = 240;
-let framebufferCanvasCtx = framebufferCanvas.getContext("2d");
-let imageData = framebufferCanvasCtx.createImageData(320, 240);
 let screen = document.getElementById('screen');
 let canvasCtx = screen.getContext('2d');
+let imageData = canvasCtx.createImageData(320, 240);
 
 let cancelFunction;
 
@@ -117,9 +113,7 @@ async function runModule(data) {
                 for (let i = 0; i < 320 * 240; ++i) {
                     buffer[i] = palette[memU8[i + 120]] | 0xff000000;
                 }
-                framebufferCanvasCtx.putImageData(imageData, 0, 0);
-                canvasCtx.imageSmoothingEnabled = false;
-                canvasCtx.drawImage(framebufferCanvas, 0, 0, 640, 480);
+                canvasCtx.putImageData(imageData, 0, 0);
 
                 window.requestAnimationFrame(mainloop);
             } catch (err) {

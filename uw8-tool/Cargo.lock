@@ -63,9 +63,11 @@ dependencies = [
 [[package]]
 name = "upkr"
 version = "0.1.0"
-source = "git+https://github.com/exoticorn/upkr.git?rev=479a2e2#479a2e2c899a7aa24fa1fd9b4ebd371f8bc39f8e"
+source = "git+https://github.com/exoticorn/upkr.git?rev=11b43f9bc4460d960a13829a8a64ff4af11d1665#11b43f9bc4460d960a13829a8a64ff4af11d1665"
 dependencies = [
+ "anyhow",
  "cdivsufsort",
+ "pico-args",
 ]
 
 [[package]]

@@ -10,8 +10,6 @@ export fn load_uw8(module_size: i32) -> i32 {
 
     let module_end = 0x1e000 + module_size;
     if version & 1 {
-        module_size?0 = 0;
-        module_size?1 = 0;
         module_end = uncompress(1, 0x1e001);
     } else {
         copy(0x1e000, 0, module_size);
@@ -76,17 +74,13 @@ fn copy(dest: i32, src: i32, len: i32) {
 // upkr unpacker
 
 global mut upkr_src_ptr: i32 = 0;
-global mut upkr_code: i64 = 0i64;
-global mut upkr_low: i64 = 0i64;
-global mut upkr_range: i64 = 0i64;
+global mut upkr_state: i32 = 0;
 
 // uncompress upkr compressed data at `src` into the buffer at `dest`
 // returns the end of the uncompressed data
 export fn uncompress(src_ptr: i32, dest_ptr: i32) -> i32 {
     upkr_src_ptr = src_ptr;
-    upkr_code = 0i64;
-    upkr_low = 0i64;
-    upkr_range = 1i64;
+    upkr_state = 0;
 
     let offset: i32;
 
@@ -94,7 +88,7 @@ export fn uncompress(src_ptr: i32, dest_ptr: i32) -> i32 {
 
     let i: i32;
     loop init_contexts {
-        i!0x3c000 = 0x8000;
+        i!0x3c000 = 0x800;
         branch_if (i := i + 4) < (256 + 1 + 128) * 4: init_contexts
     }
 
@@ -144,43 +138,30 @@ fn upkr_length(context_index: i32) -> i32 {
 }
 
 fn upkr_bit(context_index: i32) -> i32 {
-    let prob = ((context_index * 4)!0x3c000) as i64;
+    let prob = (context_index * 4)!0x3c000;
 
     loop refill {
-        if upkr_low >> 32i64 == (upkr_low + upkr_range - 1i64) >> 32i64 {
-            upkr_append_byte();
+        if upkr_state < 1<<16 {
+            upkr_state = (upkr_state << 8) | ?upkr_src_ptr;
+            upkr_src_ptr = upkr_src_ptr + 1;
             branch refill;
         }
     }
 
-    if upkr_range < (1i64 << 24i64) {
-        upkr_append_byte();
-        upkr_append_byte();
-        upkr_range = (1i64 << 40i64) - upkr_low;
-    }
-
-    let range = upkr_range / 65536i64;
-    let bit = (upkr_code - upkr_low) / range < prob;
+    let lazy state_low = upkr_state & 0xfff;
+    let bit = state_low < prob;
 
     if bit {
-        upkr_range = range * prob;
-        prob = prob + (((1i64 << 16i64) - prob) >> 4i64);
+        upkr_state = prob * (upkr_state >> 12) + state_low;
+        prob = prob + ((0x1000 - prob) >> 4);
     } else {
-        upkr_low = upkr_low + range * prob;
-        upkr_range = range * (65536i64 - prob);
-        prob = prob - (prob >> 4i64);
+        upkr_state = (0x1000 - prob) * (upkr_state >> 12) + state_low - prob;
+        prob = prob - (prob >> 4);
     }
 
-    (context_index * 4)!0x3c000 = prob as i32;
+    (context_index * 4)!0x3c000 = prob;
 
     bit
-}
-
-fn upkr_append_byte() {
-    upkr_code = ((upkr_code & i64.extend_i32_u(-1)) << 8i64) | (?upkr_src_ptr) as i64;
-    upkr_src_ptr = upkr_src_ptr + 1;
-    upkr_low = (upkr_low & i64.extend_i32_u(-1)) << 8i64;
-    upkr_range = upkr_range << 8i64;
 }
 
 start fn unpack_base() {

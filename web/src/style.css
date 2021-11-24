@@ -33,7 +33,10 @@ a:hover {
     color: #405040;
 }
 
-canvas {
+#screen {
+    width: 320px;
+    height: 240px;
+    image-rendering: pixelated;
     background-color: #202428;
     margin-bottom: 8px;
     border: 4px solid #303040;
@@ -63,4 +66,18 @@ button:hover {
 
 button:active {
     background-color: #504450;
+}
+
+@media (min-width: 680px) and (min-height: 560px) {
+    #screen {
+        width: 640px;
+        height: 480px;
+    }
+}
+
+@media (min-width: 1000px) and (min-height: 800px) {
+    #screen {
+        width: 960px;
+        height: 720px;
+    }
 }
