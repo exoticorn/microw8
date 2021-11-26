@@ -195,7 +195,7 @@ impl BaseModule {
 
     pub fn create_binary(path: &Path) -> Result<()> {
         let base1 = BaseModule::for_format_version(1)?.to_wasm();
-        let data = upkr::pack(&base1);
+        let data = upkr::pack(&base1, 4, None);
         File::create(path)?.write_all(&data)?;
         Ok(())
     }

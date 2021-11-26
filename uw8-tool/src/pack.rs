@@ -14,19 +14,24 @@ use wasmparser::{
 };
 
 pub struct PackConfig {
-    compression: bool,
+    compression: Option<u8>,
 }
 
 impl PackConfig {
     pub fn with_compression(mut self) -> Self {
-        self.compression = true;
+        self.compression = Some(2);
+        self
+    }
+
+    pub fn with_compression_level(mut self, level: u8) -> Self {
+        self.compression = Some(level);
         self
     }
 }
 
 impl Default for PackConfig {
     fn default() -> PackConfig {
-        PackConfig { compression: false }
+        PackConfig { compression: None }
     }
 }
 
@@ -46,9 +51,21 @@ pub fn pack(data: &[u8], config: PackConfig) -> Result<Vec<u8>> {
     let parsed_module = ParsedModule::parse(data)?;
     let result = parsed_module.pack(&base)?;
 
-    if config.compression {
+    if let Some(level) = config.compression {
         let mut uw8 = vec![2];
-        uw8.extend_from_slice(&upkr::pack(&result[8..]));
+
+        let content = &result[8..];
+        let mut pb = pbr::ProgressBar::new(content.len() as u64);
+        pb.set_units(pbr::Units::Bytes);
+
+        uw8.extend_from_slice(&upkr::pack(
+            &result[8..],
+            level,
+            Some(&mut |pos| {
+                pb.set(pos as u64);
+            }),
+        ));
+        pb.finish();
         Ok(uw8)
     } else {
         let mut uw8 = vec![1];

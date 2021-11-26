@@ -11,15 +11,17 @@ fn main() -> Result<()> {
     let loader = curlywas::compile_file("src/loader.cwa")?;
     File::create("bin/loader.wasm")?.write_all(&loader)?;
 
+    println!("Loader (including base module): {} bytes", loader.len());
+
     println!("Compiling platform module");
     let platform = curlywas::compile_file("src/platform.cwa")?;
     println!("Compressing platform module");
     let platform = uw8_tool::pack(
         &platform,
-        uw8_tool::PackConfig::default().with_compression(),
+        uw8_tool::PackConfig::default().with_compression_level(4),
     )?;
     File::create("bin/platform.uw8")?.write_all(&platform)?;
-    println!("All done!");
+    println!("Platform module: {} bytes", platform.len());
 
     Ok(())
 }
