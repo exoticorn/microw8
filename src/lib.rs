@@ -19,7 +19,7 @@ pub struct MicroW8 {
 struct UW8Instance {
     store: Store<()>,
     memory: Memory,
-    tic: TypedFunc<i32, ()>,
+    upd: TypedFunc<(), ()>,
     start_time: Instant,
 }
 
@@ -76,8 +76,10 @@ impl MicroW8 {
 
         let platform_data = include_bytes!("../platform/bin/platform.uw8");
         memory.data_mut(&mut store)[..platform_data.len()].copy_from_slice(platform_data);
-        let platform_length = load_uw8.call(&mut store, platform_data.len() as i32)? as u32 as usize;
-        let platform_module = wasmtime::Module::new(&self.engine, &memory.data(&store)[..platform_length])?;
+        let platform_length =
+            load_uw8.call(&mut store, platform_data.len() as i32)? as u32 as usize;
+        let platform_module =
+            wasmtime::Module::new(&self.engine, &memory.data(&store)[..platform_length])?;
 
         memory.data_mut(&mut store)[..module.len()].copy_from_slice(module);
         let module_length = load_uw8.call(&mut store, module.len() as i32)? as u32 as usize;
@@ -121,12 +123,12 @@ impl MicroW8 {
         }
 
         let instance = linker.instantiate(&mut store, &module)?;
-        let tic = instance.get_typed_func::<i32, (), _>(&mut store, "tic")?;
+        let upd = instance.get_typed_func::<(), (), _>(&mut store, "upd")?;
 
         self.instance = Some(UW8Instance {
             store,
             memory,
-            tic,
+            upd,
             start_time: Instant::now(),
         });
 
@@ -135,10 +137,9 @@ impl MicroW8 {
 
     pub fn run_frame(&mut self) -> Result<()> {
         if let Some(mut instance) = self.instance.take() {
-            instance.tic.call(
-                &mut instance.store,
-                instance.start_time.elapsed().as_millis() as i32,
-            )?;
+            instance.memory.data_mut(&mut instance.store)[64..68]
+                .copy_from_slice(&(instance.start_time.elapsed().as_millis() as i32).to_le_bytes());
+            instance.upd.call(&mut instance.store, ())?;
 
             let framebuffer = &instance.memory.data(&instance.store)[120..];
             let palette = &framebuffer[320 * 240..];

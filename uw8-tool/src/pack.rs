@@ -570,10 +570,6 @@ impl ImportSection {
             }
         }
 
-        if memory == 0 {
-            bail!("No memory import found");
-        }
-
         Ok(ImportSection {
             memory,
             functions,

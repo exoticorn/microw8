@@ -77,6 +77,9 @@ impl BaseModule {
         add_function(&mut functions, &type_map, "rectangle", &[F32, F32, F32, F32, I32], None);
         add_function(&mut functions, &type_map, "circle", &[F32, F32, F32, I32], None);
 
+        add_function(&mut functions, &type_map, "time", &[], Some(I32));
+        add_function(&mut functions, &type_map, "ftime", &[], Some(F32));
+
         for i in functions.len()..64 {
             add_function(
                 &mut functions,
@@ -105,8 +108,8 @@ impl BaseModule {
             types,
             function_imports: functions,
             global_imports,
-            functions: vec![lookup_type(&type_map, &[I32], None)],
-            exports: vec![("tic", first_function)],
+            functions: vec![lookup_type(&type_map, &[], None)],
+            exports: vec![("upd", first_function)],
             memory: 4,
         })
     }

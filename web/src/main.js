@@ -107,7 +107,8 @@ async function runModule(data) {
             }
 
             try {
-                instance.exports.tic(Date.now() - startTime);
+                new Uint32Array(memory.buffer)[16] = Date.now() - startTime;
+                instance.exports.upd();
 
                 let palette = new Uint32Array(memory.buffer.slice(76920, 76920 + 1024));
                 for (let i = 0; i < 320 * 240; ++i) {
