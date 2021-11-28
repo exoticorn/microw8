@@ -1,0 +1,27 @@
+import "env.memory" memory(2);
+
+import "env.fmod" fn fmod(f32, f32) -> f32;
+import "env.time" fn time() -> f32;
+
+export fn upd() {
+  let i: i32;
+  loop pixels {
+    let lazy x = (i % 320 - 160) as f32;
+    let lazy y = (i / 320) as f32 - 120.5;
+    let lazy z = time() + 20 as f32 / sqrt(x*x + y*y);
+    let inline z_int = z as i32;
+    let lazy q = select(z_int % 9 >= 6, z, (z_int - (z_int % 9 - 6)) as f32);
+    let lazy w = 9 as f32 / y + time();
+    let inline s = q - time();
+    let inline m = x * s / 50 as f32;
+
+    i?120 = select(y > 0 as f32 & w < q,
+              select(abs(x * (w - time())) < 9 as f32, -2, -18) - w as i32 % 2,
+              select(y * s > -99 as f32 / (m * m + 1 as f32),
+                select(z_int % 9 >= 6, z_int % 2 - 31, -27),
+                (-10 as f32 + y / 23 as f32 + fmod(y / 4 as f32, 1 as f32)) as i32
+              )
+            );
+    branch_if (i := i + 1) < 320*240: pixels;
+  }
+}

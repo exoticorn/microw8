@@ -1,0 +1,60 @@
+import "env.memory" memory(4);
+
+import "env.rectangle" fn rect(f32, f32, f32, f32, i32);
+import "env.circle" fn circle(f32, f32, f32, i32);
+import "env.isButtonPressed" fn btn(i32) -> i32;
+import "env.random" fn random() -> i32;
+import "env.randomSeed" fn randomSeed(i32);
+import "env.cls" fn cls(i32);
+
+global mut pz: i32 = 4;
+global mut px: f32 = 2.0;
+global mut py: f32 = 2.0;
+global mut s: f32 = 2.0;
+global mut f: f32 = 2.0;
+
+export fn upd() {
+    let y: i32;
+    let inline zero = 0.0;
+
+    let lazy control_speed = 0.03;
+    s = s + 0.1 - (f + control_speed) * btn(4 <| cls(4)) as f32;
+    f = f * 0.7;
+
+    loop lines {
+        let lazy z = (4000 / (y := y + 1) + pz) / 20;
+        let lazy x = px - ({randomSeed(z); random()} >> 30) as f32;
+        let lazy w = 9 as f32 / sqrt(z as f32);
+        let lazy rx = 160 as f32 - (y as f32 * x);
+        let inline rw = y as f32 * w;
+        
+        let inline c = (z & 1) * -2;
+        let inline yf = y as f32;
+        rect(rx, yf, rw, yf / 6 as f32, c + 1);
+        rect(rx, yf, rw, 1 as f32, c - 4);
+
+        if y == 180 & py > zero {
+            if x > w | x < zero {
+
+                if btn(5) {
+                    pz = 5;
+                    px = 2 as f32;
+                }
+
+                return;
+            }
+            py = zero;
+            s = zero;
+            f = 0.8;
+        }
+
+        branch_if y < 240: lines;
+    }
+
+    circle(160 as f32, 160 as f32 + py, 22 as f32, -28);
+    circle((160 - 6) as f32, (160 - 6) as f32 + py, 6 as f32, -26);
+
+    px = px + (btn(3) - btn(2)) as f32 * control_speed;
+    py = py + s;
+    pz = pz + 1;
+}

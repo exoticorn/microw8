@@ -77,8 +77,9 @@ impl BaseModule {
         add_function(&mut functions, &type_map, "rectangle", &[F32, F32, F32, F32, I32], None);
         add_function(&mut functions, &type_map, "circle", &[F32, F32, F32, I32], None);
 
-        add_function(&mut functions, &type_map, "time", &[], Some(I32));
-        add_function(&mut functions, &type_map, "ftime", &[], Some(F32));
+        add_function(&mut functions, &type_map, "time", &[], Some(F32));
+        add_function(&mut functions, &type_map, "isButtonPressed", &[I32], Some(I32));
+        add_function(&mut functions, &type_map, "isButtonTriggered", &[I32], Some(I32));
 
         for i in functions.len()..64 {
             add_function(

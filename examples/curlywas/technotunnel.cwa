@@ -1,0 +1,25 @@
+import "env.memory" memory(4);
+import "env.sin" fn sin(f32) -> f32;
+import "env.time" fn time() -> f32;
+
+export fn upd() {
+    let i: i32;
+    loop screen {
+        let inline t = time() / 2 as f32;
+        let lazy o = sin(t) * 0.8;
+        let lazy q = (i % 320) as f32 - 160.1;
+        let lazy w = (i / 320 - 120) as f32;
+        let lazy r = sqrt(q*q + w*w);
+        let lazy z = q / r;
+        let lazy s = z * o + sqrt(z * z * o * o + 1 as f32 - o * o);
+        let lazy q2 = (z * s - o) * 10 as f32 + t;
+        let lazy w2 = w / r * s * 10 as f32 + t;
+        let lazy s2 = s * 100 as f32 / r;
+        i?120 = max(
+            0 as f32, 
+            ((q2 as i32 ^ w2 as i32 & ((s2 + time()) * 10 as f32) as i32) & 5) as f32 *
+                (4 as f32 - s2) as f32
+            ) as i32 - 32;
+        branch_if (i := i + 1) < 320*240: screen
+    }
+}

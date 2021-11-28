@@ -2,12 +2,16 @@ import "env.memory" memory(4);
 
 import "env.cos" fn cos(f32) -> f32;
 
-export fn time() -> i32 {
-    0!64
+export fn time() -> f32 {
+    (0!64) as f32 / 1000 as f32
 }
 
-export fn ftime() -> f32 {
-    (0!64) as f32 / 1000 as f32
+export fn isButtonPressed(btn: i32) -> i32 {
+    (68!0 >> btn) & 1
+}
+
+export fn isButtonTriggered(btn: i32) -> i32 {
+    ((68!0 & (-1 - 68!4)) >> btn) & 1
 }
 
 global mut randomState: i64 = 37i64;
@@ -115,6 +119,10 @@ export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
             branch lines;
         }
     }
+}
+
+export fn endFrame() {
+    68!4 = 68!0;
 }
 
 start fn setup() {

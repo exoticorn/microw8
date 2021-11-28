@@ -8,6 +8,8 @@ use wasmtime::{
     Engine, GlobalType, Memory, MemoryType, Module, Mutability, Store, TypedFunc, ValType,
 };
 
+static GAMEPAD_KEYS: &'static [Key] = &[Key::Up, Key::Down, Key::Left, Key::Right, Key::Z, Key::X, Key::A, Key::S];
+
 pub struct MicroW8 {
     engine: Engine,
     loader_module: Module,
@@ -19,7 +21,8 @@ pub struct MicroW8 {
 struct UW8Instance {
     store: Store<()>,
     memory: Memory,
-    upd: TypedFunc<(), ()>,
+    end_frame: TypedFunc<(), ()>,
+    update: TypedFunc<(), ()>,
     start_time: Instant,
 }
 
@@ -30,7 +33,11 @@ impl MicroW8 {
         let loader_module =
             wasmtime::Module::new(&engine, include_bytes!("../platform/bin/loader.wasm"))?;
 
-        let mut window = Window::new("MicroW8", 320, 240, WindowOptions::default())?;
+        let mut options = WindowOptions::default();
+        options.scale = minifb::Scale::X2;
+        options.scale_mode = minifb::ScaleMode::AspectRatioStretch;
+        options.resize = true;
+        let mut window = Window::new("MicroW8", 320, 240, options)?;
         window.limit_update_rate(Some(std::time::Duration::from_micros(16666)));
 
         Ok(MicroW8 {
@@ -123,12 +130,14 @@ impl MicroW8 {
         }
 
         let instance = linker.instantiate(&mut store, &module)?;
-        let upd = instance.get_typed_func::<(), (), _>(&mut store, "upd")?;
+        let end_frame = platform_instance.get_typed_func::<(), (), _>(&mut store, "endFrame")?;
+        let update = instance.get_typed_func::<(), (), _>(&mut store, "upd")?;
 
         self.instance = Some(UW8Instance {
             store,
             memory,
-            upd,
+            end_frame,
+            update,
             start_time: Instant::now(),
         });
 
@@ -137,9 +146,22 @@ impl MicroW8 {
 
     pub fn run_frame(&mut self) -> Result<()> {
         if let Some(mut instance) = self.instance.take() {
-            instance.memory.data_mut(&mut instance.store)[64..68]
-                .copy_from_slice(&(instance.start_time.elapsed().as_millis() as i32).to_le_bytes());
-            instance.upd.call(&mut instance.store, ())?;
+            {
+                let time = instance.start_time.elapsed().as_millis() as i32;
+                let mut gamepad: u32 = 0;
+                for key in self.window.get_keys().unwrap_or(Vec::new()) {
+                    if let Some(index) = GAMEPAD_KEYS.iter().enumerate().find(|(_, &k)| k == key).map(|(i, _)| i) {
+                        gamepad |= 1 << index;
+                    }
+                }
+
+                let mem = instance.memory.data_mut(&mut instance.store);
+                mem[64..68].copy_from_slice(&time.to_le_bytes());
+                mem[68..72].copy_from_slice(&gamepad.to_le_bytes());
+            }
+
+            instance.update.call(&mut instance.store, ())?;
+            instance.end_frame.call(&mut instance.store, ())?;
 
             let framebuffer = &instance.memory.data(&instance.store)[120..];
             let palette = &framebuffer[320 * 240..];
