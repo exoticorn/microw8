@@ -110,7 +110,7 @@ async function runModule(data) {
                 new Uint32Array(memory.buffer)[16] = Date.now() - startTime;
                 instance.exports.upd();
 
-                let palette = new Uint32Array(memory.buffer.slice(76920, 76920 + 1024));
+                let palette = new Uint32Array(memory.buffer.slice(0x13000, 0x13000 + 1024));
                 for (let i = 0; i < 320 * 240; ++i) {
                     buffer[i] = palette[memU8[i + 120]] | 0xff000000;
                 }

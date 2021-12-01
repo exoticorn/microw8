@@ -6,6 +6,7 @@ import "env.isButtonPressed" fn btn(i32) -> i32;
 import "env.random" fn random() -> i32;
 import "env.randomSeed" fn randomSeed(i32);
 import "env.cls" fn cls(i32);
+import "env.printInt" fn printInt(i32);
 
 global mut pz: i32 = 4;
 global mut px: f32 = 2.0;
@@ -20,6 +21,8 @@ export fn upd() {
     let lazy control_speed = 0.03;
     s = s + 0.1 - (f + control_speed) * btn(4 <| cls(4)) as f32;
     f = f * 0.7;
+
+    printInt(pz);
 
     loop lines {
         let lazy z = (4000 / (y := y + 1) + pz) / 20;

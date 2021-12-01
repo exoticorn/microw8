@@ -163,8 +163,9 @@ impl MicroW8 {
             instance.update.call(&mut instance.store, ())?;
             instance.end_frame.call(&mut instance.store, ())?;
 
-            let framebuffer = &instance.memory.data(&instance.store)[120..];
-            let palette = &framebuffer[320 * 240..];
+            let memory = instance.memory.data(&instance.store);
+            let framebuffer = &memory[120..];
+            let palette = &memory[0x13000..];
             for i in 0..320 * 240 {
                 let offset = framebuffer[i] as usize * 4;
                 self.window_buffer[i] = 0xff000000

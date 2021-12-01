@@ -6,6 +6,10 @@ export fn time() -> f32 {
     (0!64) as f32 / 1000 as f32
 }
 
+///////////
+// INPUT //
+///////////
+
 export fn isButtonPressed(btn: i32) -> i32 {
     (68!0 >> btn) & 1
 }
@@ -13,6 +17,10 @@ export fn isButtonPressed(btn: i32) -> i32 {
 export fn isButtonTriggered(btn: i32) -> i32 {
     ((68!0 & (-1 - 68!4)) >> btn) & 1
 }
+
+////////////
+// RANDOM //
+////////////
 
 global mut randomState: i64 = 37i64;
 
@@ -43,8 +51,17 @@ export fn fmod(a: f32, b: f32) -> f32 {
     a - floor(a / b) * b
 }
 
+/////////////
+// DRAWING //
+/////////////
+
+global mut textCursorX = 0;
+global mut textCursorY = 0;
+
 export fn cls(col: i32) {
     let i: i32;
+    textCursorX = 0;
+    textCursorY = 0;
     col = (col & 255) * 0x1010101;
     loop pixels {
         i!120 = col;
@@ -121,6 +138,63 @@ export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
     }
 }
 
+//////////
+// TEXT //
+//////////
+
+global mut textColor = 15;
+
+export fn printChar(char: i32) {
+    if char == 10 | textCursorX >= 320 {
+        textCursorX = 0;
+        textCursorY = textCursorY + 8;
+        return;
+    }
+
+    let y: i32;
+    loop rows {
+        let bits = (char * 8 + y)?0x13400;
+        let x = 0;
+        loop pixels {
+            if (bits := bits << 1) & 256 {
+                setPixel(textCursorX + x, textCursorY + y, textColor);
+            }
+            branch_if (x := x + 1) < 8: pixels;
+        }
+        branch_if (y := y + 1) < 8: rows;
+    }
+    textCursorX = textCursorX + 8;
+}
+
+export fn printString(ptr: i32) {
+    loop chars {
+        let lazy char = ptr?0;
+        if char {
+            printChar(char);
+            ptr = ptr + 1;
+            branch chars;
+        }
+    }
+}
+
+export fn printInt(num: i32) {
+    let lazy p = 0x12fff;
+    p?0 = 0;
+    if num < 0 {
+        printChar(45);
+        num = -num;
+    }
+    loop digits {
+        (p := p - 1)?0 = 48 + num #% 10;
+        branch_if (num := num #/ 10): digits;
+    }
+    printString(p);
+}
+
+///////////
+// SETUP //
+///////////
+
 export fn endFrame() {
     68!4 = 68!0;
 }
@@ -137,7 +211,7 @@ start fn setup() {
         let lazy a = max(llimit, min(ulimit, c)) * (scale + 0.05);
         let lazy b = scale * scale * 0.8;
         let inline v = (select(i < 11*16*3, max(0 as f32, min(a + b - a * b, 1 as f32)), scale) * 255 as f32) as i32;
-        (i%3 + i/3*4)?(120+320*240) = v;
+        (i%3 + i/3*4)?0x13000 = v;
         avg = (avg + c) * 0.5;
 
         branch_if i := i - 1: gradients;
@@ -150,9 +224,9 @@ start fn setup() {
         let lazy first_step = index >= 32;
         let inline src1 = select(first_step, index % 32 / 2, index * 2);
         let inline src2 = select(first_step, (index + 1) % 32 / 2, index * 2 + 1);
-        let inline c1 = (src1 * 4 + channel)?(120+320*240+192*4);
-        let inline c2 = (src2 * 4 + channel)?(120+320*240+192*4);
-        i?(120+320*240+192*4) = (c1 + c2) * (3 + first_step) / 8;
+        let inline c1 = (src1 * 4 + channel)?(0x13000+192*4);
+        let inline c2 = (src2 * 4 + channel)?(0x13000+192*4);
+        i?(0x13000+192*4) = (c1 + c2) * (3 + first_step) / 8;
 
         branch_if (i := i - 1) >= 0: expand_sweetie;
     }
@@ -161,7 +235,7 @@ start fn setup() {
     randomSeed(random());
 }
 
-data 120+320*240+192*4 {
+data 0x13000+192*4 {
     i32(
         0x2c1c1a,
         0x5d275d,
@@ -180,4 +254,8 @@ data 120+320*240+192*4 {
         0x866c56,
         0x573c33
     )
+}
+
+data 0x13400 {
+    file("../target/font.bin")
 }

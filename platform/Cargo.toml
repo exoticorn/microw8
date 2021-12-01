@@ -9,3 +9,4 @@ edition = "2021"
 curlywas = { git="https://github.com/exoticorn/curlywas.git", rev="c0140d0" }
 uw8-tool = { path="../uw8-tool" }
 anyhow = "1"
+lodepng = "3.4"
