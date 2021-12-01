@@ -19,8 +19,8 @@ export fn upd() {
     let inline zero = 0.0;
 
     let lazy control_speed = 0.03125;
-    s = s + 0.125 - (f + control_speed) * btn(4 <| cls(4)) as f32;
-    f = f * 0.75;
+    s = s + 0.1875 - (f + control_speed) * btn(4 <| cls(4)) as f32;
+    f = f * 0.5625;
 
     printInt(pz);
 
@@ -48,7 +48,7 @@ export fn upd() {
             }
             py = zero;
             s = zero;
-            f = 0.75;
+            f = 2 as f32;
         }
 
         branch_if y < 240: lines;
