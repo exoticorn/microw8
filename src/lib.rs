@@ -24,6 +24,7 @@ struct UW8Instance {
     end_frame: TypedFunc<(), ()>,
     update: TypedFunc<(), ()>,
     start_time: Instant,
+    module: Vec<u8>
 }
 
 impl MicroW8 {
@@ -68,7 +69,7 @@ impl MicroW8 {
         self.load_from_memory(&module)
     }
 
-    pub fn load_from_memory(&mut self, module: &[u8]) -> Result<()> {
+    pub fn load_from_memory(&mut self, module_data: &[u8]) -> Result<()> {
         self.reset();
 
         let mut store = wasmtime::Store::new(&self.engine, ());
@@ -88,8 +89,8 @@ impl MicroW8 {
         let platform_module =
             wasmtime::Module::new(&self.engine, &memory.data(&store)[..platform_length])?;
 
-        memory.data_mut(&mut store)[..module.len()].copy_from_slice(module);
-        let module_length = load_uw8.call(&mut store, module.len() as i32)? as u32 as usize;
+        memory.data_mut(&mut store)[..module_data.len()].copy_from_slice(module_data);
+        let module_length = load_uw8.call(&mut store, module_data.len() as i32)? as u32 as usize;
         let module = wasmtime::Module::new(&self.engine, &memory.data(&store)[..module_length])?;
 
         linker.func_wrap("env", "acos", |v: f32| v.acos())?;
@@ -139,6 +140,7 @@ impl MicroW8 {
             end_frame,
             update,
             start_time: Instant::now(),
+            module: module_data.into()
         });
 
         Ok(())
@@ -174,7 +176,11 @@ impl MicroW8 {
                     | palette[offset + 2] as u32;
             }
 
-            self.instance = Some(instance);
+            if self.window.is_key_pressed(Key::R, minifb::KeyRepeat::No) {
+                self.load_from_memory(&instance.module)?;
+            } else {
+                self.instance = Some(instance);
+            }
         }
 
         self.window

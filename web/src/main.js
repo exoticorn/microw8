@@ -15,7 +15,56 @@ let imageData = canvasCtx.createImageData(320, 240);
 
 let cancelFunction;
 
+let currentData;
+
 let U8 = (d) => new Uint8Array(d);
+let U32 = (d) => new Uint32Array(d);
+
+let pad = 0;
+let keyHandler = (e) => {
+    let isKeyDown = e.type == 'keydown';
+    let mask;
+    switch(e.code) {
+    case 'ArrowUp':
+        mask = 1;
+        break;
+    case 'ArrowDown':
+        mask = 2;
+        break;
+    case 'ArrowLeft':
+        mask = 4;
+        break;
+    case 'ArrowRight':
+        mask = 8;
+        break;
+    case 'KeyZ':
+        mask = 16;
+        break;
+    case 'KeyX':
+        mask = 32;
+        break;
+    case 'KeyA':
+        mask = 64;
+        break;
+    case 'KeyS':
+        mask = 128;
+        break;
+    case 'KeyR':
+        if(isKeyDown)
+        {
+            runModule(currentData);
+        }
+        break;
+    }
+
+    if(isKeyDown) {
+        pad |= mask;
+    } else {
+        pad &= ~mask;
+    }
+};
+window.onkeydown = keyHandler;
+window.onkeyup = keyHandler;
 
 async function runModule(data) {
     if (cancelFunction) {
@@ -29,6 +78,8 @@ async function runModule(data) {
     if (cartridgeSize == 0) {
         return;
     }
+
+    currentData = data;
 
     let newURL = window.location.pathname;
     if (cartridgeSize <= 1024) {
@@ -94,12 +145,15 @@ async function runModule(data) {
 
         let instance = await instantiate(data);
 
-        let buffer = new Uint32Array(imageData.data.buffer);
+        let buffer = U32(imageData.data.buffer);
 
         let startTime = Date.now();
 
         let keepRunning = true;
         cancelFunction = () => keepRunning = false;
+
+        const timePerFrame = 1000 / 60;
+        let nextFrame = startTime;
 
         function mainloop() {
             if (!keepRunning) {
@@ -107,14 +161,20 @@ async function runModule(data) {
             }
 
             try {
-                new Uint32Array(memory.buffer)[16] = Date.now() - startTime;
-                instance.exports.upd();
+                let now = Date.now();
+                if(now >= nextFrame) {
+                    let u32Mem = U32(memory.buffer);
+                    u32Mem[16] = now - startTime;
+                    u32Mem[17] = pad;
+                    instance.exports.upd();
 
-                let palette = new Uint32Array(memory.buffer.slice(0x13000, 0x13000 + 1024));
-                for (let i = 0; i < 320 * 240; ++i) {
-                    buffer[i] = palette[memU8[i + 120]] | 0xff000000;
+                    let palette = U32(memory.buffer.slice(0x13000, 0x13000 + 1024));
+                    for (let i = 0; i < 320 * 240; ++i) {
+                        buffer[i] = palette[memU8[i + 120]] | 0xff000000;
+                    }
+                    canvasCtx.putImageData(imageData, 0, 0);
+                    nextFrame = Math.max(nextFrame + timePerFrame, now);
                 }
-                canvasCtx.putImageData(imageData, 0, 0);
 
                 window.requestAnimationFrame(mainloop);
             } catch (err) {

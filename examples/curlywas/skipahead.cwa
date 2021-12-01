@@ -38,12 +38,6 @@ export fn upd() {
 
         if y == 180 & py > zero {
             if x > w | x < zero {
-
-                if btn(5) {
-                    pz = 5;
-                    px = 2 as f32;
-                }
-
                 return;
             }
             py = zero;
