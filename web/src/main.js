@@ -162,10 +162,37 @@ async function runModule(data) {
 
             try {
                 let now = Date.now();
+                let restart = false;
                 if(now >= nextFrame) {
+                    let gamepads = navigator.getGamepads();
+                    let gamepad = 0;
+                    for(let i = 0; i < 4; ++i) {
+                        let pad = gamepads[i];
+                        if(!pad) {
+                            continue;
+                        }
+                        for(let j = 0; j < 8; ++j) {
+                            let buttonIdx = (j+12) % 16;
+                            if(pad.buttons.length > buttonIdx && pad.buttons[buttonIdx].pressed) {
+                                gamepad |= 1 << (i * 8 + j);
+                            }
+                        }
+                        if(pad.axes.length > 1) {
+                            for(let j = 0; j < 4; ++j) {
+                                let v = pad.axes[1-(j>>1)];
+                                if(((j & 1) ? v : -v) > 0.5) {
+                                    gamepad |= 1 << (i * 8 + j);
+                                }
+                            }
+                        }
+                        if(pad.buttons.length > 9 && pad.buttons[9].pressed) {
+                            restart = true;
+                        }
+                    }
+
                     let u32Mem = U32(memory.buffer);
                     u32Mem[16] = now - startTime;
-                    u32Mem[17] = pad;
+                    u32Mem[17] = pad | gamepad;
                     instance.exports.upd();
 
                     let palette = U32(memory.buffer.slice(0x13000, 0x13000 + 1024));
@@ -175,8 +202,12 @@ async function runModule(data) {
                     canvasCtx.putImageData(imageData, 0, 0);
                     nextFrame = Math.max(nextFrame + timePerFrame, now);
                 }
-
-                window.requestAnimationFrame(mainloop);
+                
+                if(restart) {
+                    runModule(currentData);
+                } else {
+                    window.requestAnimationFrame(mainloop);
+                }
             } catch (err) {
                 setMessage(cartridgeSize, err.toString());
             }
