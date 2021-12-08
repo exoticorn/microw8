@@ -1,0 +1,34 @@
+import "env.memory" memory(4);
+
+import "env.cls" fn cls(i32);
+import "env.printString" fn printString(i32);
+import "env.printChar" fn printChar(i32);
+import "env.setCursorPosition" fn setCursor(i32, i32);
+import "env.setTextColor" fn setTextColor(i32);
+
+export fn upd() {
+    cls(0);
+
+    printString(0);
+
+    let y: i32;
+    loop y {
+        setCursor(y + 2, 3);
+        let lazy hexChar = select(y < 10, y + 48, y + 87);
+        printChar(hexChar);
+        setCursor(0, y + 5);
+        printChar(hexChar);
+        printChar(32);
+        let x = 0;
+        loop x {
+//            setTextColor(x + y * 16);
+            printChar(x + y * 16);
+            branch_if (x := x + 1) < 16: x;
+        }
+        branch_if (y := y + 1) < 16: y;
+    }
+}
+
+data 0 {
+    "Default font:" i8(0)
+}

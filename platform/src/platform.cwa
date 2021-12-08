@@ -55,9 +55,6 @@ export fn fmod(a: f32, b: f32) -> f32 {
 // DRAWING //
 /////////////
 
-global mut textCursorX = 0;
-global mut textCursorY = 0;
-
 export fn cls(col: i32) {
     let i: i32;
     textCursorX = 0;
@@ -142,7 +139,10 @@ export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
 // TEXT //
 //////////
 
+global mut textCursorX = 0;
+global mut textCursorY = 0;
 global mut textColor = 15;
+global mut bgColor = 0;
 
 export fn printChar(char: i32) {
     if char == 10 | textCursorX >= 320 {
@@ -156,9 +156,7 @@ export fn printChar(char: i32) {
         let bits = (char * 8 + y)?0x13400;
         let x = 0;
         loop pixels {
-            if (bits := bits << 1) & 256 {
-                setPixel(textCursorX + x, textCursorY + y, textColor);
-            }
+            setPixel(textCursorX + x, textCursorY + y, select((bits := bits << 1) & 256, textColor, bgColor));
             branch_if (x := x + 1) < 8: pixels;
         }
         branch_if (y := y + 1) < 8: rows;
@@ -189,6 +187,19 @@ export fn printInt(num: i32) {
         branch_if (num := num #/ 10): digits;
     }
     printString(p);
+}
+
+export fn setTextColor(col: i32) {
+    textColor = col;
+}
+
+export fn setBackgroundColor(col: i32) {
+    bgColor = col;
+}
+
+export fn setCursorPosition(x: i32, y: i32) {
+    textCursorX = x * 8;
+    textCursorY = y * 8;
 }
 
 ///////////
