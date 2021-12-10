@@ -16,13 +16,13 @@ fn line(x1: f32, y1: f32, x2: f32, y2: f32, col: i32) {
         y1 = y2;
         y2 = swapTmp;
     }
-    if x1 < 0.5 & x2 >= 0.5 {
-        y1 = y1 + (y2 - y1) * (0.5 - x1) / (x2 - x1);
-        x1 = 0.5;
+    if x1 < 0 as f32 & x2 >= 0 as f32 {
+        y1 = y1 + (y2 - y1) * -x1 / (x2 - x1);
+        x1 = 0 as f32;
     }
-    if x1 < 319.5 & x2 >= 319.5 {
-        y2 = y2 + (y2 - y1) * (319.5 - x2) / (x2 - x1);
-        x2 = 319.5;
+    if x1 < 320 as f32 & x2 >= 320 as f32 {
+        y2 = y2 + (y2 - y1) * (320 as f32 - x2) / (x2 - x1);
+        x2 = 320 as f32;
     }
 
     if y1 > y2 {
@@ -33,41 +33,69 @@ fn line(x1: f32, y1: f32, x2: f32, y2: f32, col: i32) {
         y1 = y2;
         y2 = swapTmp;
     }
-    if y1 < 0.5 & y2 >= 0.5 {
-        x1 = x1 + (x2 - x1) * (0.5 - y1) / (y2 - y1);
-        y1 = 0.5;
+    if y1 < 0 as f32 & y2 >= 0 as f32 {
+        x1 = x1 + (x2 - x1) * -y1 / (y2 - y1);
+        y1 = 0.0;
     }
-    if y1 < 239.5 & y2 >= 239.5 {
-        x2 = x2 + (x2 - x1) * (239.5 - y2) / (y2 - y1);
-        y2 = 239.5;
+    if y1 < 240 as f32 & y2 >= 240 as f32 {
+        x2 = x2 + (x2 - x1) * (240 as f32 - y2) / (y2 - y1);
+        y2 = 240 as f32;
     }
 
     let dx = x2 - x1;
     let dy = y2 - y1;
-    let steps: i32;
+    let max_axis: f32;
+    let p: f32;
     if abs(dx) >= dy {
-        dy = dy / abs(dx);
-        steps = abs(dx) as i32;
-        dx = select(dx > 0 as f32, 1 as f32, -1 as f32);
+        max_axis = dx;
+        p = x1;
     } else {
-        dx = dx / dy;
-        steps = dy as i32;
-        dy = 1 as f32;
+        max_axis = dy;
+        p = y1;
     }
 
-    loop pixels {
-        setPixel(x1 as i32, y1 as i32, col);
-        x1 = x1 + dx;
-        y1 = y1 + dy;
-        branch_if (steps := steps - 1) >= 0: pixels;
+    let steps = floor(p + max_axis) as i32 - floor(p) as i32;
+    p = floor(p) + 0.5 - p;
+    if max_axis < 0 as f32 {
+        steps = -steps;
+        p = 1 as f32 - p;
+        max_axis = -max_axis;
     }
+    dx = dx / max_axis;
+    dy = dy / max_axis;
+
+    let f = min(max_axis, max(0 as f32, p));
+    setPixel((x1 + f * dx) as i32, (y1 + f * dy) as i32, col);
+
+    if !steps {
+        return;
+    }
+
+    x1 = x1 + (1 as f32 + p) * dx;
+    y1 = y1 + (1 as f32 + p) * dy;
+
+    p = p + steps as f32;
+
+    loop pixels {
+        if steps := steps - 1 {
+            setPixel(x1 as i32, y1 as i32, col);
+            x1 = x1 + dx;
+            y1 = y1 + dy;
+            branch pixels;
+        }
+    }
+
+    f = min(max_axis, p) - p;
+    setPixel((x1 + f * dx) as i32, (y1 + f * dy) as i32, col);
 }
 
 export fn upd() {
     cls(0);
+    //line(0.0, 4.0, 7.0, -2.0, 15);
+    //return;
     let i: i32;
     loop lines {
-        let angle = i as f32 * (3.1415 / 25.0) + time() * 0.1;
+        let angle = i as f32 * (3.1415 / 25.0) + time() * 0.01;
         line(160.0, 120.0, 160.0 + sin(angle) * 200.0, 120.0 + cos(angle) * 200.0, 47);
         branch_if (i := i + 1)  < 50: lines;
     }
