@@ -135,6 +135,89 @@ export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
     }
 }
 
+export fn line(x1: f32, y1: f32, x2: f32, y2: f32, col: i32) {
+    let swapTmp: f32;
+    if x1 > x2 {
+        swapTmp = x1;
+        x1 = x2;
+        x2 = swapTmp;
+        swapTmp = y1;
+        y1 = y2;
+        y2 = swapTmp;
+    }
+    if x1 < 0 as f32 & x2 >= 0 as f32 {
+        y1 = y1 + (y2 - y1) * -x1 / (x2 - x1);
+        x1 = 0 as f32;
+    }
+    if x1 < 320 as f32 & x2 >= 320 as f32 {
+        y2 = y2 + (y2 - y1) * (320 as f32 - x2) / (x2 - x1);
+        x2 = 320 as f32;
+    }
+
+    if y1 > y2 {
+        swapTmp = x1;
+        x1 = x2;
+        x2 = swapTmp;
+        swapTmp = y1;
+        y1 = y2;
+        y2 = swapTmp;
+    }
+    if y1 < 0 as f32 & y2 >= 0 as f32 {
+        x1 = x1 + (x2 - x1) * -y1 / (y2 - y1);
+        y1 = 0 as f32;
+    }
+    if y1 < 240 as f32 & y2 >= 240 as f32 {
+        x2 = x2 + (x2 - x1) * (240 as f32 - y2) / (y2 - y1);
+        y2 = 240 as f32;
+    }
+
+    let lazy dx = x2 - x1;
+    let lazy dy = y2 - y1;
+    let max_axis: f32;
+    let p: f32;
+    if abs(dx) >= dy {
+        max_axis = dx;
+        p = x1;
+    } else {
+        max_axis = dy;
+        p = y1;
+    }
+
+    let steps = floor(p + max_axis) as i32 - floor(p) as i32;
+    p = floor(p) + 0.5 - p;
+    if max_axis < 0 as f32 {
+        steps = -steps;
+        p = -p;
+        max_axis = -max_axis;
+    }
+    dx = dx / max_axis;
+    dy = dy / max_axis;
+
+    let f = min(max_axis, max(0 as f32, p));
+    setPixel((x1 + f * dx) as i32, (y1 + f * dy) as i32, col);
+
+    if !steps {
+        return;
+    }
+
+    x1 = x1 + (1 as f32 + p) * dx;
+    y1 = y1 + (1 as f32 + p) * dy;
+
+    p = p + steps as f32;
+
+    loop pixels {
+        if steps := steps - 1 {
+            setPixel(x1 as i32, y1 as i32, col);
+            x1 = x1 + dx;
+            y1 = y1 + dy;
+            branch pixels;
+        }
+    }
+
+    f = min(max_axis, p) - p;
+    setPixel((x1 + f * dx) as i32, (y1 + f * dy) as i32, col);
+}
+
 //////////
 // TEXT //
 //////////

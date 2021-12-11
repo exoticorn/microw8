@@ -146,11 +146,12 @@ checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 [[package]]
 name = "curlywas"
 version = "0.1.0"
-source = "git+https://github.com/exoticorn/curlywas.git?rev=c0140d0#c0140d0671e81b57e8fd142c66c675a659fd50f8"
+source = "git+https://github.com/exoticorn/curlywas.git?rev=196719b#196719b35ef377cb7e001554b27ac5de013dcf2b"
 dependencies = [
  "anyhow",
  "ariadne",
  "chumsky",
+ "pico-args",
  "wasm-encoder",
  "wasmparser",
 ]
