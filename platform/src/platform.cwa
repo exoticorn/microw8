@@ -59,6 +59,7 @@ export fn cls(col: i32) {
     let i: i32;
     textCursorX = 0;
     textCursorY = 0;
+    graphicsText = 0;
     col = (col & 255) * 0x1010101;
     loop pixels {
         i!120 = col;
@@ -226,9 +227,15 @@ global mut textCursorX = 0;
 global mut textCursorY = 0;
 global mut textColor = 15;
 global mut bgColor = 0;
+global mut graphicsText = 0;
 
 export fn printChar(char: i32) {
-    if char == 10 | textCursorX >= 320 {
+    if char == 4 | char == 5 {
+        graphicsText = char == 5;
+        return;
+    }
+
+    if char == 10 | (!graphicsText & textCursorX >= 320) {
         textCursorX = 0;
         textCursorY = textCursorY + 8;
         return;
@@ -238,9 +245,18 @@ export fn printChar(char: i32) {
     loop rows {
         let bits = (char * 8 + y)?0x13400;
         let x = 0;
-        loop pixels {
-            setPixel(textCursorX + x, textCursorY + y, select((bits := bits << 1) & 256, textColor, bgColor));
-            branch_if (x := x + 1) < 8: pixels;
+        if graphicsText {
+            loop pixels {
+                if (bits := bits << 1) & 256 {
+                    setPixel(textCursorX + x, textCursorY + y, textColor);
+                }
+                branch_if (x := x + 1) < 8: pixels;
+            }
+        } else {
+            loop pixels {
+                setPixel(textCursorX + x, textCursorY + y, select((bits := bits << 1) & 256, textColor, bgColor));
+                branch_if (x := x + 1) < 8: pixels;
+            }
         }
         branch_if (y := y + 1) < 8: rows;
     }
@@ -281,8 +297,9 @@ export fn setBackgroundColor(col: i32) {
 }
 
 export fn setCursorPosition(x: i32, y: i32) {
-    textCursorX = x * 8;
-    textCursorY = y * 8;
+    let lazy scale = select(graphicsText, 1, 8);
+    textCursorX = x * scale;
+    textCursorY = y * scale;
 }
 
 ///////////
