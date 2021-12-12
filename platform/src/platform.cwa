@@ -230,6 +230,13 @@ global mut bgColor = 0;
 global mut graphicsText = 0;
 
 export fn printChar(char: i32) {
+    loop chars {
+        printSingleChar(char & 255);
+        branch_if (char := char #>> 8): chars;
+    }
+}
+
+fn printSingleChar(char: i32) {
     if char == 4 | char == 5 {
         graphicsText = char == 5;
         return;
@@ -238,6 +245,15 @@ export fn printChar(char: i32) {
     if char == 10 | (!graphicsText & textCursorX >= 320) {
         textCursorX = 0;
         textCursorY = textCursorY + 8;
+        if !graphicsText & textCursorY >= 240 {
+            textCursorY = 240 - 8;
+            let i: i32;
+            loop scroll_copy {
+                i!120 = i!(120 + 320 * 8);
+                branch_if (i := i + 4) < 320 * (240 - 8): scroll_copy;
+            }
+            rectangle(0 as f32, (240 - 8) as f32, 320 as f32, 8 as f32, bgColor);
+        }
         return;
     }
 

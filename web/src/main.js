@@ -117,7 +117,7 @@ async function runModule(data) {
             return data;
         }
 
-        let instantiate = async (data) => new WebAssembly.Instance(await WebAssembly.compile(data), importObject);
+        let instantiate = async (data) => (await WebAssembly.instantiate(data, importObject)).instance;
 
         let loadModuleURL = async (url) => instantiate(loadModuleData(await (await fetch(url)).arrayBuffer()));
 
@@ -194,6 +194,7 @@ async function runModule(data) {
                     u32Mem[16] = now - startTime;
                     u32Mem[17] = pad | gamepad;
                     instance.exports.upd();
+                    platform_instance.exports.endFrame();
 
                     let palette = U32(memory.buffer.slice(0x13000, 0x13000 + 1024));
                     for (let i = 0; i < 320 * 240; ++i) {
