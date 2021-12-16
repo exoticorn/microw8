@@ -12,4 +12,5 @@ minifb = "0.19"
 notify = "4"
 pico-args = "0.4"
 curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "196719b" }
+wat = "1"
 uw8-tool = { path = "uw8-tool" }

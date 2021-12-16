@@ -97,7 +97,11 @@ fn load_cart(filename: &Path, uw8: &mut MicroW8, config: &Config) -> Result<()> 
 
     if cart[0] >= 10 {
         let src = String::from_utf8(cart)?;
-        cart = curlywas::compile_str(&src, filename, curlywas::Options::default())?;
+        cart = if src.chars().find(|c| !c.is_whitespace()) == Some('(') {
+            wat::parse_str(src)?
+        } else {
+            curlywas::compile_str(&src, filename, curlywas::Options::default())?
+        };
     }
 
     if config.pack {

@@ -1543,6 +1543,7 @@ dependencies = [
  "pico-args",
  "uw8-tool",
  "wasmtime",
+ "wat",
 ]
 
 [[package]]
