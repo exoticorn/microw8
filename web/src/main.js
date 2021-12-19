@@ -251,3 +251,15 @@ document.getElementById('cartButton').onclick = () => {
     };
     fileInput.click();
 };
+
+screen.ondragover = (e) => {
+    e.preventDefault();
+};
+
+screen.ondrop = (e) => {
+    let files = e.dataTransfer && e.dataTransfer.files;
+    if(files && files.length == 1) {
+        e.preventDefault();
+        runModuleFromURL(URL.createObjectURL(e.dataTransfer.files[0]));
+    }
+}
