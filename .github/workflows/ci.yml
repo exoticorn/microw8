@@ -1,0 +1,47 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        build: [ linux, windows, macos ]
+        include:
+          - build: linux
+            os: ubuntu-latest
+            exe: uw8
+          - build: windows
+            os: windows-latest
+            exe: uw8.exe
+          - build: macos
+            os: macos-latest
+            exe: uw8
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Cache build dirs
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}    
+    - name: Build
+      run: cargo build --verbose
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: uw8-${{ matrix.build }}
+        path: target/release/${{ matrix.exe }}
