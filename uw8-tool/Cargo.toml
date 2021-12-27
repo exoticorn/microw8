@@ -10,5 +10,5 @@ wasmparser = "0.81"
 wasm-encoder = "0.8"
 anyhow = "1"
 pico-args = "0.4"
-upkr = { git = "https://github.com/exoticorn/upkr.git", rev = "08c86af0" }
+upkr = { git = "https://github.com/exoticorn/upkr.git", rev = "2e7983fc" }
 pbr = "1"

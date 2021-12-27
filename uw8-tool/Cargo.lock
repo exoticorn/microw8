@@ -124,7 +124,7 @@ dependencies = [
 [[package]]
 name = "upkr"
 version = "0.1.0"
-source = "git+https://github.com/exoticorn/upkr.git?rev=08c86af0#08c86af06f106631ce0401c881bd66fb2c0271e6"
+source = "git+https://github.com/exoticorn/upkr.git?rev=2e7983fc#2e7983fc650788d98da2eecef2d16f63e849e4a0"
 dependencies = [
  "anyhow",
  "cdivsufsort",
