@@ -14,9 +14,9 @@ export fn load_uw8(module_size: i32) -> i32 {
     } else {
         copy(0x1e000, 0, module_size);
     }
-    copy(0, 0x3c800, 8);
+    copy(0, 0x3c200, 8);
 
-    let base_start = 0x3c808;
+    let base_start = 0x3c208;
     let dest = 8;
     let src = 0x1e001;
 
@@ -170,7 +170,7 @@ fn upkr_bit(context_index: i32) -> i32 {
 }
 
 start fn unpack_base() {
-    base_end = uncompress(0, 0x3c800);
+    base_end = uncompress(0, 0x3c200);
 }
 
 data 0 {

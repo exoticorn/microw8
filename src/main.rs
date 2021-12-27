@@ -18,13 +18,15 @@ fn main() -> Result<()> {
 
     match args.subcommand()?.as_ref().map(|s| s.as_str()) {
         Some("run") => run(args),
+        Some("pack") => pack(args),
         Some(other) => {
             eprintln!("Unknown command '{}'", other);
             process::exit(1);
         }
         None => {
             println!("Usage:");
-            println!("  uw8 run [-w] [-p] [-c] [-l] [-o <out-file>] <file>");
+            println!("  uw8 run [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
+            println!("  uw8 pack [-u/--uncompressed] [-l/--level] <in-file> <out-file>");
             Ok(())
         }
     }
@@ -34,13 +36,17 @@ fn run(mut args: Arguments) -> Result<()> {
     let watch_mode = args.contains(["-w", "--watch"]);
 
     let mut config = Config::default();
-    config.pack = args.contains(["-p", "--pack"]);
-    if args.contains(["-c", "--compress"]) {
-        config.compression = Some(2);
-    }
+    if args.contains(["-p", "--pack"]) {
+        let mut pack = uw8_tool::PackConfig::default();
+        if args.contains(["-u", "--uncompressed"]) {
+            pack = pack.uncompressed();
+        }
 
-    if let Some(level) = args.opt_value_from_str(["-l", "--level"])? {
-        config.compression = Some(level);
+        if let Some(level) = args.opt_value_from_str(["-l", "--level"])? {
+            pack = pack.with_compression_level(level);
+        }
+
+        config.pack = Some(pack);
     }
 
     if let Some(path) =
@@ -60,7 +66,7 @@ fn run(mut args: Arguments) -> Result<()> {
         watcher.watch(&filename, notify::RecursiveMode::NonRecursive)?;
     }
 
-    if let Err(err) = load_cart(&filename, &mut uw8, &config) {
+    if let Err(err) = start_cart(&filename, &mut uw8, &config) {
         eprintln!("Load error: {}", err);
         if !watch_mode {
             exit(1);
@@ -70,7 +76,7 @@ fn run(mut args: Arguments) -> Result<()> {
     while uw8.is_open() {
         match rx.try_recv() {
             Ok(DebouncedEvent::Create(_) | DebouncedEvent::Write(_)) => {
-                if let Err(err) = load_cart(&filename, &mut uw8, &config) {
+                if let Err(err) = start_cart(&filename, &mut uw8, &config) {
                     eprintln!("Load error: {}", err);
                 }
             }
@@ -86,12 +92,11 @@ fn run(mut args: Arguments) -> Result<()> {
 
 #[derive(Default)]
 struct Config {
-    pack: bool,
-    compression: Option<u8>,
+    pack: Option<uw8_tool::PackConfig>,
     output_path: Option<PathBuf>,
 }
 
-fn load_cart(filename: &Path, uw8: &mut MicroW8, config: &Config) -> Result<()> {
+fn load_cart(filename: &Path, pack: &Option<uw8_tool::PackConfig>) -> Result<Vec<u8>> {
     let mut cart = vec![];
     File::open(filename)?.read_to_end(&mut cart)?;
 
@@ -104,14 +109,16 @@ fn load_cart(filename: &Path, uw8: &mut MicroW8, config: &Config) -> Result<()> 
         };
     }
 
-    if config.pack {
-        let mut pack_config = uw8_tool::PackConfig::default();
-        if let Some(level) = config.compression {
-            pack_config = pack_config.with_compression_level(level);
-        }
+    if let Some(pack_config) = pack {
         cart = uw8_tool::pack(&cart, pack_config)?;
         println!("packed size: {} bytes", cart.len());
     }
+
+    Ok(cart)
+}
+
+fn start_cart(filename: &Path, uw8: &mut MicroW8, config: &Config) -> Result<()> {
+    let cart = load_cart(filename, &config.pack)?;
 
     if let Some(ref path) = config.output_path {
         File::create(path)?.write_all(&cart)?;
@@ -123,4 +130,26 @@ fn load_cart(filename: &Path, uw8: &mut MicroW8, config: &Config) -> Result<()> 
     } else {
         Ok(())
     }
+}
+
+fn pack(mut args: Arguments) -> Result<()> {
+    let mut pack_config = uw8_tool::PackConfig::default();
+
+    if args.contains(["-u", "--uncompressed"]) {
+        pack_config = pack_config.uncompressed();
+    }
+
+    if let Some(level) = args.opt_value_from_str(["-l", "--level"])? {
+        pack_config = pack_config.with_compression_level(level);
+    }
+
+    let in_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
+
+    let out_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
+
+    let cart = load_cart(&in_file, &Some(pack_config))?;
+
+    File::create(out_file)?.write_all(&cart)?;
+
+    Ok(())
 }

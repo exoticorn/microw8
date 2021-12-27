@@ -15,12 +15,12 @@ fn main() -> Result<()> {
             }
             "pack" => {
                 let mut config = uw8_tool::PackConfig::default();
-                if args.contains(["-c", "--compress"]) {
-                    config = config.with_compression();
+                if args.contains(["-u", "--uncompressed"]) {
+                    config = config.uncompressed();
                 }
                 let source: PathBuf = args.free_from_str()?;
                 let dest: PathBuf = args.free_from_str()?;
-                uw8_tool::pack_file(&source, &dest, config)?;
+                uw8_tool::pack_file(&source, &dest, &config)?;
             }
             "unpack" => {
                 let source: PathBuf = args.free_from_str()?;

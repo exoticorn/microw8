@@ -21,7 +21,7 @@ fn main() -> Result<()> {
     println!("Compressing platform module");
     let platform = uw8_tool::pack(
         &platform,
-        uw8_tool::PackConfig::default().with_compression_level(4),
+        &uw8_tool::PackConfig::default().with_compression_level(4),
     )?;
     File::create("bin/platform.uw8")?.write_all(&platform)?;
     println!("Platform module: {} bytes", platform.len());

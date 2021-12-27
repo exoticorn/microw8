@@ -18,8 +18,8 @@ pub struct PackConfig {
 }
 
 impl PackConfig {
-    pub fn with_compression(mut self) -> Self {
-        self.compression = Some(2);
+    pub fn uncompressed(mut self) -> Self {
+        self.compression = None;
         self
     }
 
@@ -31,11 +31,11 @@ impl PackConfig {
 
 impl Default for PackConfig {
     fn default() -> PackConfig {
-        PackConfig { compression: None }
+        PackConfig { compression: Some(2) }
     }
 }
 
-pub fn pack_file(source: &Path, dest: &Path, config: PackConfig) -> Result<()> {
+pub fn pack_file(source: &Path, dest: &Path, config: &PackConfig) -> Result<()> {
     let mut source_data = vec![];
     File::open(source)?.read_to_end(&mut source_data)?;
 
@@ -45,7 +45,7 @@ pub fn pack_file(source: &Path, dest: &Path, config: PackConfig) -> Result<()> {
     Ok(())
 }
 
-pub fn pack(data: &[u8], config: PackConfig) -> Result<Vec<u8>> {
+pub fn pack(data: &[u8], config: &PackConfig) -> Result<Vec<u8>> {
     let base = BaseModule::for_format_version(1)?;
 
     let parsed_module = ParsedModule::parse(data)?;
@@ -66,6 +66,7 @@ pub fn pack(data: &[u8], config: PackConfig) -> Result<Vec<u8>> {
             }),
         ));
         pb.finish();
+        std::io::stdout().flush()?;
         Ok(uw8)
     } else {
         let mut uw8 = vec![1];
