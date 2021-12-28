@@ -43,17 +43,16 @@ export fn load_uw8(module_size: i32) -> i32 {
 }
 
 fn section_size(ptr: i32) -> i32 {
-    let p = ptr + 1;
-    let l = 0;
-    let shift = 0;
+    let p = ptr;
+    let l: i32;
+    let shift: i32;
     loop size {
-        let lazy b = p?0;
+        let lazy b = (p := p + 1)?0;
         l = l | ((b & 127) << shift);
         shift = shift + 7;
-        p = p + 1;
-        branch_if b & 128: size;
+        branch_if b >> 7: size;
     }
-    p - ptr + l
+    p + 1 - ptr + l
 }
 
 fn copy_section(dest: i32, src: i32) -> i32 {
@@ -63,10 +62,10 @@ fn copy_section(dest: i32, src: i32) -> i32 {
 }
 
 fn copy(dest: i32, src: i32, len: i32) {
-    if len > 0 {
-        loop bytes {
+    loop bytes {
+        if len > 0 {
             (dest + (len := len - 1))?0 = (src + len)?0;
-            branch_if len: bytes
+            branch bytes;
         }
     }
 }
@@ -84,12 +83,10 @@ export fn uncompress(src_ptr: i32, dest_ptr: i32) -> i32 {
 
     let offset: i32;
 
-    let byte: i32;
-
     let i: i32;
     loop init_contexts {
         i?0x3c000 = 0x80;
-        branch_if (i := i + 1) < 256 + 1 + 128: init_contexts
+        branch_if (i := i + 1) < 256 + 1 + 128: init_contexts;
     }
 
     let prev_was_match: i32;
@@ -100,8 +97,7 @@ export fn uncompress(src_ptr: i32, dest_ptr: i32) -> i32 {
             if is_match {
                 let inline new_offset = if prev_was_match { 1 } else { upkr_bit(256) };
                 if new_offset {
-                    offset = upkr_length(257) - 1;
-                    branch_if !offset: finished
+                    branch_if !(offset := upkr_length(257) - 1): finished;
                 }
                 let length = upkr_length(257 + 64);
                 loop copy {
@@ -111,7 +107,7 @@ export fn uncompress(src_ptr: i32, dest_ptr: i32) -> i32 {
                 }
             } else {
                 // literal
-                byte = 1;
+                let byte = 1;
                 loop literal {
                     branch_if (byte := (byte << 1) | upkr_bit(byte)) < 256: literal;
                 }
@@ -130,9 +126,8 @@ fn upkr_length(context_index: i32) -> i32 {
     let length: i32;
     let bit_pos: i32;
     loop bits {
-        if upkr_bit(context_index) {
-            length = length | (upkr_bit(context_index + 1) << bit_pos);
-            context_index = context_index + 2;
+        if upkr_bit(context_index + bit_pos) {
+            length = length | (upkr_bit(context_index + bit_pos + 32) << bit_pos);
             bit_pos = bit_pos + 1;
             branch bits;
         }
