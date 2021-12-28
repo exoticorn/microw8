@@ -96,7 +96,8 @@ export fn uncompress(src_ptr: i32, dest_ptr: i32) -> i32 {
 
     block finished {
         loop unpack_loop {
-            if upkr_bit(0) {
+            let lazy is_match = upkr_bit(0);
+            if is_match {
                 let inline new_offset = if prev_was_match { 1 } else { upkr_bit(256) };
                 if new_offset {
                     offset = upkr_length(257) - 1;
@@ -108,19 +109,16 @@ export fn uncompress(src_ptr: i32, dest_ptr: i32) -> i32 {
                     dest_ptr = dest_ptr + 1;
                     branch_if (length := length - 1): copy;
                 }
-                prev_was_match = 1;
             } else {
                 // literal
-                i = 0;
                 byte = 1;
                 loop literal {
-                    byte = (byte << 1) | upkr_bit(byte);
-                    branch_if (i := i + 1) < 8: literal;
+                    branch_if (byte := (byte << 1) | upkr_bit(byte)) < 256: literal;
                 }
                 dest_ptr?0 = byte;
                 dest_ptr = dest_ptr + 1;
-                prev_was_match = 0;
             }
+            prev_was_match = is_match;
             branch unpack_loop;
         }
     }
@@ -143,7 +141,7 @@ fn upkr_length(context_index: i32) -> i32 {
 }
 
 fn upkr_bit(context_index: i32) -> i32 {
-    let prob = context_index?0x3c000;
+    let lazy prob = context_index?0x3c000;
 
     loop refill {
         if upkr_state < 1<<12 {
@@ -154,17 +152,12 @@ fn upkr_bit(context_index: i32) -> i32 {
     }
 
     let lazy state_low = upkr_state & 0xff;
-    let bit = state_low < prob;
+    let lazy state_hi = upkr_state >> 8;
+    let lazy bit = state_low < prob;
 
-    if bit {
-        upkr_state = prob * (upkr_state >> 8) + state_low;
-        prob = prob + ((0x108 - prob) >> 4);
-    } else {
-        upkr_state = (0x100 - prob) * (upkr_state >> 8) + state_low - prob;
-        prob = prob - ((prob + 8) >> 4);
-    }
+    upkr_state = state_low + select(bit, prob * state_hi, (0x100 - prob) * state_hi - prob);
 
-    context_index?0x3c000 = prob;
+    context_index?0x3c000 = prob + ((7 + bit * 257 - prob) >> 4);
 
     bit
 }
