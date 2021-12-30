@@ -1,0 +1,32 @@
+import "env.time" fn time() -> f32;
+import "env.circle" fn circle(f32, f32, f32, i32);
+import "env.cls" fn cls(i32);
+import "env.randomSeed" fn seed(i32);
+import "env.randomf" fn randomf() -> f32;
+import "env.sin" fn sin(f32) -> f32;
+import "env.cos" fn cos(f32) -> f32;
+import "env.fmod" fn fmod(f32, f32) -> f32;
+
+export fn upd() {
+    cls(0);
+
+    let i: i32;
+    loop pixels {
+        let inline rocket = i #>> 9;
+        let lazy local_time = fmod(time() + rocket as f32 / 5 as f32, 2 as f32);
+        let lazy rocket = rocket + nearest(time() - local_time) as i32 * 10;
+        seed(rocket);
+        let inline x = randomf() * 645 as f32;
+        let y = randomf() * 133 as f32;
+        let lazy angle = { seed(i); randomf() } * 44 as f32;
+        let inline dx = sin(angle);
+        let inline dy = cos(angle);
+        let lazy dist = local_time * (randomf() * 44 as f32);
+        circle(
+            x + dx * dist,
+            y + dy * dist + local_time * local_time * 24 as f32,
+            1 as f32, (rocket % 11 + 1) * 16 - (local_time * 7 as f32) as i32 - (i % 4)
+        );
+        branch_if (i := i + 1) < 5120: pixels;
+    }
+}

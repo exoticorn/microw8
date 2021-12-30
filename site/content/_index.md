@@ -7,6 +7,7 @@
 * [v0.1pre2](v0.1pre2)
 * [v0.1pre3](v0.1pre3)
 * [v0.1pre4](v0.1pre4)
+* [v0.1pre5](v0.1pre5)
 
 ## Spec
 
@@ -41,6 +42,8 @@ Other imports provided by the platform, also all in module `env`:
 * `fn hline(left: i32, right: i32, y: i32, color: i32)`
 * `fn rectangle(x1: f32, y1: f32, x2: f32, y2: f32, color: i32)`
 * `fn circle(cx: f32, cy: f32, radius: f32, color: i32)`
+* `fn rectangle_outline(x1: f32, y1: f32, x2: f32, y2: f32, color: i32)`
+* `fn circle_outline(cx: f32, cy: f32, radius: f32, color: i32)`
 * `fn line(x1: f32, y1: f32, x2: f32, y2: f32, color: i32)`
 
 * `fn time() -> f32`
@@ -116,6 +119,7 @@ Writing code for MicroW8 in C, Rust, AssemblyScript etc. should absolutely
 possible but no examples are provided, yet.
 
 ## Examples
+* [Fireworks](v0.1pre5#AgwvgP+M59snqjl4CMKw5sqm1Zw9yJCbSviMjeLUdHus2a3yl/a99+uiBeqZgP/2jqSjrLjRk73COMM6OSLpsxK8ugT1kuk/q4hQUqqPpGozHoa0laulzGGcahzdfdJsYaK1sIdeIYS9M5PnJx/Wk9H+PvWEPy2Zvv7I6IW7Fg==) (127 bytes): Some fireworks to welcome 2022.
 * [Skip Ahead](v0.1pre4#AiP94km33q5hBFbBcKl2W1ZMY67wHByUz15/qRHIr71Dvq8bTVux/DXZzSTKU5MufRXxnGEn6mOul4dil/5WLT1Y+Y/4TGd1E3U4rQaxlpcKObxc5YLdr4xo6jyBND96a569LoECv6Q4EIqxJi+3QPE21r/++js41XsBLr44X/O2XpP3kHQva3B8o6duD5WkLCf7PhsxjTBeND1ADIaJe05JCrBim18RPY9VYFmltqQ9gVzbxE/ZpojR/GJ4aCbx0hRn73RPhpA7Cd4jk0AVSOeRx+7kuHrLzpaeqeYWK5pYd/4Rv+8=) (230 bytes): A port of my [TIC-80 256byte game](http://tic80.com/play?cart=1735) from LoveByte'21
 * [OhNoAnotherTunnel](v0.1pre4#Ag95rdCB5Ww5NofyQaKF4P1mrNRso4azgiem4hK99Gh8OMzSpFq3NsNDo7O7pqln10D11l9uXr/ritw7OEzKwbEfCdvaRnS2Z0Kz0iDEZt/gIqOdvFmxsL1MjPQ4XInPbUJpQUonhQq29oP2omFabnQxn0bzoK7mZjcwc5GetHG+hGajkJcRr8oOnjfCol8RD+ha33GYtPnut+GLe4ktzf5UxZwGs6oT9qqC61lRDakN) (177 bytes): A port of my [entry](http://tic80.com/play?cart=1871) in the Outline'21 bytebattle final
 * [Technotunnel](v0.1pre4#AqL8HeK1M9dn2nWNIF5vaq/Vh64pMt5nJIFoFKpBMPUsGtDtpqjo1JbT9LzPhAxCqJ7Yh4TA6oTGd4xhLowf+cWZMY73+7AZmfXJJsBi4cej/hH+4wlAgxFIrnOYnr/18IpnZbsHf0eGm1BhahX74+cVR0TRmNQmYC7GhCNS3mv/3MJn74lCj7t28aBJPjEZhP9fGXdG2u5Egh/Tjdg=) (158 bytes): A port of my [entry](https://tic80.com/play?cart=1873) in the Outline'21 bytebattle quater final
