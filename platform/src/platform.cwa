@@ -115,6 +115,26 @@ export fn rectangle(x: f32, y: f32, w: f32, h: f32, col: i32) {
     }
 }
 
+export fn rectangle_outline(x: f32, y: f32, w: f32, h: f32, col: i32) {
+    let xl = nearest(x) as i32;
+    let xr = nearest(x + w) as i32;
+    let yt = nearest(y) as i32;
+    let yb = nearest(y + h) as i32;
+    
+    hline(xl, xr, yt, col);
+    if yt < yb {
+        hline(xl, xr, yb - 1, col);
+
+        loop y {
+            setPixel(xl, yt, col);
+            if xl < xr {
+                setPixel(xr - 1, yt, col);
+            }
+            branch_if (yt := yt + 1) < yb: y;
+        }
+    }
+}
+
 export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
     let y = clamp(nearest(cy - radius) as i32, 0, 240);
     let maxY = clamp(nearest(cy + radius) as i32, 0, 240);

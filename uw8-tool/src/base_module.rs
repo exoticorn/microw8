@@ -89,6 +89,9 @@ impl BaseModule {
         add_function(&mut functions, &type_map, "setBackgroundColor", &[I32], None);
         add_function(&mut functions, &type_map, "setCursorPosition", &[I32, I32], None);
 
+        add_function(&mut functions, &type_map, "rectangle_outline", &[F32, F32, F32, F32, I32], None);
+        add_function(&mut functions, &type_map, "circle_outline", &[F32, F32, F32, I32], None);
+
         for i in functions.len()..64 {
             add_function(
                 &mut functions,
