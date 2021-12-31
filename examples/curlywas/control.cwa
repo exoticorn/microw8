@@ -6,7 +6,11 @@ export fn upd() {
 }
 
 data 0x20000 {
-  i8(14, 0xfd, 12) // clear screen to color 0xfd
+  i8(14, 0xfd, 15, 15, 12) // clear screen to color 0xfd
   "Top left"
+  i8(31, 28, 29) "Bottom right"
+  i8(31, 1, 2, 14, 10, 15, 0xf0) "Other colors"
+  i8(24)" inverted"
+  i8(5, 31, 6, 28, 15, 0xe5) "warning!"
   i8(0)
 }
