@@ -1,0 +1,12 @@
+import "env.printChar" fn printChar(i32);
+import "env.printString" fn printString(i32);
+
+export fn upd() {
+  printString(0x20000);
+}
+
+data 0x20000 {
+  i8(14, 0xfd, 12) // clear screen to color 0xfd
+  "Top left"
+  i8(0)
+}

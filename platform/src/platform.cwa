@@ -308,14 +308,30 @@ export fn printChar(char: i32) {
     }
 }
 
+global mut controlCodeLength = 0;
+
 fn printSingleChar(char: i32) {
-    if char == 4 | char == 5 {
-        graphicsText = char == 5;
+    controlCodeLength?0x12d20 = char;
+    controlCodeLength = controlCodeLength + 1;
+    char = 0x12d20?0;
+    if char < 32 & controlCodeLength < char?0x12d00 {
+        return;
+    }
+    controlCodeLength = 0;
+
+    if char == 1 {
+        drawChar(0x12d20?1);
         return;
     }
 
-    if char == 10 | (!graphicsText & textCursorX >= 320) {
-        textCursorX = 0;
+    if char == 4 | char == 5 {
+        graphicsText = char == 5;
+	textCursorX = 0;
+        textCursorY = 0;
+        return;
+    }
+
+    if char == 10 {
         textCursorY = textCursorY + 8;
         if !graphicsText & textCursorY >= 240 {
             textCursorY = 240 - 8;
@@ -327,6 +343,47 @@ fn printSingleChar(char: i32) {
             rectangle(0 as f32, (240 - 8) as f32, 320 as f32, 8 as f32, bgColor);
         }
         return;
+    }
+
+    if char == 12 {
+        cls(bgColor);
+        return;
+    }
+
+    if char == 13 {
+        textCursorX = 0;
+        return;
+    }
+
+    if char == 14 {
+        bgColor = 0x12d20?1;
+        return;
+    }
+
+    if char == 15 {
+        textColor = 0x12d20?1;
+        return;
+    }
+
+    drawChar(char);
+}
+
+data(0x12d00) {
+  i8(
+    1, 2, 1, 1, // 0-3
+    1, 1, 1, 1, // 4-7
+    1, 1, 1, 1, // 8-11
+    1, 1, 2, 1, // 12-15,
+    1, 1, 1, 1, // 16-19,
+    1, 1, 1, 1, // 20-23,
+    1, 1, 1, 1, // 24-27,
+    1, 1, 1, 1 // 28-31
+  )
+}
+
+fn drawChar(char: i32) {
+    if !graphicsText & textCursorX >= 320 {
+        printChar(0xd0a);
     }
 
     let y: i32;
