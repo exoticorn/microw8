@@ -1,4 +1,4 @@
-import "env.printChar" fn printChar(i32);
+import "env.memory" memory(4);
 import "env.printString" fn printString(i32);
 
 export fn upd() {
@@ -8,9 +8,12 @@ export fn upd() {
 data 0x20000 {
   i8(14, 0xfd, 15, 15, 12) // clear screen to color 0xfd
   "Top left"
-  i8(31, 28, 29) "Bottom right"
-  i8(31, 1, 2, 14, 10, 15, 0xf0) "Other colors"
-  i8(24)" inverted"
-  i8(5, 31, 6, 28, 15, 0xe5) "warning!"
+  i8(14, 10, 11, 11, 11, 11) // scroll up 4 lines
+  i8(31, 28, 29, 14, 0xfd) "Bottom right"
+  i8(14, 10, 10, 10) // scroll down 2 lines
+  i8(31, 40, 3, 14, 10, 15, 0xf0) "Other colors"
+  i8(24, 0xb0) "inverted"
+  i8(5, 31, 7, 28+17, 15, 0xe3) "Graphics text!"
+  i8(5, 31, 6, 28+16, 15, 0xe5) "Graphics text!"
   i8(0)
 }
