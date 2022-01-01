@@ -19,15 +19,17 @@ fn main() -> Result<()> {
     match args.subcommand()?.as_ref().map(|s| s.as_str()) {
         Some("run") => run(args),
         Some("pack") => pack(args),
-        Some(other) => {
-            eprintln!("Unknown command '{}'", other);
-            process::exit(1);
-        }
-        None => {
+        Some("filter-exports") => filter_exports(args),
+        Some("help") | None => {
             println!("Usage:");
             println!("  uw8 run [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
             println!("  uw8 pack [-u/--uncompressed] [-l/--level] <in-file> <out-file>");
+            println!("  uw8 filter-exports <in-wasm> <out-wasm>");
             Ok(())
+        }
+        Some(other) => {
+            eprintln!("Unknown command '{}'", other);
+            process::exit(1);
         }
     }
 }
@@ -150,6 +152,15 @@ fn pack(mut args: Arguments) -> Result<()> {
     let cart = load_cart(&in_file, &Some(pack_config))?;
 
     File::create(out_file)?.write_all(&cart)?;
+
+    Ok(())
+}
+
+fn filter_exports(mut args: Arguments) -> Result<()> {
+    let in_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
+    let out_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
+
+    uw8_tool::filter_exports(&in_file, &out_file)?;
 
     Ok(())
 }

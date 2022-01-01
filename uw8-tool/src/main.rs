@@ -27,6 +27,11 @@ fn main() -> Result<()> {
                 let dest: PathBuf = args.free_from_str()?;
                 uw8_tool::unpack_file(&source, &dest)?;
             }
+            "filter-exports" => {
+                let source: PathBuf = args.free_from_str()?;
+                let dest: PathBuf = args.free_from_str()?;
+                uw8_tool::filter_exports(&source, &dest)?;
+            }
             _ => {
                 eprintln!("Unknown subcommand '{}'", cmd);
                 print_help();
@@ -44,6 +49,7 @@ fn print_help() {
         "Usage:
     uw8-tool make-base <version>
     uw8-tool pack <wasm file> <uw8 file>
-    uw8-tool unpack <uw8 file> <wasm file>"
+    uw8-tool unpack <uw8 file> <wasm file>
+    uw8-tool filter-exports <wasm file> <wasm file>"
     );
 }

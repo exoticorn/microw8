@@ -18,8 +18,10 @@ these globals and exports:
 
 They are meant to be used for heap allocations and stack for any
 values that are not simple scalars (i32, f32, etc.). Since our
-code doesn't actually use any of that, we can just delete them
-in a text editor and assemble the code again with wat2wasm.
+code doesn't actually use any of that, the globals are only
+referenced by the exports and we can remove them using
+'uw8 filter-exports' (preferably before running wasm-opt) which
+removes all exports except those used by the MicroW8 platform.
 
 This gives us a 216 byte wasm file. Running this through
 uw8 pack brings us to the final size of 119 bytes.
