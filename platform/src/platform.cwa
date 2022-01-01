@@ -326,7 +326,7 @@ fn printSingleChar(char: i32) {
 
     if char == 4 | char == 5 {
         graphicsText = char == 5;
-	textCursorX = 0;
+	    textCursorX = 0;
         textCursorY = 0;
         return;
     }
@@ -341,6 +341,9 @@ fn printSingleChar(char: i32) {
     }
 
     if char == 9 {
+        if !graphicsText & textCursorX >= 320 {
+            printChar(0xd0a);
+        }
         textCursorX = textCursorX + 8;
         return;
     }
@@ -403,6 +406,10 @@ fn printSingleChar(char: i32) {
     if char == 31 {
         textCursorX = 0x12d20?1 * (8 - graphicsText * 6);
         textCursorY = 0x12d20?2 * (8 - graphicsText * 7);
+        return;
+    }
+
+    if char < 31 {
         return;
     }
 
