@@ -9,10 +9,18 @@ mod env {
     extern "C" {
         pub fn atan2(x: f32, y: f32) -> f32;
     }
+
+    extern "C" {
+        pub fn time() -> f32;
+    }
 }
 
 fn atan2(x: f32, y: f32) -> f32 {
     unsafe { env::atan2(x, y) }
+}
+
+fn time() -> f32 {
+    unsafe { env::time() }
 }
 
 fn sqrt(v: f32) -> f32 {
@@ -29,14 +37,14 @@ fn ftoi(v: f32) -> i32 {
 }
 
 #[no_mangle]
-pub fn tic(time: i32) {
+pub fn upd() {
     for i in 0..320 * 240 {
-        let t = time as f32 / 10 as f32;
+        let t = time() * 63 as f32;
         let x = (i % 320 - 160) as f32;
         let y = (i / 320 - 120) as f32;
         let d = 40000 as f32 / sqrt(x * x + y * y + 1 as f32);
         let u = atan2(x, y) * 512f32 / 3.141;
-        let c = (ftoi(d + t * 2 as f32) ^ ftoi(u + t)) as u8;
+        let c = (ftoi(d + t * 2 as f32) ^ ftoi(u + t)) as u8 >> 4;
         unsafe {
             *((120 + i) as *mut u8) = c;
         }
