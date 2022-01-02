@@ -38,15 +38,20 @@ fn ftoi(v: f32) -> i32 {
 
 #[no_mangle]
 pub fn upd() {
-    for i in 0..320 * 240 {
-        let t = time() * 63 as f32;
+    let mut i: i32 = 0;
+    loop {
+        let t = time() * 63.;
         let x = (i % 320 - 160) as f32;
         let y = (i / 320 - 120) as f32;
-        let d = 40000 as f32 / sqrt(x * x + y * y + 1 as f32);
-        let u = atan2(x, y) * 512f32 / 3.141;
-        let c = (ftoi(d + t * 2 as f32) ^ ftoi(u + t)) as u8 >> 4;
+        let d = 40000 as f32 / sqrt(x * x + y * y + 1.);
+        let u = atan2(x, y) * 512. / 3.141;
+        let c = (ftoi(d + t * 2.) ^ ftoi(u + t)) as u8 >> 4;
         unsafe {
             *((120 + i) as *mut u8) = c;
+        }
+        i += 1;
+        if i >= 320*240 {
+            break;
         }
     }
 }
