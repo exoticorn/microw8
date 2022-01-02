@@ -5,7 +5,11 @@ pub fn build(b: *std.build.Builder) void {
 
     const lib = b.addSharedLibrary("cart", "main.zig", .unversioned);
     lib.setBuildMode(mode);
-    lib.setTarget(.{ .cpu_arch = .wasm32, .os_tag = .freestanding });
+    lib.setTarget(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .freestanding,
+        .cpu_features_add = std.Target.wasm.featureSet(&.{ .nontrapping_fptoint })
+    });
     lib.import_memory = true;
     lib.initial_memory = 262144;
     lib.max_memory = 262144;
