@@ -16,7 +16,7 @@ void upd() {
         float t = time() * 63.0f;
         float x = (float)(i % 320 - 160);
         float y = (float)(i / 320 - 120);
-        float d = 40000.0f / sqrt(x * x + y * y + 1.0f);
+        float d = 40000.0f / sqrt(x * x + y * y);
         float u = atan2(x, y) * 512.0f / 3.141f;
         unsigned char c = (unsigned char)((int)(d + t * 2.0f) ^ (int)(u + t)) >> 4;
         FRAMEBUFFER[i] = c;

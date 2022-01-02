@@ -27,15 +27,6 @@ fn sqrt(v: f32) -> f32 {
     unsafe { core::intrinsics::sqrtf32(v) }
 }
 
-fn ftoi(v: f32) -> i32 {
-    // The compiler is allowed to do bad things to our code if this
-    // ever results in a value that doesn't fit in an i32.
-    // (the joy of undefined behavior)
-    // But that would trap in wasm anyway, so we don't really
-    // care.
-    unsafe { v.to_int_unchecked() }
-}
-
 #[no_mangle]
 pub fn upd() {
     let mut i: i32 = 0;
@@ -43,9 +34,9 @@ pub fn upd() {
         let t = time() * 63.;
         let x = (i % 320 - 160) as f32;
         let y = (i / 320 - 120) as f32;
-        let d = 40000 as f32 / sqrt(x * x + y * y + 1.);
+        let d = 40000 as f32 / sqrt(x * x + y * y);
         let u = atan2(x, y) * 512. / 3.141;
-        let c = (ftoi(d + t * 2.) ^ ftoi(u + t)) as u8 >> 4;
+        let c = ((d + t * 2.) as i32 ^ (u + t) as i32) as u8 >> 4;
         unsafe {
             *((120 + i) as *mut u8) = c;
         }

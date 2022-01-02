@@ -1,0 +1,19 @@
+import "env.memory" memory(4);
+
+import "env.atan2" fn atan2(f32, f32) -> f32;
+import "env.time" fn time() -> f32;
+
+export fn upd() {
+    let i: i32;
+    loop pixels {
+        let inline t = time() * 63 as f32;
+        let lazy x = (i % 320 - 160) as f32;
+        let lazy y = (i / 320 - 120) as f32;
+        let inline d = 40000 as f32 / sqrt(x * x + y * y);
+        let inline u = atan2(x, y) * (512.0 / 3.141);
+        let inline c = ((i32.trunc_sat_f32_s(d + t * 2 as f32) ^ i32.trunc_sat_f32_s(u + t)) & 255) >> 4;
+        i?120 = c;
+
+        branch_if (i := i + 1) < 320*240: pixels;
+    }
+}
