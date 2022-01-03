@@ -86,7 +86,12 @@ fn run(mut args: Arguments) -> Result<()> {
             _ => (),
         }
 
-        uw8.run_frame()?;
+        if let Err(err) = uw8.run_frame() {
+            eprintln!("Runtime error: {}", err);
+            if !watch_mode {
+                exit(1);
+            }
+        }
     }
 
     Ok(())
