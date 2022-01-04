@@ -221,7 +221,12 @@ async function runModule(data, keepUrl) {
 }
 
 async function runModuleFromURL(url, keepUrl) {
-    runModule(await (await fetch(url)).arrayBuffer(), keepUrl);
+    let response = await fetch(url);
+    let type = response.headers.get('Content-Type');
+    if(type && type.includes('html')) {
+        throw false;
+    }
+    runModule(await response.arrayBuffer(), keepUrl);
 }
 
 function runModuleFromHash() {
@@ -238,28 +243,56 @@ function runModuleFromHash() {
 }
 
 window.onhashchange = runModuleFromHash;
-runModuleFromHash();
 
-document.getElementById('cartButton').onclick = () => {
-    let fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.wasm,.uw8,application/wasm';
-    fileInput.onchange = () => {
-        if (fileInput.files.length > 0) {
-            runModuleFromURL(URL.createObjectURL(fileInput.files[0]));
-        }
+let setupLoad = () => {
+    let loadButton = document.getElementById('cartButton');
+    loadButton.style = '';
+    loadButton.onclick = () => {
+        let fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.wasm,.uw8,application/wasm';
+        fileInput.onchange = () => {
+            if (fileInput.files.length > 0) {
+                runModuleFromURL(URL.createObjectURL(fileInput.files[0]));
+            }
+        };
+        fileInput.click();
     };
-    fileInput.click();
-};
-
-screen.ondragover = (e) => {
-    e.preventDefault();
-};
-
-screen.ondrop = (e) => {
-    let files = e.dataTransfer && e.dataTransfer.files;
-    if(files && files.length == 1) {
+    
+    screen.ondragover = (e) => {
         e.preventDefault();
-        runModuleFromURL(URL.createObjectURL(e.dataTransfer.files[0]));
+    };
+    
+    screen.ondrop = (e) => {
+        let files = e.dataTransfer && e.dataTransfer.files;
+        if(files && files.length == 1) {
+            e.preventDefault();
+            runModuleFromURL(URL.createObjectURL(e.dataTransfer.files[0]));
+        }
     }
+
+    runModuleFromHash();
+};
+
+let location = window.location;
+if(location.hash.length != 0) {
+    setupLoad();
+} else {
+    (async () => {
+        let url = location.href;
+        if(url.endsWith('.html')) {
+            url = url.slice(0, url.length - 4) + 'uw8';
+        } else {
+            if(!url.endsWith('/')) {
+                url += '/';
+            }
+            url += 'cart.uw8';
+        }
+        try {
+            await runModuleFromURL(url, true);
+        } catch(e) {
+            setupLoad();
+        }
+    })();
 }
+
