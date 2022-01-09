@@ -17,10 +17,16 @@ fn main() -> Result<()> {
     let mut args = Arguments::from_env();
 
     match args.subcommand()?.as_ref().map(|s| s.as_str()) {
+        Some("version") => {
+            println!("{}", env!("CARGO_PKG_VERSION"));
+            Ok(())
+        }
         Some("run") => run(args),
         Some("pack") => pack(args),
         Some("filter-exports") => filter_exports(args),
         Some("help") | None => {
+            println!("uw8 {}", env!("CARGO_PKG_VERSION"));
+            println!();
             println!("Usage:");
             println!("  uw8 run [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
             println!("  uw8 pack [-u/--uncompressed] [-l/--level] <in-file> <out-file>");
