@@ -105,6 +105,10 @@ as a cheap random-access PRNG (aka noise function).
 
 ## Graphics
 
+The default palette can be seen [here](../v0.1pre4#AgKaeeOuwg5gCKvFIeiitEwMpUI2rymEcu+DDB1vMu9uBoufvUxIr4Y5p4Jj2ukoNO4PE7QS5cN1ZyDMCRfSzYIGZxKlN2J6NKEWK7KVPk9wVUgn1Ip+hsMinWgEO8ETKfPuHoIa4kjI+ULFOMad7vd3rt/lh1Vy9w+R2MXG/7T61d3c7C6KY+eQNS0eW3ys4iU8R6SycuWZuuZ2Sg3Qxp826s+Kt+2qBojpzNOSoyFqyrVyYMTKEkSl0BZOj59Cs1hPm5bq0F1MmVhGAzMhW9V4YeAe). (Press Z on the keyboard to switch to palette.)
+
+The palette can be changed by writing 32bit rgba colors to addresses 0x13000-0x13400.
+
 The drawing functions are sub-pixel accurate where applicable (line, circle). Pixel centers lie halfway between integer
 coordinates. Ie. the top-left pixel covers the area `0,0 - 1,1`, with `0.5,0.5` being the pixel center.
 
@@ -188,12 +192,100 @@ The integer time in milliseconds can also be read at address 0x40.
 
 ## Text output
 
+The default font can be seen [here](../v0.1pre4#AgKaeeOuwg5gCKvFIeiitEwMpUI2rymEcu+DDB1vMu9uBoufvUxIr4Y5p4Jj2ukoNO4PE7QS5cN1ZyDMCRfSzYIGZxKlN2J6NKEWK7KVPk9wVUgn1Ip+hsMinWgEO8ETKfPuHoIa4kjI+ULFOMad7vd3rt/lh1Vy9w+R2MXG/7T61d3c7C6KY+eQNS0eW3ys4iU8R6SycuWZuuZ2Sg3Qxp826s+Kt+2qBojpzNOSoyFqyrVyYMTKEkSl0BZOj59Cs1hPm5bq0F1MmVhGAzMhW9V4YeAe).
+
+The font can be changed by writing 1bpp 8x8 characters to addresses 0x13400-0x13c00.
+
+All text printing is done at the cursor position, which is advanced after printing each character.
+The cursor is not visible.
+
+Text printing can operate in two modes - normal and graphics. After startup and after `cls()` normal mode is active.
+
+### Normal mode
+
+In normal mode, text printing is constrained to an 8x8 character grid. Setting the cursor position to `2,3` will start printing at pixel coordinates `16,24`.
+
+When printing characters, the full 8x8 pixels are painted with the text and background colors according to the character graphics in the font.
+
+When moving/printing past the left or right border the cursor will automatically wrap to the previous/next line. When moving/printing past the upper/lower border, the screen will be scrolled down/up 8 pixels, filling the fresh line with the background color.
+
+### Graphics mode
+
+In graphics mode, text can be printed to any pixel position, the cursor position is set in pixel coordinates.
+
+When printing characters only the foreground pixels are set, the background is "transparent".
+
+Moving/printing past any border does not cause any special operation, the cursor just goes off-screen.
+
+### Control chars
+
+Characters 0-31 are control characters and don't print by default. They take the next 0-2 following characters as parameters.
+Avoid the reserved control chars, they are currently NOPs but their behavior can change in later MicroW8 versions.
+
+| Code  | Parameters | Operation                            |
+| ----- | ---------- | ------------------------------------ |
+| 0     | -          | Nop                                  |
+| 1     | char       | Print char (including control chars) |
+| 2-3   | -          | Reserved                             |
+| 4     | -          | Switch to normal mode                |
+| 5     | -          | Switch to graphics mode              |
+| 6-7   | -          | Reserved                             |
+| 8     | -          | Move cursor left                     |
+| 9     | -          | Move cursor right                    |
+| 10    | -          | Move cursor down                     |
+| 11    | -          | Move cursor up                       |
+| 12    | -          | do `cls(background_color)`           |
+| 13    | -          | Move cursor to the left border       |
+| 14    | color      | Set the background color             |
+| 15    | color      | Set the text color                   |
+| 16-23 | -          | Reserved                             |
+| 24    | -          | Swap text/background colors          |
+| 25-30 | -          | Reserved                             |
+| 31    | x, y       | Set cursor position (*)              |
+
+(*) In graphics mode, the x coordinate is doubled when using control char 31 to be able to cover the whole screen with one byte.
+
 ### fn printChar(char: i32)
+
+Prints the character in the lower 8 bits of `char`. If the upper 24 bits are non-zero, right-shifts `char` by 8 bits and loops back to the beginning.
+
 ### fn printString(ptr: i32)
+
+Prints the zero-terminated string at the given memory address.
+
 ### fn printInt(num: i32)
+
+Prints `num` as a signed decimal number.
+
 ### fn setTextColor(color: i32)
+
+Sets the text color.
+
 ### fn setBackgroundColor(color: i32)
+
+Sets the background color.
+
 ### fn setCursorPosition(x: i32, y: i32)
+
+Sets the cursor position. In normal mode `x` and `y` are multiplied by 8 to get the pixel position, in graphics mode they are used as is.
+
+# The `uw8` tool
+
+## `uw8 run`
+
+## `uw8 pack`
+
+## `uw8 filter-exports`
+
+# Distribution
+
+## Base64 encoded link
+
+## url parameter
+
+## `.html` + `.uw8`
+
+## Itch.io
 
 # `.uw8` format
 
