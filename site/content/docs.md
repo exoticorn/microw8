@@ -271,11 +271,47 @@ Sets the cursor position. In normal mode `x` and `y` are multiplied by 8 to get 
 
 # The `uw8` tool
 
+The `uw8` tool included in the MicroW8 download includes a number of useful tools for developing MicroW8 carts. For small productions written in
+wat or CurlyWas you don't need anything apart from `uw8` and a text editor of your choice.
+
 ## `uw8 run`
+
+Usage:
+
+`uw8 run [<options>] <file>`
+
+Runs `<file>` which can be a binary WebAssembly module, an `.uw8` cart, a wat (WebAssembly text format) source file or a [CurlyWas](https://github.com/exoticorn/curlywas) source file.
+
+Options:
+
+* `-w`, `--watch`: Reloads the given file every time it changes on disk.
+* `-p`, `--pack`: Pack the file into an `.uw8` cart before running it and print the resulting size.
+* `-u`, `--uncompressed`: Use the uncompressed `uw8` format for packing.
+* `-l LEVEL`, `--level LEVEL`: Compression level (0-9). Higher compression levels are really slow.
+* `-o FILE`, `--output FILE`: Write the loaded and optionally packed cart back to disk.
 
 ## `uw8 pack`
 
+Usage:
+
+`uw8 pack [<options>] <infile> <outfile>`
+
+Packs the WebAssembly module or text file, or [CurlyWas](https://github.com/exoticorn/curlywas) source file into a `.uw8` cart.
+
+Options:
+
+* `-u`, `--uncompressed`: Use the uncompressed `uw8` format for packing.
+* `-l LEVEL`, `--level LEVEL`: Compression level (0-9). Higher compression levels are really slow.
+
 ## `uw8 filter-exports`
+
+Usage:
+
+`uw8 filter-exports <infile> <outfile>`
+
+Reads a binary WebAssembly module, removes all exports not used by the MicroW8 platform + everything that is unreachable without those exports and writes the resulting module to `outfile`.
+
+When compiling C code (or Rust, zig or others) to WebAssembly, you end up with a few exported global variables that are used for managing the heap and C stack, even if the code doesn't actually use those features. You can use this command to automatically remove those and gain a few bytes. See the C, Rust and zig examples in the MicroW8 repository.
 
 # Distribution
 
