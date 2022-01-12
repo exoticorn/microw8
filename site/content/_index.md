@@ -31,22 +31,3 @@ The initial motivation behind MicroW8 was to explore whether there was a way to 
 * [v0.1pre3](v0.1pre3)
 * [v0.1pre4](v0.1pre4)
 * [v0.1pre5](v0.1pre5)
-
-## Tooling
-
-WARNING: severely out of date. The `uw8` binary includes a lot of the tool features below.
-
-The [Web Assembly Binary Toolkit](https://github.com/WebAssembly/wabt) includes
-a few useful tools, eg. `wat2wasm` to compile the WebAssemby text format to binary
-wasm and `wasm2wat` to disassemble wasm binaries.
-
-If you don't like the look of the `.wat` text format, you might want to take a
-look at [CurlyWas](https://github.com/exoticorn/curlywas), a curly-braces infix
-syntax for WebAssembly.
-
-Once you have a size-efficient `.wasm` file, you can use [uw8-tool](https://github.com/exoticorn/microw8/tree/master/uw8-tool)
-(currently included in the MicroW8 repository) to strip off sections of the
-WebAssembly module that are provided by the MicroW8 platform.
-
-Writing code for MicroW8 in C, Rust, AssemblyScript etc. should absolutely
-possible but no examples are provided, yet.

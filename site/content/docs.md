@@ -311,17 +311,54 @@ Usage:
 
 Reads a binary WebAssembly module, removes all exports not used by the MicroW8 platform + everything that is unreachable without those exports and writes the resulting module to `outfile`.
 
-When compiling C code (or Rust, zig or others) to WebAssembly, you end up with a few exported global variables that are used for managing the heap and C stack, even if the code doesn't actually use those features. You can use this command to automatically remove those and gain a few bytes. See the C, Rust and zig examples in the MicroW8 repository.
+When compiling C code (or Rust, zig or others) to WebAssembly, you end up with a few exported global variables that are used for managing the heap and C stack, even if the code doesn't actually use those features. You can use this command to automatically remove them and gain a few bytes. See the C, Rust and zig examples in the MicroW8 repository.
+
+# Other useful tools
+
+The [Web Assembly Binary Toolkit](https://github.com/WebAssembly/wabt) includes
+a few useful tools, eg. `wat2wasm` to compile the WebAssemby text format to binary
+wasm and `wasm2wat` to disassemble wasm binaries.
+
+[Binaryen](https://github.com/WebAssembly/binaryen) includes `wasm-opt` which enable additional optimizations over what LLVM (the backend that is used by most compilers that target WebAssembly) can do.
 
 # Distribution
 
+The classical distribution option is just to put the `.uw8` cart into a zip file, let people run it themselves, either in the `uw8` tool or in the web runtime.
+
+If you want to go this way, you might consider including `microw8.html` in your download. It's specifically designed to be a small (~10KB at the moment), self-contained HTML file for just this reason. That way, anyone who has downloaded you production can run it, even when offline, provided they have a modern web browser at hand. Also, should future versions of MicroW8 ever introduce any kind of incompatibilities, they'd still have a compatible version right there without hunting arround for an old version.
+
 ## Base64 encoded link
+
+For small productions (<= 1024 bytes), when you load them in the web runtime, the URL is automatically updated to include the cart as base64 encoded data. You can just give that URL to others for them to run your prod.
 
 ## url parameter
 
+Another option is to put the cart on a webserver and add `#url=url/to/the/cart.uw8` to the end of the web runtime URL. ([Like this](../v0.1pre5#url=../uw8/skipahead.uw8))
+
+If the cart and the web runtime are on different domains, you'll have to make sure that [CORS header](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#the_http_response_headers) are enabled for the cart, otherwise the web runtime won't be able to load it.
+
+Feel free to put the web runtime on your own server if it makes sense to you, its [license](https://unlicense.org/) allows you to do anything you want with it.
+
 ## `.html` + `.uw8`
 
+At startup the web runtime will try to load a cart in the same directory as the `.html` file. If the URL of the web runtime ends in `.html` it will try to load a cart with the same name and the extension `.uw8`. If the URL of the web runtime ends in a `/` it will try to load a `cart.uw8` at that location.
+
+So, you could for example serve the web runtime as `https://example.org/mytunnel.html` and the cart as `https://example.org/mytunnel.uw8` and send people to the HTML page to run the cart. Or you could put them up as `https://example.org/mytunnel/index.html` and `https://example.org/mytunnel/cart.uw8` and send people to `https://example.org/mytunnel`.
+
+If a cart is found and loaded in this way, the load button is hidden.
+
 ## Itch.io
+
+The above `.html` + `.uw8` option works great on [Itch.io](https://itch.io) as well. Put these two files into a zip archive:
+
+* `index.html`: a copy of the web runtime (`microw8.html` in the MicroW8 download)
+* `index.uw8`: Your game cart
+
+Upload the zip file to itch.io and make sure to set the embedded viewport size to exactly (!) 640x480 pixel. At that exact size the web runtime hides everything except for the MicroW8 screen.
+
+If instead you actually *want* to display the border around the screen and the byte size you can try a size of about 720x620.
+
+[See here for an example upload.](https://exoticorn.itch.io/skipahead)
 
 # `.uw8` format
 
