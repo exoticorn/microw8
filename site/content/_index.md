@@ -26,8 +26,9 @@ The initial motivation behind MicroW8 was to explore whether there was a way to 
 
 ## Versions
 
-* [v0.1pre1](v0.1pre1)
-* [v0.1pre2](v0.1pre2)
-* [v0.1pre3](v0.1pre3)
-* [v0.1pre4](v0.1pre4)
-* [v0.1pre5](v0.1pre5)
+### v0.1.0
+
+* [Web runtime](v0.1.0)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.1.0/microw8-0.1.0-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.1.0/microw8-0.1.0-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.1.0/microw8-0.1.0-windows.zip)

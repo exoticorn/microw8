@@ -13,7 +13,11 @@ See [here](https://exoticorn.github.io/microw8/) for more information and docs.
 * Memory: 256KB
 * Gamepad input (D-Pad + 4 Buttons)
 
-## Download
+## Downloads
+
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.1.0/microw8-0.1.0-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.1.0/microw8-0.1.0-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.1.0/microw8-0.1.0-windows.zip)
 
 The download includes
 
