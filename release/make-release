@@ -1,0 +1,54 @@
+#!/bin/bash
+
+set -e
+
+cd $(dirname $0)
+
+# build web runtime
+pushd ../web
+rm -rf .parcel-cache
+yarn parcel build src/index.html
+popd
+
+rm -rf build
+mkdir -p build/microw8-linux
+mkdir build/microw8-macos
+mkdir build/microw8-windows
+
+# unzip binaries build by github actions
+pushd binaries
+unzip -o uw8-linux.zip
+chmod +x uw8
+mv uw8 ../build/microw8-linux
+unzip -o uw8-macos.zip
+chmod +x uw8
+mv uw8 ../build/microw8-macos
+unzip -o uw8-windows.zip
+mv uw8.exe ../build/microw8-windows
+popd
+
+for dir in build/*; do
+    mkdir $dir/examples
+    for example in ../examples/curlywas/*.cwa; do
+        cp $example $dir/examples
+    done
+    for example in ../examples/wat/*.wat; do
+        cp $example $dir/examples
+    done
+
+    mkdir $dir/carts
+    for example in $dir/examples/*; do
+        build/microw8-linux/uw8 pack -l 9 $example $dir/carts/$(basename ${example%.*}).uw8
+    done
+
+    cp ../web/dist/index.html $dir/microw8.html
+    cp ../README.md $dir
+    cp ../UNLICENSE $dir
+done
+
+VERSION=$(build/microw8-linux/uw8 version)
+
+cd build
+tar czf microw8-$VERSION-linux.tgz microw8-linux
+tar czf microw8-$VERSION-macos.tgz microw8-macos
+zip -r -9 microw8-$VERSION-windows.zip microw8-windows

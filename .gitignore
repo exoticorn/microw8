@@ -1,3 +1,5 @@
 /target
 .cargo/
 .vscode/
+/examples/**/*.wasm
+/examples/**/*.uw8

@@ -16,13 +16,17 @@ body {
     grid-template-rows: 1fr 0fr;
 }
 
+#uw8 {
+    position: absolute;
+}
+
+#uw8 a {
+    font-size: 130%;
+}
+
 #centered {
     align-self: center;
     justify-self: center;
-}
-
-.footer {
-    color: #202420;
 }
 
 a {
@@ -69,7 +73,7 @@ button:active {
     background-color: #504450;
 }
 
-@media (min-width: 680px) and (min-height: 560px) {
+@media (min-width: 680px) and (min-height: 620px) {
     #screen {
         width: 640px;
         height: 480px;
