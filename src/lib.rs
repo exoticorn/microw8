@@ -1,6 +1,8 @@
 use std::io::prelude::*;
 use std::path::Path;
-use std::{fs::File, time::Instant};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use std::{fs::File, thread, time::Instant};
 
 use anyhow::Result;
 use minifb::{Key, Window, WindowOptions};
@@ -8,7 +10,16 @@ use wasmtime::{
     Engine, GlobalType, Memory, MemoryType, Module, Mutability, Store, TypedFunc, ValType,
 };
 
-static GAMEPAD_KEYS: &'static [Key] = &[Key::Up, Key::Down, Key::Left, Key::Right, Key::Z, Key::X, Key::A, Key::S];
+static GAMEPAD_KEYS: &'static [Key] = &[
+    Key::Up,
+    Key::Down,
+    Key::Left,
+    Key::Right,
+    Key::Z,
+    Key::X,
+    Key::A,
+    Key::S,
+];
 
 pub struct MicroW8 {
     engine: Engine,
@@ -16,6 +27,7 @@ pub struct MicroW8 {
     window: Window,
     window_buffer: Vec<u32>,
     instance: Option<UW8Instance>,
+    timeout: u32,
 }
 
 struct UW8Instance {
@@ -24,12 +36,27 @@ struct UW8Instance {
     end_frame: TypedFunc<(), ()>,
     update: TypedFunc<(), ()>,
     start_time: Instant,
-    module: Vec<u8>
+    module: Vec<u8>,
+    watchdog: Arc<Mutex<UW8WatchDog>>,
+}
+
+impl Drop for UW8Instance {
+    fn drop(&mut self) {
+        if let Ok(mut watchdog) = self.watchdog.lock() {
+            watchdog.stop = true;
+        }
+    }
+}
+
+struct UW8WatchDog {
+    interupt: wasmtime::InterruptHandle,
+    timeout: u32,
+    stop: bool,
 }
 
 impl MicroW8 {
     pub fn new() -> Result<MicroW8> {
-        let engine = wasmtime::Engine::default();
+        let engine = wasmtime::Engine::new(wasmtime::Config::new().interruptable(true))?;
 
         let loader_module =
             wasmtime::Module::new(&engine, include_bytes!("../platform/bin/loader.wasm"))?;
@@ -47,11 +74,16 @@ impl MicroW8 {
             window,
             window_buffer: vec![0u32; 320 * 240],
             instance: None,
+            timeout: 30,
         })
     }
 
     pub fn is_open(&self) -> bool {
         self.window.is_open() && !self.window.is_key_down(Key::Escape)
+    }
+
+    pub fn set_timeout(&mut self, timeout: u32) {
+        self.timeout = timeout;
     }
 
     fn reset(&mut self) {
@@ -130,7 +162,36 @@ impl MicroW8 {
             )?;
         }
 
+        let watchdog = Arc::new(Mutex::new(UW8WatchDog {
+            interupt: store.interrupt_handle()?,
+            timeout: self.timeout,
+            stop: false,
+        }));
+
+        {
+            let watchdog = watchdog.clone();
+            thread::spawn(move || loop {
+                thread::sleep(Duration::from_millis(17));
+                if let Ok(mut watchdog) = watchdog.lock() {
+                    if watchdog.stop {
+                        break;
+                    }
+                    if watchdog.timeout > 0 {
+                        watchdog.timeout -= 1;
+                        if watchdog.timeout == 0 {
+                            watchdog.interupt.interrupt();
+                        }
+                    }
+                } else {
+                    break;
+                }
+            });
+        }
+
         let instance = linker.instantiate(&mut store, &module)?;
+        if let Ok(mut watchdog) = watchdog.lock() {
+            watchdog.timeout = 0;
+        }
         let end_frame = platform_instance.get_typed_func::<(), (), _>(&mut store, "endFrame")?;
         let update = instance.get_typed_func::<(), (), _>(&mut store, "upd")?;
 
@@ -140,19 +201,26 @@ impl MicroW8 {
             end_frame,
             update,
             start_time: Instant::now(),
-            module: module_data.into()
+            module: module_data.into(),
+            watchdog,
         });
 
         Ok(())
     }
 
     pub fn run_frame(&mut self) -> Result<()> {
+        let mut result = Ok(());
         if let Some(mut instance) = self.instance.take() {
             {
                 let time = instance.start_time.elapsed().as_millis() as i32;
                 let mut gamepad: u32 = 0;
                 for key in self.window.get_keys() {
-                    if let Some(index) = GAMEPAD_KEYS.iter().enumerate().find(|(_, &k)| k == key).map(|(i, _)| i) {
+                    if let Some(index) = GAMEPAD_KEYS
+                        .iter()
+                        .enumerate()
+                        .find(|(_, &k)| k == key)
+                        .map(|(i, _)| i)
+                    {
                         gamepad |= 1 << index;
                     }
                 }
@@ -162,7 +230,13 @@ impl MicroW8 {
                 mem[68..72].copy_from_slice(&gamepad.to_le_bytes());
             }
 
-            instance.update.call(&mut instance.store, ())?;
+            if let Ok(mut watchdog) = instance.watchdog.lock() {
+                watchdog.timeout = self.timeout;
+            }
+            result = instance.update.call(&mut instance.store, ());
+            if let Ok(mut watchdog) = instance.watchdog.lock() {
+                watchdog.timeout = 0;
+            }
             instance.end_frame.call(&mut instance.store, ())?;
 
             let memory = instance.memory.data(&instance.store);
@@ -178,7 +252,7 @@ impl MicroW8 {
 
             if self.window.is_key_pressed(Key::R, minifb::KeyRepeat::No) {
                 self.load_from_memory(&instance.module)?;
-            } else {
+            } else if result.is_ok() {
                 self.instance = Some(instance);
             }
         }
@@ -186,6 +260,7 @@ impl MicroW8 {
         self.window
             .update_with_buffer(&self.window_buffer, 320, 240)?;
 
+        result?;
         Ok(())
     }
 }

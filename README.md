@@ -35,6 +35,7 @@ Runs <file> which can be a binary WebAssembly module, an `.uw8` cart, a wat (Web
 
 Options:
 
+-t, --timeout FRAMES    : Sets the timeout in frames (1/60s)
 -w, --watch             : Reloads the given file every time it changes on disk.
 -p, --pack              : Pack the file into an .uw8 cart before running it and print the resulting size.
 -u, --uncompressed      : Use the uncompressed uw8 format for packing.

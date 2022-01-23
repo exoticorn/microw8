@@ -28,7 +28,7 @@ fn main() -> Result<()> {
             println!("uw8 {}", env!("CARGO_PKG_VERSION"));
             println!();
             println!("Usage:");
-            println!("  uw8 run [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
+            println!("  uw8 run [-t/--timeout <frames>] [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
             println!("  uw8 pack [-u/--uncompressed] [-l/--level] <in-file> <out-file>");
             println!("  uw8 filter-exports <in-wasm> <out-wasm>");
             Ok(())
@@ -42,6 +42,7 @@ fn main() -> Result<()> {
 
 fn run(mut args: Arguments) -> Result<()> {
     let watch_mode = args.contains(["-w", "--watch"]);
+    let timeout: Option<u32> = args.opt_value_from_str(["-t", "--timeout"])?;
 
     let mut config = Config::default();
     if args.contains(["-p", "--pack"]) {
@@ -66,6 +67,10 @@ fn run(mut args: Arguments) -> Result<()> {
     let filename = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
 
     let mut uw8 = MicroW8::new()?;
+
+    if let Some(timeout) = timeout {
+        uw8.set_timeout(timeout);
+    }
 
     let (tx, rx) = mpsc::channel();
     let mut watcher = notify::watcher(tx, Duration::from_millis(100))?;
