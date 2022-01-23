@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 wasmtime = "0.30"
 anyhow = "1"
-minifb = "0.19"
+minifb = { version = "0.20", default-features = false, features = ["x11"] }
 notify = "4"
 pico-args = "0.4"
 curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "196719b" }

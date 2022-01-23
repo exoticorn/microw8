@@ -151,7 +151,7 @@ impl MicroW8 {
             {
                 let time = instance.start_time.elapsed().as_millis() as i32;
                 let mut gamepad: u32 = 0;
-                for key in self.window.get_keys().unwrap_or(Vec::new()) {
+                for key in self.window.get_keys() {
                     if let Some(index) = GAMEPAD_KEYS.iter().enumerate().find(|(_, &k)| k == key).map(|(i, _)| i) {
                         gamepad |= 1 << index;
                     }
