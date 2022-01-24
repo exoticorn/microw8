@@ -54,6 +54,12 @@ let keyHandler = (e) => {
                 runModule(currentData);
             }
             break;
+        case 'F10':
+            if(isKeyDown) {
+                recordVideo();
+            }
+            e.preventDefault();
+            break;
     }
 
     if (isKeyDown) {
@@ -218,6 +224,55 @@ async function runModule(data, keepUrl) {
     } catch (err) {
         setMessage(cartridgeSize, err.toString());
     }
+}
+
+let videoRecorder;
+let videoStartTime;
+function recordVideo() {
+    if(videoRecorder) {
+        videoRecorder.stop();
+        videoRecorder = null;
+        return;
+    }
+
+    videoRecorder = new MediaRecorder(screen.captureStream(), {
+        mimeType: 'video/webm',
+        videoBitsPerSecond: 5000000
+    });
+
+    let chunks = [];
+    videoRecorder.ondataavailable = e => {
+        chunks.push(e.data);
+    };
+
+    let timer = document.getElementById("timer");
+    timer.hidden = false;
+    timer.innerText = "00:00";
+
+    videoRecorder.onstop = () => {
+        timer.hidden = true;
+        let a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob(chunks, {type: 'video/webm'}));
+        a.download = 'microw8_' + new Date().toISOString() + 'webm';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    };
+
+    videoRecorder.start();
+    videoStartTime = Date.now();
+
+    function updateTimer() {
+        if(!videoStartTime) {
+            return;
+        }
+
+        let duration = Math.floor((Date.now() - videoStartTime) / 1000);
+        timer.innerText = Math.floor(duration / 60).toString().padStart(2, '0') + ':' + (duration % 60).toString().padStart(2, '0');
+
+        setTimeout(updateTimer, 1000);
+    }
+
+    setTimeout(updateTimer, 1000);
 }
 
 async function runModuleFromURL(url, keepUrl) {

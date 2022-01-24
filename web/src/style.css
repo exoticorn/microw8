@@ -48,6 +48,16 @@ a:hover {
     cursor: none;
 }
 
+#timer::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background-color: red;
+    margin-right: 3px;
+}
+
 #message {
     margin-bottom: 8px;
 }
