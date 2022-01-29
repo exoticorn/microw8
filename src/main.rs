@@ -1,17 +1,14 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::process;
-use std::sync::mpsc;
-use std::time::Duration;
 use std::{
     path::{Path, PathBuf},
     process::exit,
 };
 
-use anyhow::{bail, Result};
-use notify::{DebouncedEvent, Watcher};
+use anyhow::Result;
 use pico_args::Arguments;
-use uw8::MicroW8;
+use uw8::{FileWatcher, MicroW8};
 
 fn main() -> Result<()> {
     let mut args = Arguments::from_env();
@@ -72,12 +69,13 @@ fn run(mut args: Arguments) -> Result<()> {
         uw8.set_timeout(timeout);
     }
 
-    let (tx, rx) = mpsc::channel();
-    let mut watcher = notify::watcher(tx, Duration::from_millis(100))?;
+    let mut watcher = FileWatcher::builder();
 
     if watch_mode {
-        watcher.watch(&filename, notify::RecursiveMode::NonRecursive)?;
+        watcher.add_file(&filename);
     }
+
+    let watcher = watcher.build()?;
 
     if let Err(err) = start_cart(&filename, &mut uw8, &config) {
         eprintln!("Load error: {}", err);
@@ -87,14 +85,10 @@ fn run(mut args: Arguments) -> Result<()> {
     }
 
     while uw8.is_open() {
-        match rx.try_recv() {
-            Ok(DebouncedEvent::Create(_) | DebouncedEvent::Write(_)) => {
-                if let Err(err) = start_cart(&filename, &mut uw8, &config) {
-                    eprintln!("Load error: {}", err);
-                }
+        if watcher.poll_changed_file()?.is_some() {
+            if let Err(err) = start_cart(&filename, &mut uw8, &config) {
+                eprintln!("Load error: {}", err);
             }
-            Err(mpsc::TryRecvError::Disconnected) => bail!("File watcher disconnected"),
-            _ => (),
         }
 
         if let Err(err) = uw8.run_frame() {

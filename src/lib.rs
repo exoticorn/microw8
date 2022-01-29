@@ -10,6 +10,10 @@ use wasmtime::{
     Engine, GlobalType, Memory, MemoryType, Module, Mutability, Store, TypedFunc, ValType,
 };
 
+mod filewatcher;
+
+pub use filewatcher::FileWatcher;
+
 static GAMEPAD_KEYS: &'static [Key] = &[
     Key::Up,
     Key::Down,

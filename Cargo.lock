@@ -1524,6 +1524,7 @@ dependencies = [
  "minifb",
  "notify",
  "pico-args",
+ "same-file",
  "uw8-tool",
  "wasmtime",
  "wat",

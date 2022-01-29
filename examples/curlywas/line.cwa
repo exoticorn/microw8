@@ -1,102 +1,21 @@
 import "env.memory" memory(4);
 
 import "env.cls" fn cls(i32);
-import "env.setPixel" fn setPixel(i32, i32, i32);
 import "env.time" fn time() -> f32;
+import "env.line" fn line(f32, f32, f32, f32, i32);
 import "env.sin" fn sin(f32) -> f32;
 import "env.cos" fn cos(f32) -> f32;
 
-fn line(x1: f32, y1: f32, x2: f32, y2: f32, col: i32) {
-    let swapTmp: f32;
-    if x1 > x2 {
-        swapTmp = x1;
-        x1 = x2;
-        x2 = swapTmp;
-        swapTmp = y1;
-        y1 = y2;
-        y2 = swapTmp;
-    }
-    if x1 < 0 as f32 & x2 >= 0 as f32 {
-        y1 = y1 + (y2 - y1) * -x1 / (x2 - x1);
-        x1 = 0 as f32;
-    }
-    if x1 < 320 as f32 & x2 >= 320 as f32 {
-        y2 = y2 + (y2 - y1) * (320 as f32 - x2) / (x2 - x1);
-        x2 = 320 as f32;
-    }
-
-    if y1 > y2 {
-        swapTmp = x1;
-        x1 = x2;
-        x2 = swapTmp;
-        swapTmp = y1;
-        y1 = y2;
-        y2 = swapTmp;
-    }
-    if y1 < 0 as f32 & y2 >= 0 as f32 {
-        x1 = x1 + (x2 - x1) * -y1 / (y2 - y1);
-        y1 = 0 as f32;
-    }
-    if y1 < 240 as f32 & y2 >= 240 as f32 {
-        x2 = x2 + (x2 - x1) * (240 as f32 - y2) / (y2 - y1);
-        y2 = 240 as f32;
-    }
-
-    let lazy dx = x2 - x1;
-    let lazy dy = y2 - y1;
-    let max_axis: f32;
-    let p: f32;
-    if abs(dx) >= dy {
-        max_axis = dx;
-        p = x1;
-    } else {
-        max_axis = dy;
-        p = y1;
-    }
-
-    let steps = floor(p + max_axis) as i32 - floor(p) as i32;
-    p = floor(p) + 0.5 - p;
-    if max_axis < 0 as f32 {
-        steps = -steps;
-        p = -p;
-        max_axis = -max_axis;
-    }
-    dx = dx / max_axis;
-    dy = dy / max_axis;
-
-    let f = min(max_axis, max(0 as f32, p));
-    setPixel((x1 + f * dx) as i32, (y1 + f * dy) as i32, col);
-
-    if !steps {
-        return;
-    }
-
-    x1 = x1 + (1 as f32 + p) * dx;
-    y1 = y1 + (1 as f32 + p) * dy;
-
-    p = p + steps as f32;
-
-    loop pixels {
-        if steps := steps - 1 {
-            setPixel(x1 as i32, y1 as i32, col);
-            x1 = x1 + dx;
-            y1 = y1 + dy;
-            branch pixels;
-        }
-    }
-
-    f = min(max_axis, p) - p;
-    setPixel((x1 + f * dx) as i32, (y1 + f * dy) as i32, col);
-}
-
 export fn upd() {
     cls(0);
-//    line(0.0, 4.0, 7.0, -2.0, 15);
-//    return;
     let i: i32;
     loop lines {
-        let angle = i as f32 * (3.1415 / 25.0) + time() * 0.1;
-        line(160.0, 120.0, 160.0 + sin(angle) * 100.0, 120.0 + cos(angle) * 100.0, 47);
+        let angle = i as f32 * (3.1415 / 25.0) + time() * 0.125;
+        line(
+            160 as f32, 120 as f32,
+            160 as f32 + sin(angle) * 100 as f32,
+            120 as f32 + cos(angle) * 100 as f32,
+            47);
         branch_if (i := i + 1)  < 50: lines;
     }
 }
