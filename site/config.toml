@@ -18,7 +18,7 @@ highlight_theme = "ascetic-white"
 [extra]
 # Put all your custom variables here
 juice_logo_name = "MicroW8"
-juice_logo_path = "microw8.svg"
+juice_logo_path = "img/microw8.svg"
 juice_extra_menu = [
     { title = "Github", link = "https://github.com/exoticorn/microw8" }
 ]
