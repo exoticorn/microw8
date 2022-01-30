@@ -54,6 +54,14 @@ let keyHandler = (e) => {
                 runModule(currentData);
             }
             break;
+        case 'F9':
+            if(isKeyDown) {
+                screen.toBlob(blob => {
+                    downloadBlob(blob, '.png');
+                });
+            }
+            e.preventDefault();
+            break;
         case 'F10':
             if(isKeyDown) {
                 recordVideo();
@@ -226,6 +234,14 @@ async function runModule(data, keepUrl) {
     }
 }
 
+function downloadBlob(blob, ext) {
+    let a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'microw8_' + new Date().toISOString() + ext;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
 let videoRecorder;
 let videoStartTime;
 function recordVideo() {
@@ -237,7 +253,7 @@ function recordVideo() {
 
     videoRecorder = new MediaRecorder(screen.captureStream(), {
         mimeType: 'video/webm',
-        videoBitsPerSecond: 5000000
+        videoBitsPerSecond: 25000000
     });
 
     let chunks = [];
@@ -251,11 +267,7 @@ function recordVideo() {
 
     videoRecorder.onstop = () => {
         timer.hidden = true;
-        let a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob(chunks, {type: 'video/webm'}));
-        a.download = 'microw8_' + new Date().toISOString() + 'webm';
-        a.click();
-        URL.revokeObjectURL(a.href);
+        downloadBlob(new Blob(chunks, {type: 'video/webm'}), '.webm');
     };
 
     videoRecorder.start();

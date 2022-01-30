@@ -390,3 +390,23 @@ the first function in the file under the name `upd`.
 
 Same as version `01` except everything after the first byte is compressed
 using a [custom LZ compression scheme](https://github.com/exoticorn/upkr).
+
+# The web runtime
+
+[...]
+
+## Video recording
+
+Press F10 to start recording, press again to stop. Then a download dialog will open for the video file.
+The file might miss some metadata needed to load in some video editing tools, in that case you can run
+it through ffmpeg like this `ffmpeg -i IN_NAME.webm -c copy -o OUT_NAME.webm to fix it up.
+
+To convert it to 1280x720, for example for a lovebyte upload, you can use:
+
+```
+ffmpeg -i IN.webm -vf "scale=960:720:flags=neighbor,pad=1280:720:160:0" -r 60 OUT.mp4
+```
+
+## Screenshot
+
+Pressing F9 opens a download dialog with a screenshot.
