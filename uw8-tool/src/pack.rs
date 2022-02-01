@@ -10,7 +10,7 @@ use std::{
 use wasm_encoder as enc;
 use wasmparser::{
     BinaryReader, ExportSectionReader, ExternalKind, FunctionBody, FunctionSectionReader,
-    ImportSectionEntryType, ImportSectionReader, TypeSectionReader,
+    ImportSectionEntryType, ImportSectionReader, TableSectionReader, TypeSectionReader,
 };
 
 pub struct PackConfig {
@@ -31,7 +31,9 @@ impl PackConfig {
 
 impl Default for PackConfig {
     fn default() -> PackConfig {
-        PackConfig { compression: Some(2) }
+        PackConfig {
+            compression: Some(2),
+        }
     }
 }
 
@@ -156,6 +158,8 @@ struct ParsedModule<'a> {
     start_section: Option<u32>,
     function_bodies: Vec<wasmparser::FunctionBody<'a>>,
     data_section: Option<Section<()>>,
+    table_section: Option<Section<()>>,
+    element_section: Option<Vec<Element>>,
 }
 
 impl<'a> ParsedModule<'a> {
@@ -170,6 +174,8 @@ impl<'a> ParsedModule<'a> {
         let mut start_section = None;
         let mut function_bodies = Vec::new();
         let mut data_section = None;
+        let mut table_section = None;
+        let mut element_section = None;
 
         let mut offset = 0;
 
@@ -209,6 +215,17 @@ impl<'a> ParsedModule<'a> {
                 Payload::DataSection(_) => {
                     data_section = Some(Section::new(range, ()));
                 }
+                Payload::TableSection(reader) => {
+                    validate_table_section(reader)?;
+                    table_section = Some(Section::new(range, ()));
+                }
+                Payload::ElementSection(mut reader) => {
+                    let mut elements = Vec::with_capacity(reader.get_count() as usize);
+                    for _ in 0..reader.get_count() {
+                        elements.push(Element::parse(reader.read()?)?);
+                    }
+                    element_section = Some(elements);
+                }
                 Payload::CodeSectionStart { .. } => (),
                 Payload::CodeSectionEntry(body) => function_bodies.push(body),
                 Payload::CustomSection { .. } => (),
@@ -229,6 +246,8 @@ impl<'a> ParsedModule<'a> {
             start_section,
             function_bodies,
             data_section,
+            table_section,
+            element_section,
         })
     }
 
@@ -405,6 +424,10 @@ impl<'a> ParsedModule<'a> {
             module.section(&function_section);
         }
 
+        if let Some(tables) = self.table_section {
+            copy_section(&mut module, &self.data[tables.range.clone()])?;
+        }
+
         if let Some(ref globals) = self.globals {
             copy_section(&mut module, &self.data[globals.range.clone()])?;
             for i in 0..globals.data {
@@ -444,6 +467,25 @@ impl<'a> ParsedModule<'a> {
             module.section(&enc::StartSection {
                 function_index: *function_map.get(&start_function).unwrap(),
             });
+        }
+
+        if let Some(elements) = self.element_section {
+            let mut element_section = wasm_encoder::ElementSection::new();
+            for element in elements {
+                let mut functions = Vec::with_capacity(element.functions.len());
+                for index in element.functions {
+                    functions.push(*function_map.get(&index).ok_or_else(|| {
+                        anyhow!("Function index {} not found in function map", index)
+                    })?);
+                }
+                element_section.active(
+                    None,
+                    &wasm_encoder::Instruction::I32Const(element.start_index as i32),
+                    ValType::FuncRef,
+                    wasm_encoder::Elements::Functions(&functions),
+                );
+            }
+            module.section(&element_section);
         }
 
         {
@@ -500,6 +542,19 @@ fn read_type_section(reader: TypeSectionReader) -> Result<Vec<base_module::Funct
     }
 
     Ok(function_types)
+}
+
+fn validate_table_section(mut reader: TableSectionReader) -> Result<()> {
+    if reader.get_count() != 1 {
+        bail!("Only up to one table supported");
+    }
+
+    let type_ = reader.read()?;
+    if type_.element_type != wasmparser::Type::FuncRef {
+        bail!("Only one funcref table is supported");
+    }
+
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -575,6 +630,51 @@ impl ImportSection {
             memory,
             functions,
             globals,
+        })
+    }
+}
+
+#[derive(Debug)]
+struct Element {
+    start_index: u32,
+    functions: Vec<u32>,
+}
+
+impl Element {
+    fn parse(element: wasmparser::Element) -> Result<Element> {
+        if element.ty != wasmparser::Type::FuncRef {
+            bail!("Table element type is not FuncRef");
+        }
+
+        let start_index = if let wasmparser::ElementKind::Active {
+            init_expr,
+            table_index: 0,
+        } = element.kind
+        {
+            let mut init_reader = init_expr.get_operators_reader();
+            if let wasmparser::Operator::I32Const { value: start_index } = init_reader.read()? {
+                start_index as u32
+            } else {
+                bail!("Table element start index is not a integer constant");
+            }
+        } else {
+            bail!("Unsupported table element kind");
+        };
+
+        let mut items_reader = element.items.get_items_reader()?;
+
+        let mut functions = Vec::with_capacity(items_reader.get_count() as usize);
+        for _ in 0..items_reader.get_count() {
+            if let wasmparser::ElementItem::Func(index) = items_reader.read()? {
+                functions.push(index);
+            } else {
+                bail!("Table element item is not a function");
+            }
+        }
+
+        Ok(Element {
+            start_index,
+            functions,
         })
     }
 }
@@ -678,8 +778,13 @@ fn remap_function(
                     .get(&function_index)
                     .ok_or_else(|| anyhow!("Function index out of range: {}", function_index))?,
             ),
-            De::CallIndirect { .. }
-            | De::ReturnCall { .. }
+            De::CallIndirect { index, table_index } => En::CallIndirect {
+                ty: *type_map
+                    .get(&index)
+                    .ok_or_else(|| anyhow!("Unknown function type in call indirect"))?,
+                table: table_index,
+            },
+            De::ReturnCall { .. }
             | De::ReturnCallIndirect { .. }
             | De::Delegate { .. }
             | De::CatchAll => todo!(),
