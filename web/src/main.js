@@ -13,6 +13,8 @@ let screen = document.getElementById('screen');
 let canvasCtx = screen.getContext('2d');
 let imageData = canvasCtx.createImageData(320, 240);
 
+let devkitMode;
+
 let cancelFunction;
 
 let currentData;
@@ -51,7 +53,7 @@ let keyHandler = (e) => {
             break;
         case 'KeyR':
             if (isKeyDown) {
-                runModule(currentData);
+                runModule(currentData, true);
             }
             break;
         case 'F9':
@@ -110,7 +112,11 @@ async function runModule(data, keepUrl) {
     screen.width = screen.width;
 
     try {
-        let memory = new WebAssembly.Memory({ initial: 4, maximum: 4 });
+        let memSize = { initial: 4 };
+        if(!devkitMode) {
+            memSize.maximum = 4;
+        }
+        let memory = new WebAssembly.Memory({ initial: 4, maximum: devkitMode ? 16 : 4 });
         let memU8 = U8(memory.buffer);
 
         let importObject = {
@@ -122,7 +128,7 @@ async function runModule(data, keepUrl) {
         let loader;
 
         let loadModuleData = (data) => {
-            if (U8(data)[0] != 0) {
+            if (loader && (!devkitMode || U8(data)[0] != 0)) {
                 memU8.set(U8(data));
                 let length = loader.exports.load_uw8(data.byteLength);
                 data = new ArrayBuffer(length);
@@ -293,11 +299,16 @@ async function runModuleFromURL(url, keepUrl) {
     if(type && type.includes('html')) {
         throw false;
     }
-    runModule(await response.arrayBuffer(), keepUrl);
+    runModule(await response.arrayBuffer(), keepUrl || devkitMode);
 }
 
 function runModuleFromHash() {
     let hash = window.location.hash.slice(1);
+    if(hash == 'devkit') {
+        devkitMode = true;
+        return;
+    }
+    devkitMode = false;
     if (hash.length > 0) {
         if (hash.startsWith("url=")) {
             runModuleFromURL(hash.slice(4), true);

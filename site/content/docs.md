@@ -105,7 +105,7 @@ as a cheap random-access PRNG (aka noise function).
 
 ## Graphics
 
-The default palette can be seen [here](../v0.1pre4#AgKaeeOuwg5gCKvFIeiitEwMpUI2rymEcu+DDB1vMu9uBoufvUxIr4Y5p4Jj2ukoNO4PE7QS5cN1ZyDMCRfSzYIGZxKlN2J6NKEWK7KVPk9wVUgn1Ip+hsMinWgEO8ETKfPuHoIa4kjI+ULFOMad7vd3rt/lh1Vy9w+R2MXG/7T61d3c7C6KY+eQNS0eW3ys4iU8R6SycuWZuuZ2Sg3Qxp826s+Kt+2qBojpzNOSoyFqyrVyYMTKEkSl0BZOj59Cs1hPm5bq0F1MmVhGAzMhW9V4YeAe). (Press Z on the keyboard to switch to palette.)
+The default palette can be seen [here](../v0.1.0#At/p39+IBnj6ry1TRe7jzVy2A4tXgBvmoW2itzoyF2aM28pGy5QDiKxqrk8l9sbWZLtnAb+jgOfU+9QhpuyCAkhN6gPOU481IUL/df96vNe3h288Dqwhd3sfFpothIVFsMwRK72kW2hiR7zWsaXyy5pNmjR6BJk4piWx9ApT1ZwoUajhk6/zij6itq/FD1U3jj/J3MOwqZ2ef8Bv6ZPQlJIYVf62icGa69wS6SI1qBpIFiF14F8PcztRVbKIxLpT4ArCS6nz6FPnyUkqATGSBNPJ). (Press Z on the keyboard to switch to palette.)
 
 The palette can be changed by writing 32bit rgba colors to addresses 0x13000-0x13400.
 
@@ -192,7 +192,7 @@ The integer time in milliseconds can also be read at address 0x40.
 
 ## Text output
 
-The default font can be seen [here](../v0.1pre4#AgKaeeOuwg5gCKvFIeiitEwMpUI2rymEcu+DDB1vMu9uBoufvUxIr4Y5p4Jj2ukoNO4PE7QS5cN1ZyDMCRfSzYIGZxKlN2J6NKEWK7KVPk9wVUgn1Ip+hsMinWgEO8ETKfPuHoIa4kjI+ULFOMad7vd3rt/lh1Vy9w+R2MXG/7T61d3c7C6KY+eQNS0eW3ys4iU8R6SycuWZuuZ2Sg3Qxp826s+Kt+2qBojpzNOSoyFqyrVyYMTKEkSl0BZOj59Cs1hPm5bq0F1MmVhGAzMhW9V4YeAe).
+The default font can be seen [here](../v0.1.0#At/p39+IBnj6ry1TRe7jzVy2A4tXgBvmoW2itzoyF2aM28pGy5QDiKxqrk8l9sbWZLtnAb+jgOfU+9QhpuyCAkhN6gPOU481IUL/df96vNe3h288Dqwhd3sfFpothIVFsMwRK72kW2hiR7zWsaXyy5pNmjR6BJk4piWx9ApT1ZwoUajhk6/zij6itq/FD1U3jj/J3MOwqZ2ef8Bv6ZPQlJIYVf62icGa69wS6SI1qBpIFiF14F8PcztRVbKIxLpT4ArCS6nz6FPnyUkqATGSBNPJ).
 
 The font can be changed by writing 1bpp 8x8 characters to addresses 0x13400-0x13c00.
 
@@ -305,6 +305,27 @@ Options:
 * `-u`, `--uncompressed`: Use the uncompressed `uw8` format for packing.
 * `-l LEVEL`, `--level LEVEL`: Compression level (0-9). Higher compression levels are really slow.
 
+## `uw8 unpack`
+
+Usage:
+
+`uw8 unpack <infile> <outfile>`
+
+Unpacks a MicroW8 module into a standard WebAssembly module.
+
+## `uw8 compile`
+
+Usage:
+
+`uw8 compile [<options>] <infile> <outfile>`
+
+Compiles a [CurlyWas](https://github.com/exoticorn/curlywas) source file to a standard WebAssembly module. Most useful together with
+the `--debug` option to get a module that works well in the Chrome debugger.
+
+Options:
+
+* `-d`, `--debug`: Generate a name section to help debugging
+
 ## `uw8 filter-exports`
 
 Usage:
@@ -393,7 +414,12 @@ using a [custom LZ compression scheme](https://github.com/exoticorn/upkr).
 
 # The web runtime
 
-[...]
+Load carts into the web runtime either by using the "Load cart..." button, or by dragging the file
+onto the screen area.
+
+## Input
+
+For input, you can either use a standard gamepad or keyboard. On a keyboard use the arrow keys and the keys Z, X, A and S to emulate the A, B, X and Y buttons.
 
 ## Video recording
 
@@ -410,3 +436,8 @@ ffmpeg -i IN.webm -vf "scale=960:720:flags=neighbor,pad=1280:720:160:0" -r 60 OU
 ## Screenshot
 
 Pressing F9 opens a download dialog with a screenshot.
+
+## Devkit mode
+
+Append `#devkit` to the web runtime url in order to switch to devkit mode. In devkit mode, standard web assembly modules
+are loaded bypassing the loader, removing all size restrictions. At the same time, the memory limit is increased to 1GB.

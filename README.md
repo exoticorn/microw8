@@ -53,6 +53,21 @@ Options:
 -l LEVEL, --level LEVEL : Compression level (0-9). Higher compression levels are really slow.
 
 
+uw8 unpack <infile> <outfile>
+
+Unpacks a MicroW8 module into a standard WebAssembly module.
+
+
+uw8 compile [<options>] <infile> <outfile>
+
+Compiles a CurlyWas source file to a standard WebAssembly module. Most useful together with
+the --debug option to get a module that works well in the Chrome debugger.
+
+Options:
+
+-d, --debug             : Generate a name section to help debugging
+
+
 uw8 filter-exports <infile> <outfile>
 
 Reads a binary WebAssembly module, removes all exports not used by the MicroW8 platform + everything that is unreachable without those exports and writes the resulting module to <outfile>.

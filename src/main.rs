@@ -20,6 +20,8 @@ fn main() -> Result<()> {
         }
         Some("run") => run(args),
         Some("pack") => pack(args),
+        Some("unpack") => unpack(args),
+        Some("compile") => compile(args),
         Some("filter-exports") => filter_exports(args),
         Some("help") | None => {
             println!("uw8 {}", env!("CARGO_PKG_VERSION"));
@@ -27,6 +29,8 @@ fn main() -> Result<()> {
             println!("Usage:");
             println!("  uw8 run [-t/--timeout <frames>] [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
             println!("  uw8 pack [-u/--uncompressed] [-l/--level] <in-file> <out-file>");
+            println!("  uw8 unpack <in-file> <out-file>");
+            println!("  uw8 compile [-d/--debug] <in-file> <out-file>");
             println!("  uw8 filter-exports <in-wasm> <out-wasm>");
             Ok(())
         }
@@ -162,6 +166,28 @@ fn pack(mut args: Arguments) -> Result<()> {
     let cart = load_cart(&in_file, &Some(pack_config))?;
 
     File::create(out_file)?.write_all(&cart)?;
+
+    Ok(())
+}
+
+fn unpack(mut args: Arguments) -> Result<()> {
+    let in_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
+    let out_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
+    
+    uw8_tool::unpack_file(&in_file, &out_file).into()
+}
+
+fn compile(mut args: Arguments) -> Result<()> {
+    let mut options = curlywas::Options::default();
+    if args.contains(["-d", "--debug"]) {
+        options = options.with_debug();
+    }
+
+    let in_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
+    let out_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
+
+    let module = curlywas::compile_file(in_file, options)?;
+    File::create(out_file)?.write_all(&module)?;
 
     Ok(())
 }
