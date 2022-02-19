@@ -11,8 +11,10 @@ use wasmtime::{
 };
 
 mod filewatcher;
+mod run_web;
 
 pub use filewatcher::FileWatcher;
+pub use run_web::RunWebServer;
 
 static GAMEPAD_KEYS: &'static [Key] = &[
     Key::Up,

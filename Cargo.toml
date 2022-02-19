@@ -15,3 +15,6 @@ curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "196719b" 
 wat = "1"
 uw8-tool = { path = "uw8-tool" }
 same-file = "1"
+warp = "0.3.2"
+tokio = { version = "1.17.0", features = ["sync", "rt"] }
+webbrowser = "0.6.0"

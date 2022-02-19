@@ -1,7 +1,7 @@
 import loaderUrl from "data-url:../../platform/bin/loader.wasm";
 import platformUrl from "data-url:../../platform/bin/platform.uw8";
 
-export default function MicroW8(screen, config) {
+export default function MicroW8(screen, config = {}) {
     let canvasCtx = screen.getContext('2d');
     let imageData = canvasCtx.createImageData(320, 240);
     
@@ -310,5 +310,3 @@ export default function MicroW8(screen, config) {
         setDevkitMode: (m) => devkitMode = m,
     };
 }
-
-this.uw8 = MicroW8;
