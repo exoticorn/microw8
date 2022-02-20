@@ -2,6 +2,13 @@ import loaderUrl from "data-url:../../platform/bin/loader.wasm";
 import platformUrl from "data-url:../../platform/bin/platform.uw8";
 
 export default function MicroW8(screen, config = {}) {
+    if(!config.setMessage) {
+        config.setMessage = (s, e) => {
+            if(e) {
+                console.log('error: ' + e);
+            }
+        }
+    }
     let canvasCtx = screen.getContext('2d');
     let imageData = canvasCtx.createImageData(320, 240);
     

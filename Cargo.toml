@@ -17,4 +17,5 @@ uw8-tool = { path = "uw8-tool" }
 same-file = "1"
 warp = "0.3.2"
 tokio = { version = "1.17.0", features = ["sync", "rt"] }
+tokio-stream = { version = "0.1.8", features = ["sync"] }
 webbrowser = "0.6.0"

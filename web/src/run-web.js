@@ -5,6 +5,7 @@ let events = new EventSource('events');
 events.onmessage = event => {
     console.log(event.data);
     if(event.data == 'L') {
-        uw8.runModuleFromURL('cart');
+        uw8.runModuleFromURL('cart', true);
     }
 };
+uw8.runModuleFromURL('cart', true);

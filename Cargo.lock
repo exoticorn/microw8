@@ -2122,6 +2122,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]
@@ -2320,6 +2321,7 @@ dependencies = [
  "pico-args",
  "same-file",
  "tokio",
+ "tokio-stream",
  "uw8-tool",
  "warp",
  "wasmtime",

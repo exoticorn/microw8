@@ -70,20 +70,20 @@ fn run(mut args: Arguments) -> Result<()> {
 
     let filename = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
 
+    let mut watcher = FileWatcher::builder();
+
+    if watch_mode {
+        watcher.add_file(&filename);
+    }
+
+    let watcher = watcher.build()?;
+
     if !run_browser {
         let mut uw8 = MicroW8::new()?;
 
         if let Some(timeout) = timeout {
             uw8.set_timeout(timeout);
         }
-
-        let mut watcher = FileWatcher::builder();
-
-        if watch_mode {
-            watcher.add_file(&filename);
-        }
-
-        let watcher = watcher.build()?;
 
         if let Err(err) = start_cart(&filename, &mut uw8, &config) {
             eprintln!("Load error: {}", err);
@@ -119,6 +119,14 @@ fn run(mut args: Arguments) -> Result<()> {
         }
 
         loop {
+            if watcher.poll_changed_file()?.is_some() {
+                match load_cart(&filename, &config) {
+                    Ok(cart) => server.load_module(&cart)?,
+                    Err(err) => {
+                        eprintln!("Load error: {}", err);
+                    }
+                }
+            }
             std::thread::sleep(Duration::from_millis(100));
         }
     }
