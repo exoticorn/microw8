@@ -1,0 +1,2 @@
+#!/bin/bash
+rm -rf .parcel-cache && yarn parcel build src/run-web.html && cp dist/run-web.html ../src/
