@@ -1,5 +1,6 @@
 use anyhow::Result;
 use std::{
+    net::SocketAddr,
     sync::{Arc, Mutex},
     thread,
 };
@@ -46,23 +47,43 @@ impl RunWebServer {
                     warp::sse::reply(warp::sse::keep_alive().stream(event_stream(&server_tx)))
                 });
 
-                let server_future =
-                    warp::serve(html.or(cart).or(events)).bind(([127, 0, 0, 1], 3030));
-                println!("Point browser at 127.0.0.1:3030");
-                let _ignore_result = webbrowser::open("http://127.0.0.1:3030");
+                let socket_addr = "127.0.0.1:3030"
+                    .parse::<SocketAddr>()
+                    .expect("Failed to parse socket address");
+
+                let server_future = warp::serve(html.or(cart).or(events)).bind(socket_addr);
+                println!("Point browser at http://{}", socket_addr);
+                let _ignore_result = webbrowser::open(&format!("http://{}", socket_addr));
                 server_future.await
             });
         });
 
         RunWebServer { cart, tx }
     }
+}
 
-    pub fn load_module(&mut self, module_data: &[u8]) -> Result<()> {
+impl super::Runtime for RunWebServer {
+    fn load(&mut self, module_data: &[u8]) -> Result<()> {
         if let Ok(mut lock) = self.cart.lock() {
             lock.clear();
             lock.extend_from_slice(module_data);
         }
         let _ignore_result = self.tx.send(());
         Ok(())
+    }
+
+    fn is_open(&self) -> bool {
+        true
+    }
+
+    fn run_frame(&mut self) -> Result<()> {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        Ok(())
+    }
+}
+
+impl Default for RunWebServer {
+    fn default() -> RunWebServer {
+        RunWebServer::new()
     }
 }
