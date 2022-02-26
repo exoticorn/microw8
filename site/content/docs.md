@@ -47,7 +47,7 @@ Returns the arccosine of `x`.
 
 Returns the arctangent of `x`.
 
-### fn atan2(y: f32, y: f32) -> f32
+### fn atan2(y: f32, x: f32) -> f32
 
 Returns the angle between the point `(x, y)` and the positive x-axis.
 
