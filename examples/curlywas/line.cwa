@@ -1,10 +1,4 @@
-import "env.memory" memory(4);
-
-import "env.cls" fn cls(i32);
-import "env.time" fn time() -> f32;
-import "env.line" fn line(f32, f32, f32, f32, i32);
-import "env.sin" fn sin(f32) -> f32;
-import "env.cos" fn cos(f32) -> f32;
+include "microw8-api.cwa"
 
 export fn upd() {
     cls(0);

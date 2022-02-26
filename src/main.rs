@@ -135,17 +135,15 @@ struct Config {
 }
 
 fn load_cart(filename: &Path, config: &Config) -> Result<Vec<u8>> {
-    let mut cart = vec![];
-    File::open(filename)?.read_to_end(&mut cart)?;
-
-    if cart[0] >= 10 {
-        let src = String::from_utf8(cart)?;
-        cart = if src.chars().find(|c| !c.is_whitespace()) == Some('(') {
-            wat::parse_str(src)?
-        } else {
-            curlywas::compile_str(&src, filename, curlywas::Options::default())?
-        };
-    }
+    let mut cart = match SourceType::of_file(filename)? {
+        SourceType::Binary => {
+            let mut cart = vec![];
+            File::open(filename)?.read_to_end(&mut cart)?;
+            cart
+        }
+        SourceType::Wat => wat::parse_file(filename)?,
+        SourceType::CurlyWas => curlywas::compile_file(filename, curlywas::Options::default())?,
+    };
 
     if let Some(ref pack_config) = config.pack {
         cart = uw8_tool::pack(&cart, pack_config)?;
@@ -157,6 +155,41 @@ fn load_cart(filename: &Path, config: &Config) -> Result<Vec<u8>> {
     }
 
     Ok(cart)
+}
+
+enum SourceType {
+    Binary,
+    Wat,
+    CurlyWas,
+}
+
+impl SourceType {
+    fn of_file(filename: &Path) -> Result<SourceType> {
+        if let Some(extension) = filename.extension() {
+            if extension == "uw8" || extension == "wasm" {
+                return Ok(SourceType::Binary);
+            } else if extension == "wat" || extension == "wast" {
+                return Ok(SourceType::Wat);
+            } else if extension == "cwa" {
+                return Ok(SourceType::CurlyWas);
+            }
+        }
+
+        let mut cart = vec![];
+        File::open(filename)?.read_to_end(&mut cart)?;
+
+        let ty = if cart[0] < 10 {
+            SourceType::Binary
+        } else {
+            let src = String::from_utf8(cart)?;
+            if src.chars().find(|&c| !c.is_whitespace() && c != ';') == Some('(') {
+                SourceType::Wat
+            } else {
+                SourceType::CurlyWas
+            }
+        };
+        Ok(ty)
+    }
 }
 
 #[cfg(any(feature = "native", feature = "browser"))]

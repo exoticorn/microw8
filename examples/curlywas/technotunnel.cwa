@@ -1,7 +1,4 @@
-import "env.memory" memory(4);
-import "env.sin" fn sin(f32) -> f32;
-import "env.time" fn time() -> f32;
-import "env.setPixel" fn setPixel(i32, i32, i32);
+include "microw8-api.cwa"
 
 export fn upd() {
     let x: i32;

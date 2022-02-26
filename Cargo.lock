@@ -238,9 +238,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chumsky"
-version = "0.5.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2d3efff85e8572b1c3fa0127706af58c4fff8458f8d9436d54b1e97573c7a3f"
+checksum = "8d02796e4586c6c41aeb68eae9bfb4558a522c35f1430c14b40136c3706e09e4"
 dependencies = [
  "ahash",
 ]
@@ -498,14 +498,14 @@ checksum = "b365fabc795046672053e29c954733ec3b05e4be654ab130fe8f1f94d7051f35"
 [[package]]
 name = "curlywas"
 version = "0.1.0"
-source = "git+https://github.com/exoticorn/curlywas.git?rev=196719b#196719b35ef377cb7e001554b27ac5de013dcf2b"
+source = "git+https://github.com/exoticorn/curlywas.git?rev=cda3eb868bc1aaa837c4d36898d0e885ee8fce59#cda3eb868bc1aaa837c4d36898d0e885ee8fce59"
 dependencies = [
  "anyhow",
  "ariadne",
  "chumsky",
  "pico-args",
- "wasm-encoder",
- "wasmparser 0.81.0",
+ "wasm-encoder 0.10.0",
+ "wasmparser 0.83.0",
 ]
 
 [[package]]
@@ -2338,7 +2338,7 @@ dependencies = [
  "pico-args",
  "upkr",
  "walrus",
- "wasm-encoder",
+ "wasm-encoder 0.8.0",
  "wasmparser 0.81.0",
 ]
 
@@ -2507,6 +2507,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-encoder"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa9d9bf45fc46f71c407837c9b30b1e874197f2dc357588430b21e5017d290ab"
+dependencies = [
+ "leb128",
+]
+
+[[package]]
 name = "wasmparser"
 version = "0.77.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2523,6 +2532,12 @@ name = "wasmparser"
 version = "0.81.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98930446519f63d00a836efdc22f67766ceae8dbcc1571379f2bcabc6b2b9abc"
+
+[[package]]
+name = "wasmparser"
+version = "0.83.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "718ed7c55c2add6548cca3ddd6383d738cd73b892df400e96b9aa876f0141d7a"
 
 [[package]]
 name = "wasmtime"

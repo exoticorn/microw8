@@ -1,38 +1,30 @@
-import "env.memory" memory(4);
-
-import "env.cls" fn cls(i32);
-import "env.printString" fn printString(i32);
-import "env.printChar" fn printChar(i32);
-import "env.setCursorPosition" fn setCursor(i32, i32);
-import "env.setTextColor" fn setTextColor(i32);
-import "env.line" fn line(f32, f32, f32, f32, i32);
-import "env.isButtonTriggered" fn triggered(i32) -> i32;
+include "microw8-api.cwa"
 
 global mut mode: i32 = 0;
 
 export fn upd() {
     cls(0);
 
-    if triggered(4) {
+    if isButtonTriggered(BUTTON_A) {
         mode = !mode;
     }
 
     setTextColor(15);
-    printString(mode * 0x20000);
+    printString(mode * USER_MEM);
 
     let y: i32;
     loop y {
         line(0 as f32, (y * 9 + 39) as f32, (14+16*9) as f32, (y * 9 + 39) as f32, 1);
         line((y * 9 + 15) as f32, 24 as f32, (y * 9 + 15) as f32, (38+16*9) as f32, 1);
         setTextColor(15);
-        setCursor(y * 9 + 16, 24);
+        setCursorPosition(y * 9 + 16, 24);
         let lazy hexChar = select(y < 10, y + 48, y + 87);
         printChar(hexChar);
-        setCursor(0, y * 9 + 24+16);
+        setCursorPosition(0, y * 9 + 24+16);
         printChar(hexChar);
         let x = 0;
         loop x {
-            setCursor(x * 9 + 16, y * 9 + 24+16);
+            setCursorPosition(x * 9 + 16, y * 9 + 24+16);
             setTextColor(select(mode, x + y * 16, -9));
             if y >= 2 | mode {
                 printChar(select(mode, 0xa4, x + y * 16));
@@ -47,6 +39,6 @@ data 0 {
     "Default font:      (press " i8(0xcc) " for palette)" i8(5, 0)
 }
 
-data 0x20000 {
+data USER_MEM {
     "Default palette:   (press " i8(0xcc) " for font)" i8(5, 0)
 }

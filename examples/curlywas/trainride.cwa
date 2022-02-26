@@ -1,7 +1,4 @@
-import "env.memory" memory(2);
-
-import "env.fmod" fn fmod(f32, f32) -> f32;
-import "env.time" fn time() -> f32;
+include "microw8-api.cwa"
 
 export fn upd() {
   let i: i32;

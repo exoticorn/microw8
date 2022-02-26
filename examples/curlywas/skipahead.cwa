@@ -1,12 +1,4 @@
-import "env.memory" memory(4);
-
-import "env.rectangle" fn rect(f32, f32, f32, f32, i32);
-import "env.circle" fn circle(f32, f32, f32, i32);
-import "env.isButtonPressed" fn btn(i32) -> i32;
-import "env.random" fn random() -> i32;
-import "env.randomSeed" fn randomSeed(i32);
-import "env.cls" fn cls(i32);
-import "env.printInt" fn printInt(i32);
+include "microw8-api.cwa"
 
 global mut pz: i32 = 4;
 global mut px: f32 = 2.0;
@@ -19,7 +11,7 @@ export fn upd() {
     let inline zero = 0.0;
 
     let lazy control_speed = 0.03125;
-    s = s + 0.1875 - (f + control_speed) * btn(4 <| cls(4)) as f32;
+    s = s + 0.1875 - (f + control_speed) * isButtonPressed(4 <| cls(4)) as f32;
     f = f * 0.5625;
 
     printInt(pz);
@@ -33,8 +25,8 @@ export fn upd() {
         
         let inline c = (z & 1) * -2;
         let inline yf = y as f32;
-        rect(rx, yf, rw, yf / 6 as f32, c + 1);
-        rect(rx, yf, rw, 1 as f32, c - 4);
+        rectangle(rx, yf, rw, yf / 6 as f32, c + 1);
+        rectangle(rx, yf, rw, 1 as f32, c - 4);
 
         if y == 180 & py > zero {
             if x > w | x < zero {
@@ -51,7 +43,7 @@ export fn upd() {
     circle(160 as f32, 160 as f32 + py, 22 as f32, -28);
     circle((160 - 6) as f32, (160 - 6) as f32 + py, 6 as f32, -26);
 
-    px = px + (btn(3) - btn(2)) as f32 * control_speed;
+    px = px + (isButtonPressed(3) - isButtonPressed(2)) as f32 * control_speed;
     py = py + s;
     pz = pz + 1;
 }

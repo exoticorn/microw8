@@ -291,7 +291,7 @@ impl BaseModule {
 
     pub fn write_as_cwa<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         fn inner(mut file: File, base: &BaseModule) -> Result<()> {
-            writeln!(file, ";; MicroW8 APIs, to be `include`d in CurlyWas sources")?;
+            writeln!(file, "// MicroW8 APIs, to be `include`d in CurlyWas sources")?;
             writeln!(file, "import \"env.memory\" memory({});", base.memory)?;
             writeln!(file)?;
             for &(module, ref name, type_id) in &base.function_imports {
