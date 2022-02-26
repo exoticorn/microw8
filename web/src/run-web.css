@@ -1,0 +1,46 @@
+html, body, canvas {
+    padding: 0;
+    margin: 0;
+    background-color: #202024;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    height: 100%;
+    display: grid;
+    grid-template-rows: 1fr;
+}
+
+#screen {
+    align-self: center;
+    justify-self: center;
+    image-rendering: pixelated;
+    border: 4px solid #303040;
+}
+
+#message {
+    position: absolute;
+    width: calc(100% - 16px);
+    background-color: rgba(0, 0, 0, 0.4);
+    color: #c64;
+    padding: 8px;
+    font: bold 12pt sans-serif;
+    z-index: 2;
+}
+
+@media (min-width: 648px) and (min-height: 488px) {
+    #screen {
+        width: 640px;
+        height: 480px;
+    }
+}
+
+@media (min-width: 968px) and (min-height: 728px) {
+    #screen {
+        width: 960px;
+        height: 720px;
+    }
+}
