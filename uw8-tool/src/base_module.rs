@@ -71,26 +71,100 @@ impl BaseModule {
         add_function(&mut functions, &type_map, "randomSeed", &[I32], None);
 
         add_function(&mut functions, &type_map, "cls", &[I32], None);
-        add_function(&mut functions, &type_map, "setPixel", &[I32, I32, I32], None);
-        add_function(&mut functions, &type_map, "getPixel", &[I32, I32], Some(I32));
-        add_function(&mut functions, &type_map, "hline", &[I32, I32, I32, I32], None);
-        add_function(&mut functions, &type_map, "rectangle", &[F32, F32, F32, F32, I32], None);
-        add_function(&mut functions, &type_map, "circle", &[F32, F32, F32, I32], None);
-        add_function(&mut functions, &type_map, "line", &[F32, F32, F32, F32, I32], None);
+        add_function(
+            &mut functions,
+            &type_map,
+            "setPixel",
+            &[I32, I32, I32],
+            None,
+        );
+        add_function(
+            &mut functions,
+            &type_map,
+            "getPixel",
+            &[I32, I32],
+            Some(I32),
+        );
+        add_function(
+            &mut functions,
+            &type_map,
+            "hline",
+            &[I32, I32, I32, I32],
+            None,
+        );
+        add_function(
+            &mut functions,
+            &type_map,
+            "rectangle",
+            &[F32, F32, F32, F32, I32],
+            None,
+        );
+        add_function(
+            &mut functions,
+            &type_map,
+            "circle",
+            &[F32, F32, F32, I32],
+            None,
+        );
+        add_function(
+            &mut functions,
+            &type_map,
+            "line",
+            &[F32, F32, F32, F32, I32],
+            None,
+        );
 
         add_function(&mut functions, &type_map, "time", &[], Some(F32));
-        add_function(&mut functions, &type_map, "isButtonPressed", &[I32], Some(I32));
-        add_function(&mut functions, &type_map, "isButtonTriggered", &[I32], Some(I32));
+        add_function(
+            &mut functions,
+            &type_map,
+            "isButtonPressed",
+            &[I32],
+            Some(I32),
+        );
+        add_function(
+            &mut functions,
+            &type_map,
+            "isButtonTriggered",
+            &[I32],
+            Some(I32),
+        );
 
         add_function(&mut functions, &type_map, "printChar", &[I32], None);
         add_function(&mut functions, &type_map, "printString", &[I32], None);
         add_function(&mut functions, &type_map, "printInt", &[I32], None);
         add_function(&mut functions, &type_map, "setTextColor", &[I32], None);
-        add_function(&mut functions, &type_map, "setBackgroundColor", &[I32], None);
-        add_function(&mut functions, &type_map, "setCursorPosition", &[I32, I32], None);
+        add_function(
+            &mut functions,
+            &type_map,
+            "setBackgroundColor",
+            &[I32],
+            None,
+        );
+        add_function(
+            &mut functions,
+            &type_map,
+            "setCursorPosition",
+            &[I32, I32],
+            None,
+        );
 
-        add_function(&mut functions, &type_map, "rectangle_outline", &[F32, F32, F32, F32, I32], None);
-        add_function(&mut functions, &type_map, "circle_outline", &[F32, F32, F32, I32], None);
+        add_function(
+            &mut functions,
+            &type_map,
+            "rectangle_outline",
+            &[F32, F32, F32, F32, I32],
+            None,
+        );
+        add_function(
+            &mut functions,
+            &type_map,
+            "circle_outline",
+            &[F32, F32, F32, I32],
+            None,
+        );
+
+        add_function(&mut functions, &type_map, "exp", &[F32], Some(F32));
 
         for i in functions.len()..64 {
             add_function(
@@ -214,6 +288,68 @@ impl BaseModule {
         File::create(path)?.write_all(&data)?;
         Ok(())
     }
+
+    pub fn write_as_cwa<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        fn inner(mut file: File, base: &BaseModule) -> Result<()> {
+            writeln!(file, ";; MicroW8 APIs, to be `include`d in CurlyWas sources")?;
+            writeln!(file, "import \"env.memory\" memory({});", base.memory)?;
+            writeln!(file)?;
+            for &(module, ref name, type_id) in &base.function_imports {
+                if !name.contains("reserved") {
+                    let ty = &base.types[type_id as usize];
+                    let params: Vec<&str> = ty.params.iter().copied().map(type_to_str).collect();
+                    write!(
+                        file,
+                        "import \"{}.{}\" fn {}({})",
+                        module,
+                        name,
+                        name,
+                        params.join(", ")
+                    )?;
+                    if let Some(result) = ty.result {
+                        write!(file, " -> {}", type_to_str(result))?;
+                    }
+                    writeln!(file, ";")?;
+                }
+            }
+
+            writeln!(file)?;
+            for &(name, value) in CONSTANTS {
+                writeln!(file, "const {} = 0x{:x};", name, value)?;
+            }
+            Ok(())
+        }
+        inner(File::create(path)?, self)
+    }
+
+    pub fn write_as_wat<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        fn inner(mut file: File, base: &BaseModule) -> Result<()> {
+            writeln!(file, ";; MicroW8 APIs, in WAT (Wasm Text) format")?;
+            writeln!(file, "(import \"env\" \"memory\" (memory {}))", base.memory)?;
+            writeln!(file)?;
+            for &(module, ref name, type_id) in &base.function_imports {
+                if !name.contains("reserved") {
+                    let ty = &base.types[type_id as usize];
+                    write!(file, "(import \"{}\" \"{}\" (func ${}", module, name, name)?;
+                    for &param in &ty.params {
+                        write!(file, " (param {})", type_to_str(param))?;
+                    }
+                    if let Some(result) = ty.result {
+                        write!(file, " (result {})", type_to_str(result))?;
+                    }
+                    writeln!(file, "))")?;
+                }
+            }
+
+            writeln!(file)?;
+            writeln!(file, ";; to use defines, include this file with a preprocessor\n;; like gpp (https://logological.org/gpp).")?;
+            for &(name, value) in CONSTANTS {
+                writeln!(file, "#define {} 0x{:x};", name, value)?;
+            }
+            Ok(())
+        }
+        inner(File::create(path)?, self)
+    }
 }
 
 fn add_function(
@@ -241,3 +377,30 @@ fn lookup_type(
     };
     *type_map.get(&key).unwrap()
 }
+
+fn type_to_str(ty: ValType) -> &'static str {
+    match ty {
+        ValType::I32 => "i32",
+        ValType::I64 => "i64",
+        ValType::F32 => "f32",
+        ValType::F64 => "f64",
+        _ => unimplemented!(),
+    }
+}
+
+const CONSTANTS: &[(&str, u32)] = &[
+    ("TIME_MS", 0x40),
+    ("GAMEPAD", 0x44),
+    ("FRAMEBUFFER", 0x78),
+    ("PALETTE", 0x13000),
+    ("FONT", 0x13400),
+    ("USER_MEM", 0x14000),
+    ("BUTTON_UP", 0),
+    ("BUTTON_DOWN", 1),
+    ("BUTTON_LEFT", 2),
+    ("BUTTON_RIGHT", 3),
+    ("BUTTON_A", 4),
+    ("BUTTON_B", 5),
+    ("BUTTON_X", 6),
+    ("BUTTON_Y", 7)
+];

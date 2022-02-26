@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use uw8_tool::BaseModule;
 use pico_args::Arguments;
+use uw8_tool::BaseModule;
 
 fn main() -> Result<()> {
     let mut args = Arguments::from_env();
@@ -31,6 +31,14 @@ fn main() -> Result<()> {
                 let source: PathBuf = args.free_from_str()?;
                 let dest: PathBuf = args.free_from_str()?;
                 uw8_tool::filter_exports(&source, &dest)?;
+            }
+            "base-cwa" => {
+                let path: PathBuf = args.free_from_str()?;
+                BaseModule::for_format_version(1)?.write_as_cwa(path)?;
+            }
+            "base-wat" => {
+                let path: PathBuf = args.free_from_str()?;
+                BaseModule::for_format_version(1)?.write_as_wat(path)?;
             }
             _ => {
                 eprintln!("Unknown subcommand '{}'", cmd);
