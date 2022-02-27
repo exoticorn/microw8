@@ -77,13 +77,7 @@ fn run(mut args: Arguments) -> Result<()> {
 
     let filename = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
 
-    let mut watcher = uw8::FileWatcher::builder();
-
-    if watch_mode {
-        watcher.add_file(&filename);
-    }
-
-    let watcher = watcher.build()?;
+    let mut watcher = uw8::FileWatcher::new()?;
 
     use std::process::exit;
 
@@ -103,18 +97,26 @@ fn run(mut args: Arguments) -> Result<()> {
         runtime.set_timeout(timeout);
     }
 
-    if let Err(err) = start_cart(&filename, &mut *runtime, &config) {
-        eprintln!("Load error: {}", err);
-        if !watch_mode {
-            exit(1);
-        }
-    }
+    let mut first_run = true;
 
     while runtime.is_open() {
-        if watcher.poll_changed_file()?.is_some() {
-            if let Err(err) = start_cart(&filename, &mut *runtime, &config) {
-                eprintln!("Load error: {}", err);
+        if first_run || watcher.poll_changed_file()?.is_some() {
+            match start_cart(&filename, &mut *runtime, &config) {
+                Ok(dependencies) => {
+                    if watch_mode {
+                        for dep in dependencies {
+                            watcher.add_file(dep)?;
+                        }
+                    }
+                }
+                Err(err) => {
+                    eprintln!("Load error: {}", err);
+                    if !watch_mode {
+                        exit(1);
+                    }
+                }
             }
+            first_run = false;
         }
 
         if let Err(err) = runtime.run_frame() {
@@ -134,15 +136,25 @@ struct Config {
     output_path: Option<PathBuf>,
 }
 
-fn load_cart(filename: &Path, config: &Config) -> Result<Vec<u8>> {
+fn load_cart(filename: &Path, config: &Config) -> Result<(Vec<u8>, Vec<PathBuf>)> {
+    let mut dependencies = Vec::new();
     let mut cart = match SourceType::of_file(filename)? {
         SourceType::Binary => {
             let mut cart = vec![];
             File::open(filename)?.read_to_end(&mut cart)?;
+            dependencies.push(filename.to_path_buf());
             cart
         }
-        SourceType::Wat => wat::parse_file(filename)?,
-        SourceType::CurlyWas => curlywas::compile_file(filename, curlywas::Options::default())?,
+        SourceType::Wat => {
+            let cart = wat::parse_file(filename)?;
+            dependencies.push(filename.to_path_buf());
+            cart
+        }
+        SourceType::CurlyWas => {
+            let module = curlywas::compile_file(filename, curlywas::Options::default())?;
+            dependencies = module.dependencies;
+            module.wasm
+        }
     };
 
     if let Some(ref pack_config) = config.pack {
@@ -154,7 +166,7 @@ fn load_cart(filename: &Path, config: &Config) -> Result<Vec<u8>> {
         File::create(path)?.write_all(&cart)?;
     }
 
-    Ok(cart)
+    Ok((cart, dependencies))
 }
 
 enum SourceType {
@@ -193,14 +205,14 @@ impl SourceType {
 }
 
 #[cfg(any(feature = "native", feature = "browser"))]
-fn start_cart(filename: &Path, runtime: &mut dyn Runtime, config: &Config) -> Result<()> {
+fn start_cart(filename: &Path, runtime: &mut dyn Runtime, config: &Config) -> Result<Vec<PathBuf>> {
     let cart = load_cart(filename, config)?;
 
-    if let Err(err) = runtime.load(&cart) {
+    if let Err(err) = runtime.load(&cart.0) {
         eprintln!("Load error: {}", err);
         Err(err)
     } else {
-        Ok(())
+        Ok(cart.1)
     }
 }
 
@@ -219,7 +231,7 @@ fn pack(mut args: Arguments) -> Result<()> {
 
     let out_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
 
-    let cart = load_cart(
+    let (cart, _) = load_cart(
         &in_file,
         &Config {
             pack: Some(pack_config),
@@ -249,7 +261,7 @@ fn compile(mut args: Arguments) -> Result<()> {
     let out_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
 
     let module = curlywas::compile_file(in_file, options)?;
-    File::create(out_file)?.write_all(&module)?;
+    File::create(out_file)?.write_all(&module.wasm)?;
 
     Ok(())
 }

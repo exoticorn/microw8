@@ -1,23 +1,38 @@
-use anyhow::{bail, Result};
-use notify::{DebouncedEvent, Watcher, RecommendedWatcher};
-use std::{
-    collections::BTreeSet,
-    path::{Path, PathBuf},
-    sync::mpsc,
-    time::Duration,
-};
+use anyhow::{anyhow, bail, Result};
+use notify::{DebouncedEvent, RecommendedWatcher, Watcher};
+use std::{collections::BTreeSet, path::PathBuf, sync::mpsc, time::Duration};
 
 pub struct FileWatcher {
-    _watcher: RecommendedWatcher,
+    watcher: RecommendedWatcher,
     watched_files: BTreeSet<PathBuf>,
+    directories: BTreeSet<PathBuf>,
     rx: mpsc::Receiver<DebouncedEvent>,
 }
 
-pub struct FileWatcherBuilder(BTreeSet<PathBuf>);
-
 impl FileWatcher {
-    pub fn builder() -> FileWatcherBuilder {
-        FileWatcherBuilder(BTreeSet::new())
+    pub fn new() -> Result<FileWatcher> {
+        let (tx, rx) = mpsc::channel();
+        let watcher = notify::watcher(tx, Duration::from_millis(100))?;
+        Ok(FileWatcher {
+            watcher,
+            watched_files: BTreeSet::new(),
+            directories: BTreeSet::new(),
+            rx,
+        })
+    }
+
+    pub fn add_file<P: Into<PathBuf>>(&mut self, path: P) -> Result<()> {
+        let path = path.into();
+        let parent = path.parent().ok_or_else(|| anyhow!("File has no parent"))?;
+
+        if !self.directories.contains(parent) {
+            self.watcher
+                .watch(parent, notify::RecursiveMode::NonRecursive)?;
+            self.directories.insert(parent.to_path_buf());
+        }
+
+        self.watched_files.insert(path);
+        Ok(())
     }
 
     pub fn poll_changed_file(&self) -> Result<Option<PathBuf>> {
@@ -36,35 +51,5 @@ impl FileWatcher {
         }
 
         Ok(None)
-    }
-}
-
-impl FileWatcherBuilder {
-    pub fn add_file<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
-        self.0.insert(path.into());
-        self
-    }
-
-    pub fn build(self) -> Result<FileWatcher> {
-        let mut directories: BTreeSet<&Path> = BTreeSet::new();
-
-        for file in &self.0 {
-            if let Some(directory) = file.parent() {
-                directories.insert(directory);
-            }
-        }
-
-        let (tx, rx) = mpsc::channel();
-        let mut watcher = notify::watcher(tx, Duration::from_millis(100))?;
-
-        for directory in directories {
-            watcher.watch(directory, notify::RecursiveMode::NonRecursive)?;
-        }
-
-        Ok(FileWatcher {
-            _watcher: watcher,
-            watched_files: self.0,
-            rx,
-        })
     }
 }
