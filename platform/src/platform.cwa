@@ -256,6 +256,11 @@ export fn line(x1: f32, y1: f32, x2: f32, y2: f32, col: i32) {
         p = y1;
     }
 
+    if max_axis == 0 as f32 {
+        setPixel(x1 as i32, y1 as i32, col);
+        return;
+    }
+
     let steps = floor(p + max_axis) as i32 - floor(p) as i32;
     p = floor(p) + 0.5 - p;
     if max_axis < 0 as f32 {
@@ -267,7 +272,7 @@ export fn line(x1: f32, y1: f32, x2: f32, y2: f32, col: i32) {
     dy = dy / max_axis;
 
     let f = min(max_axis, max(0 as f32, p));
-    setPixel((x1 + f * dx) as i32, (y1 + f * dy) as i32, col);
+    setPixel(i32.trunc_sat_f32_s(x1 + f * dx), i32.trunc_sat_f32_s(y1 + f * dy), col);
 
     if !steps {
         return;
@@ -280,7 +285,7 @@ export fn line(x1: f32, y1: f32, x2: f32, y2: f32, col: i32) {
 
     loop pixels {
         if steps := steps - 1 {
-            setPixel(x1 as i32, y1 as i32, col);
+            setPixel(i32.trunc_sat_f32_s(x1), i32.trunc_sat_f32_s(y1), col);
             x1 = x1 + dx;
             y1 = y1 + dy;
             branch pixels;
@@ -288,7 +293,7 @@ export fn line(x1: f32, y1: f32, x2: f32, y2: f32, col: i32) {
     }
 
     f = min(max_axis, p) - p;
-    setPixel((x1 + f * dx) as i32, (y1 + f * dy) as i32, col);
+    setPixel(i32.trunc_sat_f32_s(x1 + f * dx), i32.trunc_sat_f32_s(y1 + f * dy), col);
 }
 
 //////////

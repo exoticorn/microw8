@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-curlywas = { git="https://github.com/exoticorn/curlywas.git", rev="196719b" }
+curlywas = { git="https://github.com/exoticorn/curlywas.git", rev="89638565" }
 uw8-tool = { path="../uw8-tool" }
 anyhow = "1"
 lodepng = "3.4"
