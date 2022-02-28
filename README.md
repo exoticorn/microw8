@@ -15,9 +15,9 @@ See [here](https://exoticorn.github.io/microw8/) for more information and docs.
 
 ## Downloads
 
-* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.1.0/microw8-0.1.0-linux.tgz)
-* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.1.0/microw8-0.1.0-macos.tgz)
-* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.1.0/microw8-0.1.0-windows.zip)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.1.2/microw8-0.1.2-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.1.2/microw8-0.1.2-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.1.2/microw8-0.1.2-windows.zip)
 
 The download includes
 
@@ -35,6 +35,7 @@ Runs <file> which can be a binary WebAssembly module, an `.uw8` cart, a wat (Web
 
 Options:
 
+-b, --browser           : Run in browser instead of using native runtime
 -t, --timeout FRAMES    : Sets the timeout in frames (1/60s)
 -w, --watch             : Reloads the given file every time it changes on disk.
 -p, --pack              : Pack the file into an .uw8 cart before running it and print the resulting size.
