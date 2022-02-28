@@ -1,4 +1,4 @@
-include "microw8-api.cwa"
+include "../include/microw8-api.cwa"
 
 global mut mode: i32 = 0;
 

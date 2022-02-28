@@ -36,6 +36,8 @@ for dir in build/*; do
         cp $example $dir/examples
     done
 
+    cp -r ../examples/include $dir/include
+
     mkdir $dir/carts
     for example in $dir/examples/*; do
         build/microw8-linux/uw8 pack -l 9 $example $dir/carts/$(basename ${example%.*}).uw8
