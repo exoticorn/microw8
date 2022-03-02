@@ -11,7 +11,7 @@ native = ["wasmtime"]
 browser = ["warp", "tokio", "tokio-stream", "webbrowser"]
 
 [dependencies]
-wasmtime = { version = "0.30", optional = true }
+wasmtime = { version = "0.34", optional = true }
 anyhow = "1"
 minifb = { version = "0.20", default-features = false, features = ["x11"] }
 notify = "4"
