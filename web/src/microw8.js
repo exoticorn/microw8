@@ -1,5 +1,15 @@
 import loaderUrl from "data-url:../../platform/bin/loader.wasm";
 import platformUrl from "data-url:../../platform/bin/platform.uw8";
+import audioWorkletUrl from "data-url:./audiolet.js";
+
+class AudioNode extends AudioWorkletNode {
+    constructor(context) {
+        super(context, 'apu', {outputChannelCount: [2]});
+    }
+}
+
+let U8 = (d) => new Uint8Array(d);
+let U32 = (d) => new Uint32Array(d);
 
 export default function MicroW8(screen, config = {}) {
     if(!config.setMessage) {
@@ -17,9 +27,6 @@ export default function MicroW8(screen, config = {}) {
     let cancelFunction;
     
     let currentData;
-    
-    let U8 = (d) => new Uint8Array(d);
-    let U32 = (d) => new Uint32Array(d);
     
     let pad = 0;
     let keyboardElement = config.keyboardElement == undefined ? screen : config.keyboardElement;
@@ -90,6 +97,16 @@ export default function MicroW8(screen, config = {}) {
             cancelFunction = null;
         }
     
+        let audioContext = new AudioContext({sampleRate: 44100});
+        let keepRunning = true;
+        cancelFunction = () => {
+            audioContext.close();
+            keepRunning = false;
+        }
+
+        await audioContext.audioWorklet.addModule(audioWorkletUrl);
+        let audioNode = new AudioNode(audioContext);
+
         let cartridgeSize = data.byteLength;
     
         config.setMessage(cartridgeSize);
@@ -119,7 +136,7 @@ export default function MicroW8(screen, config = {}) {
             if(!devkitMode) {
                 memSize.maximum = 4;
             }
-            let memory = new WebAssembly.Memory({ initial: 4, maximum: devkitMode ? 16 : 4 });
+            let memory = new WebAssembly.Memory(memSize);
             let memU8 = U8(memory.buffer);
     
             let importObject = {
@@ -142,9 +159,9 @@ export default function MicroW8(screen, config = {}) {
     
             let instantiate = async (data) => (await WebAssembly.instantiate(data, importObject)).instance;
     
-            let loadModuleURL = async (url) => instantiate(loadModuleData(await (await fetch(url)).arrayBuffer()));
+            let loadModuleURL = async (url) => loadModuleData(await (await fetch(url)).arrayBuffer());
     
-            loader = await loadModuleURL(loaderUrl);
+            loader = await instantiate(await loadModuleURL(loaderUrl));
     
             for (let n of ['acos', 'asin', 'atan', 'atan2', 'cos', 'exp', 'log', 'sin', 'tan', 'pow']) {
                 importObject.env[n] = Math[n];
@@ -160,7 +177,10 @@ export default function MicroW8(screen, config = {}) {
     
             data = loadModuleData(data);
     
-            let platform_instance = await loadModuleURL(platformUrl);
+            let platform_data = await loadModuleURL(platformUrl);
+            audioNode.port.postMessage([platform_data, data]);
+
+            let platform_instance = await instantiate(platform_data);
     
             for (let name in platform_instance.exports) {
                 importObject.env[name] = platform_instance.exports[name]
@@ -172,11 +192,10 @@ export default function MicroW8(screen, config = {}) {
     
             let startTime = Date.now();
     
-            let keepRunning = true;
-            cancelFunction = () => keepRunning = false;
-    
             const timePerFrame = 1000 / 60;
             let nextFrame = startTime;
+
+            audioNode.connect(audioContext.destination);
     
             function mainloop() {
                 if (!keepRunning) {
@@ -216,7 +235,9 @@ export default function MicroW8(screen, config = {}) {
                         let u32Mem = U32(memory.buffer);
                         u32Mem[16] = now - startTime;
                         u32Mem[17] = pad | gamepad;
-                        instance.exports.upd();
+                        if(instance.exports.upd) {
+                            instance.exports.upd();
+                        }
                         platform_instance.exports.endFrame();
     
                         let palette = U32(memory.buffer.slice(0x13000, 0x13000 + 1024));

@@ -1,10 +1,8 @@
 include "../include/microw8-api.cwa"
 
-export fn upd() {}
-
 export fn snd(index: i32) -> f32 {
-    let inline saw = index & 255;
-    let inline env = (-index #>> 9) & 255;
+    let inline saw = index;
+    let inline env = (-index #>> 9);
     let inline sample = saw & env;
-    sample as f32 / 255 as f32 - 0.5
+    (sample & 255) as f32 / 255 as f32 - 0.5
 }

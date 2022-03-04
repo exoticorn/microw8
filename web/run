@@ -1,0 +1,2 @@
+#!/bin/bash
+rm -rf .parcel-cache && yarn parcel src/index.html
