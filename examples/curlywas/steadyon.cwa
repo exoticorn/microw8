@@ -1,0 +1,27 @@
+// Steady On Tim, It's Only A Budget Game
+// by Gasman / Hooy-Program
+// ported to MicroW8 by exoticorn/icebird
+
+include "../include/microw8-api.cwa"
+
+fn melody(t: i32, T: i32) -> i32 {
+    let lazy b=(T&31)-16;
+    if b < 0 {
+        b = -b;
+    }
+    let lazy K = 1.0 + ((1-((T>>5)&3))%2-1) as f32 / 6.0;
+    let inline arpeggio = ((t as f32 * pow(2.0, ((((0x85>>(t/2000%3*4)) & 15) - 1) as f32 / 12.0 + K))) as i32 & 128) * (!!(T>>8) * (12-T%12)) / 12;
+    let inline melody = (t as f32 * pow(2.0, K+(b/5) as f32 - (((5514>>(b%select(T>>9, 4, 5)*4)&15) as f32) / 12.0))) as i32 & 128;
+    arpeggio +
+    melody
+}
+
+export fn snd(sample: i32) -> f32 {
+    let lazy t = sample / 2;
+    let lazy T = t/5000;
+    let inline mel_arp = melody(t, T)/3 + melody(t, T-3)/5;
+    let inline bass = !!(T>>7) * ((t as f32 * pow(2.0, ((!!(T & 4) * ((T & 7) - 1)) as f32 / 6.0 - 4.0))) as i32 & 63) * ((197 >> (T % 8)) & 1);
+    let inline snare_ish = (random() & 31) * (8 - (T + 4) % 8) / 8;
+    let inline sample = mel_arp + bass + snare_ish;
+    (sample & 255) as f32 / 255 as f32 - 0.5
+}

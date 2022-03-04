@@ -1,8 +1,0 @@
-include "../include/microw8-api.cwa"
-
-export fn snd(index: i32) -> f32 {
-    let inline saw = index;
-    let inline env = (-index #>> 9);
-    let inline sample = saw & env;
-    (sample & 255) as f32 / 255 as f32 - 0.5
-}
