@@ -5,23 +5,34 @@
 include "../include/microw8-api.cwa"
 
 fn melody(t: i32, T: i32) -> i32 {
-    let lazy b=(T&31)-16;
-    if b < 0 {
-        b = -b;
-    }
-    let lazy K = 1.0 + ((1-((T>>5)&3))%2-1) as f32 / 6.0;
-    let inline arpeggio = ((t as f32 * pow(2.0, ((((0x85>>(t/2000%3*4)) & 15) - 1) as f32 / 12.0 + K))) as i32 & 128) * (!!(T>>8) * (12-T%12)) / 12;
-    let inline melody = (t as f32 * pow(2.0, K+(b/5) as f32 - (((5514>>(b%select(T>>9, 4, 5)*4)&15) as f32) / 12.0))) as i32 & 128;
-    arpeggio +
-    melody
+    let lazy riff_pos = select(T & 16, (T&31) - 16, 16 - (T&31));
+    let lazy shift = ((1-((T>>5)&3))%2-1) as f32 / 6 as f32;
+
+    let inline note_count = select(T>>9, 4, 5);
+    let inline octave = (riff_pos/5) as f32;
+    let inline riff_note = 5514 >> (riff_pos % note_count * 4) & 15;
+    let inline melody_freq = pow(2 as f32, shift + octave - ((riff_note as f32) / 12 as f32));
+    let inline melody = (t as f32 * melody_freq) as i32 & 128;
+    
+    let inline arp_note = ((0x85>>((t>>12)%3*4)) & 15) - 1;
+    let inline arp_freq = pow(2 as f32, shift + (arp_note as f32 / 12 as f32));
+    let inline arp_vol = (T >= 256) * (12-T%12);
+    let inline arpeggio = ((t as f32 * arp_freq) as i32 & 128) * arp_vol / 12;
+    
+    melody + arpeggio
 }
 
-export fn snd(sample: i32) -> f32 {
-    let lazy t = sample / 2;
-    let lazy T = t/5000;
+export fn snd(t: i32) -> f32 {
+    let lazy T = t/10000;
+    
     let inline mel_arp = melody(t, T)/3 + melody(t, T-3)/5;
-    let inline bass = !!(T>>7) * ((t as f32 * pow(2.0, ((!!(T & 4) * ((T & 7) - 1)) as f32 / 6.0 - 4.0))) as i32 & 63) * ((197 >> (T % 8)) & 1);
+
+    let inline bass_vol = (T >= 128) & (197 >> (T % 8));
+    let inline bass_freq = pow(2 as f32, (((T & 4) * ((T & 7) - 1)) as f32 / 24 as f32 - 5 as f32));
+    let inline bass = ((t as f32 * bass_freq) as i32 & 63) * bass_vol;
+
     let inline snare_ish = (random() & 31) * (8 - (T + 4) % 8) / 8;
+
     let inline sample = mel_arp + bass + snare_ish;
-    (sample & 255) as f32 / 255 as f32 - 0.5
+    (sample & 255) as f32 / 255 as f32
 }
