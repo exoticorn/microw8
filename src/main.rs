@@ -101,19 +101,16 @@ fn run(mut args: Arguments) -> Result<()> {
 
     while runtime.is_open() {
         if first_run || watcher.poll_changed_file()?.is_some() {
-            match start_cart(&filename, &mut *runtime, &config) {
-                Ok(dependencies) => {
-                    if watch_mode {
-                        for dep in dependencies {
-                            watcher.add_file(dep)?;
-                        }
-                    }
+            let (result, dependencies) = start_cart(&filename, &mut *runtime, &config);
+            if watch_mode {
+                for dep in dependencies {
+                    watcher.add_file(dep)?;
                 }
-                Err(err) => {
-                    eprintln!("Load error: {}", err);
-                    if !watch_mode {
-                        exit(1);
-                    }
+            }
+            if let Err(err) = result {
+                eprintln!("Load error: {}", err);
+                if !watch_mode {
+                    exit(1);
                 }
             }
             first_run = false;
@@ -136,37 +133,45 @@ struct Config {
     output_path: Option<PathBuf>,
 }
 
-fn load_cart(filename: &Path, config: &Config) -> Result<(Vec<u8>, Vec<PathBuf>)> {
+fn load_cart(filename: &Path, config: &Config) -> (Result<Vec<u8>>, Vec<PathBuf>) {
     let mut dependencies = Vec::new();
-    let mut cart = match SourceType::of_file(filename)? {
-        SourceType::Binary => {
-            let mut cart = vec![];
-            File::open(filename)?.read_to_end(&mut cart)?;
-            dependencies.push(filename.to_path_buf());
-            cart
-        }
-        SourceType::Wat => {
-            let cart = wat::parse_file(filename)?;
-            dependencies.push(filename.to_path_buf());
-            cart
-        }
-        SourceType::CurlyWas => {
-            let module = curlywas::compile_file(filename, curlywas::Options::default())?;
-            dependencies = module.dependencies;
-            module.wasm
-        }
-    };
+    fn inner(filename: &Path, config: &Config, dependencies: &mut Vec<PathBuf>) -> Result<Vec<u8>> {
+        let mut cart = match SourceType::of_file(filename)? {
+            SourceType::Binary => {
+                let mut cart = vec![];
+                File::open(filename)?.read_to_end(&mut cart)?;
+                cart
+            }
+            SourceType::Wat => {
+                let cart = wat::parse_file(filename)?;
+                cart
+            }
+            SourceType::CurlyWas => {
+                let (module, deps) = curlywas::compile_file(filename, curlywas::Options::default());
+                *dependencies = deps;
+                module?
+            }
+        };
 
-    if let Some(ref pack_config) = config.pack {
-        cart = uw8_tool::pack(&cart, pack_config)?;
-        println!("packed size: {} bytes", cart.len());
+        if let Some(ref pack_config) = config.pack {
+            cart = uw8_tool::pack(&cart, pack_config)?;
+            println!("packed size: {} bytes", cart.len());
+        }
+
+        if let Some(ref path) = config.output_path {
+            File::create(path)?.write_all(&cart)?;
+        }
+
+        Ok(cart)
     }
 
-    if let Some(ref path) = config.output_path {
-        File::create(path)?.write_all(&cart)?;
+    let result = inner(filename, config, &mut dependencies);
+
+    if dependencies.is_empty() {
+        dependencies.push(filename.to_path_buf());
     }
 
-    Ok((cart, dependencies))
+    (result, dependencies)
 }
 
 enum SourceType {
@@ -205,14 +210,22 @@ impl SourceType {
 }
 
 #[cfg(any(feature = "native", feature = "browser"))]
-fn start_cart(filename: &Path, runtime: &mut dyn Runtime, config: &Config) -> Result<Vec<PathBuf>> {
-    let cart = load_cart(filename, config)?;
+fn start_cart(
+    filename: &Path,
+    runtime: &mut dyn Runtime,
+    config: &Config,
+) -> (Result<()>, Vec<PathBuf>) {
+    let (cart, dependencies) = load_cart(filename, config);
+    let cart = match cart {
+        Ok(cart) => cart,
+        Err(err) => return (Err(err), dependencies),
+    };
 
-    if let Err(err) = runtime.load(&cart.0) {
+    if let Err(err) = runtime.load(&cart) {
         eprintln!("Load error: {}", err);
-        Err(err)
+        (Err(err), dependencies)
     } else {
-        Ok(cart.1)
+        (Ok(()), dependencies)
     }
 }
 
@@ -231,13 +244,14 @@ fn pack(mut args: Arguments) -> Result<()> {
 
     let out_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
 
-    let (cart, _) = load_cart(
+    let cart = load_cart(
         &in_file,
         &Config {
             pack: Some(pack_config),
             output_path: None,
         },
-    )?;
+    )
+    .0?;
 
     File::create(out_file)?.write_all(&cart)?;
 
@@ -260,8 +274,8 @@ fn compile(mut args: Arguments) -> Result<()> {
     let in_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
     let out_file = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
 
-    let module = curlywas::compile_file(in_file, options)?;
-    File::create(out_file)?.write_all(&module.wasm)?;
+    let module = curlywas::compile_file(in_file, options).0?;
+    File::create(out_file)?.write_all(&module)?;
 
     Ok(())
 }
