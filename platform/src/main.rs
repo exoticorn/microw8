@@ -11,16 +11,16 @@ fn main() -> Result<()> {
     convert_font()?;
 
     println!("Compiling loader module");
-    let loader = curlywas::compile_file("src/loader.cwa", curlywas::Options::default())?;
-    File::create("bin/loader.wasm")?.write_all(&loader.wasm)?;
+    let loader = curlywas::compile_file("src/loader.cwa", curlywas::Options::default()).0?;
+    File::create("bin/loader.wasm")?.write_all(&loader)?;
 
-    println!("Loader (including base module): {} bytes", loader.wasm.len());
+    println!("Loader (including base module): {} bytes", loader.len());
 
     println!("Compiling platform module");
-    let platform = curlywas::compile_file("src/platform.cwa", curlywas::Options::default())?;
+    let platform = curlywas::compile_file("src/platform.cwa", curlywas::Options::default()).0?;
     println!("Compressing platform module");
     let platform = uw8_tool::pack(
-        &platform.wasm,
+        &platform,
         &uw8_tool::PackConfig::default().with_compression_level(4),
     )?;
     File::create("bin/platform.uw8")?.write_all(&platform)?;

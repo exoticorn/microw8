@@ -326,10 +326,11 @@ export default function MicroW8(screen, config = {}) {
     async function runModuleFromURL(url, keepUrl) {
         let response = await fetch(url);
         let type = response.headers.get('Content-Type');
-        if(type && type.includes('html')) {
-            throw false;
+        if((type && type.includes('html')) || response.status != 200) {
+            return false;
         }
         runModule(await response.arrayBuffer(), keepUrl || devkitMode);
+        return true;
     }
 
     return {

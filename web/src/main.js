@@ -79,7 +79,9 @@ if(location.hash.length != 0) {
             url += 'cart.uw8';
         }
         try {
-            await uw8.runModuleFromURL(url, true);
+            if(!await uw8.runModuleFromURL(url, true)) {
+                setupLoad();
+            }
         } catch(e) {
             setupLoad();
         }
