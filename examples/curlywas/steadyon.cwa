@@ -5,13 +5,13 @@
 include "../include/microw8-api.cwa"
 
 fn melody(t: i32, T: i32) -> i32 {
-    let lazy riff_pos = select(T & 16, (T&31) - 16, 16 - (T&31));
+    let inline riff_pos = abs(((T&31) - 16) as f32) as i32;
     let lazy shift = ((1-((T>>5)&3))%2-1) as f32 / 6 as f32;
 
-    let inline note_count = select(T>>9, 4, 5);
+    let inline note_count = 5 - (T >= 512);
     let inline octave = (riff_pos/5) as f32;
     let inline riff_note = 5514 >> (riff_pos % note_count * 4) & 15;
-    let inline melody_freq = pow(2 as f32, shift + octave - ((riff_note as f32) / 12 as f32));
+    let inline melody_freq = pow(2 as f32, shift + octave - (riff_note as f32 / 12 as f32));
     let inline melody = (t as f32 * melody_freq) as i32 & 128;
     
     let inline arp_note = ((0x85>>((t>>12)%3*4)) & 15) - 1;
@@ -34,5 +34,5 @@ export fn snd(t: i32) -> f32 {
     let inline snare_ish = (random() & 31) * (8 - (T + 4) % 8) / 8;
 
     let inline sample = mel_arp + bass + snare_ish;
-    (sample & 255) as f32 / 255 as f32
+    sample as f32 / 255 as f32
 }
