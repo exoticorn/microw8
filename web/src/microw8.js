@@ -104,9 +104,6 @@ export default function MicroW8(screen, config = {}) {
             keepRunning = false;
         }
 
-        await audioContext.audioWorklet.addModule(audioWorkletUrl);
-        let audioNode = new AudioNode(audioContext);
-
         let cartridgeSize = data.byteLength;
     
         config.setMessage(cartridgeSize);
@@ -114,6 +111,40 @@ export default function MicroW8(screen, config = {}) {
             return;
         }
     
+        await audioContext.audioWorklet.addModule(audioWorkletUrl);
+        let audioNode = new AudioNode(audioContext);
+
+        let audioReadyFlags = 0;
+        let audioReadyResolve;
+        let audioReadyPromise = new Promise(resolve => audioReadyResolve = resolve);
+        let updateAudioReady = (f) => {
+            audioReadyFlags |= f;
+            if(audioReadyFlags == 3 && audioReadyResolve) {
+                audioReadyResolve(true);
+                audioReadyResolve = null;
+            }
+        };
+        audioNode.port.onmessage = (e) => updateAudioReady(e.data);
+        let audioStateChange = () => {
+            if(audioContext.state == 'suspended') {
+                if(config.startButton) {
+                    config.startButton.style = '';
+                    screen.style = 'display:none';
+                }
+                (config.startButton || screen).onclick = () => {
+                    audioContext.resume();
+                };
+            } else {
+                if(config.startButton) {
+                    config.startButton.style = 'display:none';
+                    screen.style = '';
+                }
+                updateAudioReady(1);
+            }
+        };
+        audioContext.onstatechange = audioStateChange;
+        audioStateChange();
+
         currentData = data;
     
         let newURL = window.location.pathname;
@@ -189,6 +220,8 @@ export default function MicroW8(screen, config = {}) {
             let instance = await instantiate(data);
     
             let buffer = U32(imageData.data.buffer);
+
+            await audioReadyPromise;
     
             let startTime = Date.now();
     

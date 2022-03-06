@@ -12,6 +12,7 @@ let uw8 = MicroW8(document.getElementById('screen'), {
     setMessage,
     keyboardElement: window,
     timerElement: document.getElementById("timer"),
+    startButton: document.getElementById("start")
 });
 
 function runModuleFromHash() {

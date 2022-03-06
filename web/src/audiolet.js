@@ -39,6 +39,8 @@ class APU extends AudioWorkletProcessor {
         let instance = await instantiate(data);
 
         this.snd = instance.exports.snd;
+
+        this.port.postMessage(2);
     }
 
     process(inputs, outputs, parameters) {

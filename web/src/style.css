@@ -37,7 +37,7 @@ a:hover {
     color: #405040;
 }
 
-#screen {
+.screen {
     width: 320px;
     height: 240px;
     image-rendering: pixelated;
@@ -45,7 +45,14 @@ a:hover {
     margin-bottom: 8px;
     border: 4px solid #303040;
     box-shadow: 5px 5px 20px black;
+}
+
+#screen {
     cursor: none;
+}
+
+#start {
+    font-size: 150%;
 }
 
 #timer::before {
@@ -84,21 +91,21 @@ button:active {
 }
 
 @media (min-width: 680px) and (min-height: 620px) {
-    #screen {
+    .screen {
         width: 640px;
         height: 480px;
     }
 }
 
 @media (min-width: 1000px) and (min-height: 800px) {
-    #screen {
+    .screen {
         width: 960px;
         height: 720px;
     }
 }
 
 @media (width:640px) and (height:480px) {
-    #screen {
+    .screen {
         width: 640px;
         height: 480px;
         border: 0;
