@@ -18,7 +18,9 @@ The memory has to be imported as `env` `memory` and has a maximum size of 256kb 
 00000-00040: user memory
 00040-00044: time since module start in ms
 00044-0004c: gamepad state
-0004c-00078: reserved
+0004c-00050: reserved
+00050-00070: sound registers
+00070-00078: reserved
 00078-12c78: frame buffer
 12c78-13000: reserved
 13000-13400: palette
@@ -268,6 +270,38 @@ Sets the background color.
 ### fn setCursorPosition(x: i32, y: i32)
 
 Sets the cursor position. In normal mode `x` and `y` are multiplied by 8 to get the pixel position, in graphics mode they are used as is.
+
+## Sound
+
+```
+Per channel:
+
+00 : CTRL - wave form, ring, sync, filter send, trigger
+   bit 0: note on flag
+   bit 1: note trigger
+   bit 2,3: filter 0,1 send
+   bit 6,7: wave form (rect, saw, tri, noise)
+01 : PULS - pulse width
+02 : FINE - fine tuning
+03 : NOTE - note
+04 : ENVA - attack, decay
+05 : ENVR - sustain, release
+
+50-56: channel 0
+56-5b: channel 1
+5c-61: channel 2
+62-67: channel 3
+
+68: VO01 - volumes channel 0&1
+69: VO23 - volumes channel 2&3
+
+6a : FCTR 0 - type, resonance
+6b : FCTR 1 - type, resonance
+6c : FFIN 0 - cutoff fine tuning
+6d : FNOT 0 - cutoff note
+6e : FFIN 1 - cutoff fine tuning
+6f : FNOT 1 - cutoff note
+```
 
 # The `uw8` tool
 
