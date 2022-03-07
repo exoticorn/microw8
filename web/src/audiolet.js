@@ -1,9 +1,14 @@
+let U8 = (...a) => new Uint8Array(...a);
 class APU extends AudioWorkletProcessor {
     constructor() {
         super();
         this.sampleIndex = 0;
         this.port.onmessage = (ev) => {
-            this.load(ev.data[0], ev.data[1]);
+            if(this.memory) {
+                U8(this.memory.buffer, 80, 32).set(U8(ev.data));
+            } else {
+                this.load(ev.data[0], ev.data[1]);
+            }
         };
     }
 
@@ -37,6 +42,8 @@ class APU extends AudioWorkletProcessor {
         }
 
         let instance = await instantiate(data);
+
+        this.memory = memory;
 
         this.snd = instance.exports.snd;
 

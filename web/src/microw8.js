@@ -8,8 +8,8 @@ class AudioNode extends AudioWorkletNode {
     }
 }
 
-let U8 = (d) => new Uint8Array(d);
-let U32 = (d) => new Uint32Array(d);
+let U8 = (...a) => new Uint8Array(...a);
+let U32 = (...a) => new Uint32Array(...a);
 
 export default function MicroW8(screen, config = {}) {
     if(!config.setMessage) {
@@ -272,8 +272,12 @@ export default function MicroW8(screen, config = {}) {
                             instance.exports.upd();
                         }
                         platform_instance.exports.endFrame();
+
+                        let soundRegisters = new ArrayBuffer(32);
+                        U8(soundRegisters).set(U8(memory.buffer, 80, 32));
+                        audioNode.port.postMessage(soundRegisters, [soundRegisters]);
     
-                        let palette = U32(memory.buffer.slice(0x13000, 0x13000 + 1024));
+                        let palette = U32(memory.buffer, 0x13000, 1024);
                         for (let i = 0; i < 320 * 240; ++i) {
                             buffer[i] = palette[memU8[i + 120]] | 0xff000000;
                         }

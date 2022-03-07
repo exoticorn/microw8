@@ -1,0 +1,45 @@
+include "../include/microw8-api.cwa"
+
+export fn upd() {
+    let T = 32!32 / 120;
+
+    let inline riff_pos = abs(((T&31) - 16) as f32) as i32;
+    let lazy shift = ((1-((T>>5)&3))%2-1) * 2;
+
+    let inline note_count = 5 - (T >= 512);
+    let inline octave = (riff_pos/5) * 12;
+    let inline riff_note = 5514 >> (riff_pos % note_count * 4) & 15;
+    let inline melody_note = shift + octave - riff_note;
+
+    80?1 = melody_note + 64;
+}
+
+export fn snd(t: i32) -> f32 {
+    gesSample(t)
+}
+
+const gesStateOffset = 112;
+const gesBufferOffset = 120;
+
+fn gesSample(t: i32) -> f32 {
+    if !(t & 127) {
+        let i: i32;
+        loop clearLoop {
+            i!gesBufferOffset = 0;
+            branch_if (i := i + 4) < 128*4: clearLoop;
+        }
+
+        let phase = 0!gesStateOffset;
+        let inline note = 80?1;
+        let inline freq = 440 as f32 * pow(2.0, (note - 69) as f32 / 12 as f32);
+        let phaseInc = (freq * (65536.0 / 88200.0)) as i32;
+        i = 0;
+        loop osciLoop {
+            i!gesBufferOffset = (phase & 65535) - 32768;
+            phase = phase + phaseInc;
+            branch_if (i := i + 4) < 128*4: osciLoop;
+        }
+        0!gesStateOffset = phase;
+    }
+    (((t & 127) * 4)!gesBufferOffset) as f32 / 32768 as f32
+}
