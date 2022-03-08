@@ -45,7 +45,7 @@ class APU extends AudioWorkletProcessor {
 
         this.memory = memory;
 
-        this.snd = instance.exports.snd;
+        this.snd = instance.exports.snd || platform_instance.exports.gesSnd;
 
         this.port.postMessage(2);
     }

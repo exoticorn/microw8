@@ -1,6 +1,8 @@
 import "env.memory" memory(4);
 
+import "env.sin" fn sin(f32) -> f32;
 import "env.cos" fn cos(f32) -> f32;
+import "env.pow" fn pow(f32, f32) -> f32;
 
 export fn time() -> f32 {
     (0!64) as f32 / 1000 as f32
@@ -501,11 +503,24 @@ export fn setCursorPosition(x: i32, y: i32) {
 }
 
 ///////////
+// SOUND //
+///////////
+
+include "ges.cwa"
+
+///////////
 // SETUP //
 ///////////
 
 export fn endFrame() {
     68!4 = 68!0;
+}
+
+fn memclr(base: i32, size: i32) {
+    loop bytes {
+        (base + (size := size - 1))?0 = 0;
+        branch_if size: bytes;
+    }
 }
 
 start fn setup() {
@@ -540,8 +555,24 @@ start fn setup() {
         branch_if (i := i - 1) >= 0: expand_sweetie;
     }
 
+    memclr(0, 64);
+    memclr(112, 8);
+    memclr(0x14000, 0x2c000);
+
+
     cls(0);
     randomSeed(random());
+}
+
+data 80 {
+    i8(
+        0, 128, 0, 69, 0x8, 0xc8,
+        0, 128, 0, 69, 0x8, 0xc8,
+        0, 128, 0, 69, 0x8, 0xc8,
+        0, 128, 0, 69, 0x8, 0xc8,
+        0xff, 0xff,
+        1, 1, 0, 100, 0, 100
+    )
 }
 
 data 0x13000+192*4 {

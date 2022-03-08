@@ -1,0 +1,154 @@
+const GesChannelState.Trigger = 0;
+const GesChannelState.EnvState = 1;
+const GesChannelState.EnvVol = 2;
+const GesChannelState.Phase = 4;
+const GesChannelState.Size = 6;
+
+const GesState.Filter = GesChannelState.Size * 4;
+const GesState.Size = GesState.Filter + 8*4;
+
+const GesStateOffset = 112;
+const GesBufferOffset = 112 + GesState.Size;
+
+export fn gesSnd(t: i32) -> f32 {
+    if !(t & 127) {
+        let i: i32;
+        loop clearLoop {
+            i!GesBufferOffset = 0;
+            branch_if (i := i + 4) < 128*8: clearLoop;
+        }
+
+        let ch: i32;
+        loop channelLoop {
+            let lazy channelState = GesStateOffset + ch * GesChannelState.Size;
+            let lazy channelReg = 80 + ch * 6;
+            let envState = channelState?GesChannelState.EnvState;
+            let envVol = i32.load16_u(channelState, GesChannelState.EnvVol);
+
+            let lazy oldTrigger = channelState?GesChannelState.Trigger;
+            let lazy ctrl = channelReg?0;
+            if (oldTrigger ^ ctrl) & (ctrl | 2) & 3 {
+                envState = 1;
+                envVol = 0;
+            }
+            channelState?GesChannelState.Trigger = ctrl;
+
+            if envState {
+                envVol = envVol + (16384 / ((channelReg?4 >> 4) + 1));
+                if envVol >= 65535 {
+                    envVol = 65535;
+                    envState = 0;
+                }
+            } else {
+                if !envState & ctrl {
+                    envVol = envVol - (16 - (channelReg?4 & 15)) * 48;
+                    let sustain = (channelReg?5 >> 4) * 4096;
+                    if envVol < sustain {
+                        envVol = sustain;
+                    }
+                } else {
+                    envVol = envVol - (16 - (channelReg?5 & 15)) * 48;
+                    if envVol < 0 {
+                        envVol = 0;
+                    }
+                }
+            }
+            channelState?GesChannelState.EnvState = envState;
+
+            i32.store16(envVol, channelState, GesChannelState.EnvVol);
+
+            let inline note = i32.load16_u(channelReg, 2);
+            let inline freq = 440 as f32 * pow(2.0, (note - 69*256) as f32 / (12*256) as f32);
+            let phaseInc = (freq * (65536.0 / 44100.0)) as i32;
+
+            let phase = i32.load16_u(channelState, GesChannelState.Phase) << 8;
+
+            i = 0;
+            let wave = ctrl >> 6;
+            if wave < 2 {
+                if wave {
+                    loop sawLoop {
+                        i!(GesBufferOffset + 128*4) = (phase & 65535) - 32768;
+                        phase = phase + phaseInc;
+                        branch_if (i := i + 4) < 64*4: sawLoop;
+                    }
+                }
+                else
+                {
+                    loop rectLoop {
+                        i!(GesBufferOffset + 128*4) = select(phase & 32768, -32768, 32767);
+                        phase = phase + phaseInc;
+                        branch_if (i := i + 4) < 64*4: rectLoop;
+                    }
+                }
+            } else {
+                if wave == 2 {
+                    loop triLoop {
+                        let s = phase << 16;
+                        s = s ^ (s >> 31);
+                        i!(GesBufferOffset + 128*4) = (s >> 15) - 32768;
+                        phase = phase + phaseInc;
+                        branch_if (i := i + 4) < 64*4: triLoop;
+                    }
+                } else {
+                    loop noiseLoop {
+                        let s = (phase >> 12) & 4095;
+                        s = s * 0x6746ba73;
+                        s = s ^ (s >> 15);
+                        i!(GesBufferOffset + 128*4) = (s * 0x83567a92) >> 16;
+                        phase = phase + phaseInc;
+                        branch_if (i := i + 4) < 64*4: noiseLoop;
+                    }
+                }
+            }
+
+            i32.store16(phase >> 8, channelState, GesChannelState.Phase);
+
+            let channelVol = ((ch >> 1)?0x68 >> ((ch & 1) * 4)) & 15;
+            envVol = envVol * channelVol / 15;
+
+            let leftVol = (0x4c6a >> (ch * 4)) & 15;
+            let rightVol = 16 - leftVol;
+
+            let lazy filter = ((ctrl >> 2) & 3) - 1;
+
+            i = 0;
+            if filter #> 1 {
+                loop mixLoop {
+                    let sample = (i!(GesBufferOffset + 128*4) * envVol) >> 18;
+                    (i * 2)!GesBufferOffset = (i * 2)!GesBufferOffset + ((sample * leftVol) >> 4);
+                    (i * 2)!(GesBufferOffset + 4) = (i * 2)!(GesBufferOffset + 4) + ((sample * rightVol) >> 4);
+                    branch_if (i := i + 4) < 64*4: mixLoop;
+                }
+            } else {
+                let ctrl = filter?0x6a;
+                let note = i32.load16_u(filter * 2, 0x6c);
+                let inline freq = 440 as f32 * pow(2.0, (note - 69*256) as f32 / (12*256) as f32);
+                let F = min(4096 as f32, 8192 as f32 * sin(freq * (3.1415 / 44100.0))) as i32;
+                let Q = 7000 - ctrl * (6000/255);
+                let low_out = ctrl & 1;
+                let high_out = (ctrl >> 1) & 1;
+                let band_out = (ctrl >> 2) & 1;
+                let low = (ch * 8)!(GesStateOffset + GesState.Filter);
+                let band = (ch * 8)!(GesStateOffset + GesState.Filter + 4);
+                loop filterLoop {
+                    let in = (i!(GesBufferOffset + 128*4) * envVol) >> 18;
+
+                    let high = in - low - ((band * Q) >> 12);
+                    band = band + ((F * high) >> 12);
+                    low = low + ((F * band) >> 12);
+
+                    let sample = low * low_out + high * high_out + band * band_out;
+                    (i * 2)!GesBufferOffset = (i * 2)!GesBufferOffset + ((sample * leftVol) >> 4);
+                    (i * 2)!(GesBufferOffset + 4) = (i * 2)!(GesBufferOffset + 4) + ((sample * rightVol) >> 4);
+                    branch_if (i := i + 4) < 64*4: filterLoop;
+                }
+                (ch * 8)!(GesStateOffset + GesState.Filter) = low;
+                (ch * 8)!(GesStateOffset + GesState.Filter + 4) = band;
+            }
+
+            branch_if (ch := ch + 1) < 4: channelLoop;
+        }
+    }
+    (((t & 127) * 4)!GesBufferOffset) as f32 / 32768 as f32
+}
