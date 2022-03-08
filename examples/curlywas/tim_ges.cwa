@@ -16,7 +16,7 @@ fn melody(ch: i32, t: i32, T: i32) {
 
 export fn upd() {
     let lazy t = 32!32 / (1000/60);
-    let lazy T = t / 8;
+    let lazy T = t / 7;
     melody(98, t, T - 3);
     melody(92, t, T);
 
@@ -36,10 +36,10 @@ export fn upd() {
 
 data 80 {
     i8(
-        0, 128, 0, 128, 0x40, 0xe,
+        0, 64, 0, 128, 0x40, 0xe,
         0, 128, 0, 128, 0x8, 0xc8,
-        0, 128, 0, 128, 0xa, 0xa,
-        0, 128, 0, 128, 0xa, 0xa,
+        0, 32, 0, 128, 0xa, 0xa,
+        0, 64, 0, 128, 0xa, 0xa,
         0xf8, 0x85,
         0xc1, 0xf1, 0, 110, 0, 90
     )

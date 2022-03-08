@@ -63,6 +63,9 @@ export fn gesSnd(t: i32) -> f32 {
 
             let phase = i32.load16_u(channelState, GesChannelState.Phase) << 8;
 
+            let inline pulseWidth = channelReg?1;
+            let phaseShift = (pulseWidth - 128) * 255;
+
             i = 0;
             let wave = ctrl >> 6;
             if wave < 2 {
@@ -76,7 +79,8 @@ export fn gesSnd(t: i32) -> f32 {
                 else
                 {
                     loop rectLoop {
-                        i!(GesBufferOffset + 128*4) = select(phase & 32768, -32768, 32767);
+                        let p = (phase & 65535) + phaseShift;
+                        i!(GesBufferOffset + 128*4) = select(p >= 32768, -32768, 32767);
                         phase = phase + phaseInc;
                         branch_if (i := i + 4) < 64*4: rectLoop;
                     }
