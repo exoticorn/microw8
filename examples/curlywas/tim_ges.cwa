@@ -1,5 +1,5 @@
 fn melody(ch: i32, t: i32, T: i32) {
-    let inline riff_pos = abs(((T&31) - 16) as f32) as i32;
+    let lazy riff_pos = abs(((T&31) - 16) as f32) as i32;
     let lazy shift = ((1-((T>>5)&3))%2-1) * 2;
 
     let inline note_count = 5 - (T >= 512);
@@ -7,7 +7,7 @@ fn melody(ch: i32, t: i32, T: i32) {
     let inline riff_note = 5514 >> (riff_pos % note_count * 4) & 15;
     let inline melody_note = shift + octave - riff_note;
 
-    ch?0 = ((T&1) << 1) | 0x4; // note trigger
+    ch?1 = riff_pos * 10 + 4;
     ch?3 = melody_note + 64;
 
     let inline arp_note = shift + ((0x85>>((t/2)%3*4)) & 15) - 1;
@@ -36,12 +36,12 @@ export fn upd() {
 
 data 80 {
     i8(
-        0, 64, 0, 128, 0x40, 0xe,
-        0, 128, 0, 128, 0x8, 0xc8,
-        0, 32, 0, 128, 0xa, 0xa,
-        0, 64, 0, 128, 0xa, 0xa,
+        0, 64, 0, 128, 0, 0xe,
+        0, 128, 0, 128, 0, 0xc8,
+        5, 128, 0, 128, 0, 0xc8,
+        5, 128, 0, 128, 0, 0xc8,
         0xf8, 0x85,
-        0xc1, 0xf1, 0, 110, 0, 90
+        0xc1, 0xf1, 0, 110, 0, 80
     )
 }
 
