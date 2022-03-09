@@ -34,23 +34,19 @@ export fn gesSnd(t: i32) -> f32 {
             channelState?GesChannelState.Trigger = ctrl;
 
             if envState {
-                envVol = envVol + (16384 / ((channelReg?4 >> 4) + 1));
+                envVol = envVol + 8 * pow(1.5625, (15 - channelReg?4 & 15) as f32) as i32;
                 if envVol >= 65535 {
                     envVol = 65535;
                     envState = 0;
                 }
             } else {
-                if !envState & ctrl {
-                    envVol = envVol - (16 - (channelReg?4 & 15)) * 48;
-                    let sustain = (channelReg?5 >> 4) * 4096;
-                    if envVol < sustain {
-                        envVol = sustain;
-                    }
-                } else {
-                    envVol = envVol - (16 - (channelReg?5 & 15)) * 48;
-                    if envVol < 0 {
-                        envVol = 0;
-                    }
+                let inline decay = (channelReg - (ctrl & 1))?5 >> 4;
+                let inline dec = 8 * pow(1.5625, (15 - decay) as f32) as i32;
+                envVol = envVol - ((dec * (envVol + 8192)) >> 16);
+                let inline sustain = (channelReg?5 & 15) << 12;
+                let lazy targetVol = (ctrl & 1) * sustain;
+                if envVol < targetVol {
+                    envVol = targetVol;
                 }
             }
             channelState?GesChannelState.EnvState = envState;
@@ -129,7 +125,7 @@ export fn gesSnd(t: i32) -> f32 {
                 let note = i32.load16_u(filter * 2, 0x6c);
                 let inline freq = 440 as f32 * pow(2.0, (note - 69*256) as f32 / (12*256) as f32);
                 let F = min(4096 as f32, 8192 as f32 * sin(freq * (3.1415 / 44100.0))) as i32;
-                let Q = 7000 - ctrl * (6000/255);
+                let Q = 7350 - ctrl * (6530/255);
                 let low_out = ctrl & 1;
                 let high_out = (ctrl >> 1) & 1;
                 let band_out = (ctrl >> 2) & 1;

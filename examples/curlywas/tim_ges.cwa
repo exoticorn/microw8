@@ -36,17 +36,16 @@ export fn upd() {
 
 data 80 {
     i8(
-        0, 64, 0, 128, 0, 0xe,
-        0, 128, 0, 128, 0, 0xc8,
-        5, 128, 0, 128, 0, 0xc8,
-        5, 128, 0, 128, 0, 0xc8,
+        0, 64, 0, 128, 0, 0x90,
+        0, 128, 0, 128, 0, 0x4c,
+        5, 128, 0, 128, 0, 0x4c,
+        5, 128, 0, 128, 0, 0x4c,
         0xf8, 0x85,
-        0xc1, 0xf1, 0, 110, 0, 80
+        0x81, 0x81, 0, 105, 0, 80
     )
 }
 
 /*
-
 include "../../platform/src/ges.cwa"
 
 import "env.pow" fn pow(f32, f32) -> f32;
@@ -55,5 +54,4 @@ import "env.sin" fn sin(f32) -> f32;
 export fn snd(t: i32) -> f32 {
     gesSnd(t)
 }
-
 */
