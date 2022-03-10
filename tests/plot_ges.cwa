@@ -1,0 +1,59 @@
+include "../examples/include/microw8-api.cwa"
+
+export fn upd() {
+    80?0 = (32!32 >> 11 << 6) | 5;
+    80?1 = (sin(time() * 6 as f32) * 95 as f32) as i32 + 128;
+    plotGes();
+}
+
+data 80 { i8 (
+    1, 128, 0, 69, 0, 15,
+    0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0,
+    0xff, 0xff,
+    0xc1, 0, 0, 110, 0, 0
+) }
+
+//import "env.gesSnd" fn gesSnd(i32) -> f32;
+
+include "../platform/src/ges.cwa"
+
+export fn snd(t: i32) -> f32 {
+    gesSnd(t)
+}
+
+global mut samplePos: i32 = 0;
+
+const SoundBuffer = 0x30000;
+
+fn plotGes() {
+    rectangle(0 as f32, 10 as f32, 320 as f32, 320 as f32, 0);
+    let count = (time() * 44100 as f32) as i32 * 2 - samplePos;
+    let i: i32;
+    loop genLoop {
+        (i*4)$SoundBuffer = gesSnd(samplePos + i);
+        branch_if (i := i + 1) < count: genLoop;
+    }
+    samplePos = samplePos + count;
+
+    let ch: i32;
+    loop channelLoop {
+        let offset = 159;
+        i = 0;
+
+        loop searchLoop {
+            offset = offset + 1;
+            branch_if (offset * 8 + ch - 8)$SoundBuffer < 0 as f32 | (offset * 8 + ch)$SoundBuffer >= 0 as f32 & offset + 160 < count: searchLoop;
+        }
+
+        offset = ch + (offset - 160) * 8;
+        i = 0;
+        loop plotLoop {
+            setPixel(i, floor((i * 8 + offset)$SoundBuffer * 127 as f32) as i32 + 60 + ch * (120/8), 15);
+            branch_if (i := i + 1) < 320: plotLoop;
+        }
+
+        branch_if (ch := ch + 8) < 16: channelLoop;
+    }
+}

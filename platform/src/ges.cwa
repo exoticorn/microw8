@@ -67,7 +67,10 @@ export fn gesSnd(t: i32) -> f32 {
             if wave < 2 {
                 if wave {
                     loop sawLoop {
-                        i!(GesBufferOffset + 128*4) = (phase & 65535) - 32768;
+                        let p = (phase ^ 32768) << 16;
+                        p = ((p ^ (p >> 31)) >> 15) + phaseShift;
+                        p = (p < 0 | p > 65535) * 65535;
+                        i!(GesBufferOffset + 128*4) = (phase ^ p & 65535) - 32768;
                         phase = phase + phaseInc;
                         branch_if (i := i + 4) < 64*4: sawLoop;
                     }
@@ -83,9 +86,12 @@ export fn gesSnd(t: i32) -> f32 {
                 }
             } else {
                 if wave == 2 {
+                    let scale = pulseWidth + 256;
                     loop triLoop {
                         let s = phase << 16;
-                        s = s ^ (s >> 31);
+                        s = (s ^ (s >> 31));
+                        s = (s >> 8) * scale;
+                        s = (s ^ (s >> 31));
                         i!(GesBufferOffset + 128*4) = (s >> 15) - 32768;
                         phase = phase + phaseInc;
                         branch_if (i := i + 4) < 64*4: triLoop;
@@ -93,9 +99,10 @@ export fn gesSnd(t: i32) -> f32 {
                 } else {
                     loop noiseLoop {
                         let s = (phase >> 12) & 4095;
+                        let pulse = ((phase >> 8) & 255) >= pulseWidth;
                         s = s * 0x6746ba73;
-                        s = s ^ (s >> 15);
-                        i!(GesBufferOffset + 128*4) = (s * 0x83567a92) >> 16;
+                        s = s ^ (s >> 15) * pulse;
+                        i!(GesBufferOffset + 128*4) = (s * 0x83567a92 + (phase << 16)) >> 16;
                         phase = phase + phaseInc;
                         branch_if (i := i + 4) < 64*4: noiseLoop;
                     }
@@ -124,8 +131,12 @@ export fn gesSnd(t: i32) -> f32 {
                 let ctrl = filter?0x6a;
                 let note = i32.load16_u(filter * 2, 0x6c);
                 let inline freq = 440 as f32 * pow(2.0, (note - 69*256) as f32 / (12*256) as f32);
-                let F = min(4096 as f32, 8192 as f32 * sin(freq * (3.1415 / 44100.0))) as i32;
-                let Q = 7350 - ctrl * (6530/255);
+                let F = (8192 as f32 * sin(min(0.25, freq / 44100 as f32) * 3.1415)) as i32;
+                let Q = 8192 - (ctrl >> 4) * (7000/15);
+                let Qlimit = (8192*4096/F - F/2) * 3 / 4;
+                if Q > Qlimit {
+                    Q = Qlimit;
+                }
                 let low_out = ctrl & 1;
                 let high_out = (ctrl >> 1) & 1;
                 let band_out = (ctrl >> 2) & 1;
