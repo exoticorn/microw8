@@ -1,0 +1,30 @@
+import "env.memory" memory(4);
+import "env.pow" fn pow(f32, f32) -> f32;
+import "env.sin" fn sin(f32) -> f32;
+import "env.cls" fn cls(i32);
+import "env.rectangle" fn rectangle(f32, f32, f32, f32, i32);
+
+include "../platform/src/ges.cwa"
+
+export fn snd(t: i32) -> f32 {
+    gesSnd(t)
+}
+
+export fn upd() {
+    80?0 = 32!32 / 200 & 2 | 0x41;
+    80?3 = (32!32 / 400)%7*12/7 + 40;
+    let pulse = (32!32 * 256 / 2000) & 511;
+    if pulse >= 256 {
+        pulse = 511 - pulse;
+    }
+    80?1 = pulse;
+
+    cls(0);
+    rectangle(0.0, 100.0, (pulse * 320 / 256) as f32, 16.0, 15);
+}
+
+data 80 {
+    i8(
+        0x41, 0, 0, 80, 0x70, 0
+    )
+}

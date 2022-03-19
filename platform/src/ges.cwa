@@ -34,8 +34,9 @@ export fn gesSnd(t: i32) -> f32 {
             channelState?GesChannelState.Trigger = ctrl;
 
             if envState {
-                envVol = envVol + 8 * pow(1.5625, (15 - channelReg?4 & 15) as f32) as i32;
-                if envVol >= 65535 {
+                let lazy attack = channelReg?4 & 15;
+                envVol = envVol + 12 * pow(1.5625, (15 - attack) as f32) as i32;
+                if envVol >= 65535 | !attack {
                     envVol = 65535;
                     envState = 0;
                 }
@@ -61,25 +62,33 @@ export fn gesSnd(t: i32) -> f32 {
 
             let inline pulseWidth = channelReg?1;
             let phaseShift = (pulseWidth - 128) * 255;
+            let invPhaseInc = 1 as f32 / phaseInc as f32;
 
             i = 0;
             let wave = ctrl >> 6;
             if wave < 2 {
                 if wave {
+                    let pulsePhase1 = pulseWidth << 23;
+                    let pulsePhase2 = (511 - pulseWidth) << 23;
                     loop sawLoop {
                         let p = (phase ^ 32768) << 16;
-                        p = ((p ^ (p >> 31)) >> 15) + phaseShift;
-                        p = (p < 0 | p > 65535) * 65535;
-                        i!(GesBufferOffset + 128*4) = (phase ^ p & 65535) - 32768;
+                        let saw = (p >> 16) - polyBlep(phase, invPhaseInc, -32767);
+                        let saw2 = select(p #>= pulsePhase1 & p #< pulsePhase2, -saw, saw);
+                        let saw2 = saw2 -
+                            polyBlep((p - pulsePhase1) >> 16, invPhaseInc, -saw) -
+                            polyBlep((p - pulsePhase2) >> 16, invPhaseInc, saw);
+                        i!(GesBufferOffset + 128*4) = saw2;
                         phase = phase + phaseInc;
                         branch_if (i := i + 4) < 64*4: sawLoop;
                     }
                 }
                 else
                 {
+                    let pulsePhase = 32768 + pulseWidth * 128;
                     loop rectLoop {
-                        let p = (phase & 65535) + phaseShift;
-                        i!(GesBufferOffset + 128*4) = select(p >= 32768, -32768, 32767);
+                        i!(GesBufferOffset + 128*4) = select((phase & 65535) < pulsePhase, -32768, 32767) -
+                            polyBlep(phase, invPhaseInc, -32767) -
+                            polyBlep(phase - pulsePhase, invPhaseInc, 32767);
                         phase = phase + phaseInc;
                         branch_if (i := i + 4) < 64*4: rectLoop;
                     }
@@ -162,4 +171,10 @@ export fn gesSnd(t: i32) -> f32 {
         }
     }
     (((t & 127) * 4)!GesBufferOffset) as f32 / 32768 as f32
+}
+
+fn polyBlep(transientPhase: i32, invPhaseInc: f32, magnitude: i32) -> i32 {
+    let lazy t = ((transientPhase << 16) >> 16) as f32 * invPhaseInc;
+    let lazy x = max(0 as f32, 1 as f32 - abs(t));
+    (f32.copysign(x * x, t) * magnitude as f32) as i32
 }
