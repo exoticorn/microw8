@@ -15,6 +15,9 @@ use uw8::Runtime;
 fn main() -> Result<()> {
     let mut args = Arguments::from_env();
 
+    // try to enable ansi support in win10 cmd shell
+    let _ = ansi_term::enable_ansi_support();
+
     match args.subcommand()?.as_deref() {
         Some("version") => {
             println!("{}", env!("CARGO_PKG_VERSION"));
