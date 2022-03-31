@@ -2,7 +2,7 @@ const GesChannelState.Trigger = 0;
 const GesChannelState.EnvState = 1;
 const GesChannelState.EnvVol = 2;
 const GesChannelState.Phase = 4;
-const GesChannelState.Size = 6;
+const GesChannelState.Size = 8;
 
 const GesState.Filter = GesChannelState.Size * 4;
 const GesState.Size = GesState.Filter + 8*4;
@@ -35,8 +35,8 @@ export fn gesSnd(t: i32) -> f32 {
 
             if envState {
                 let lazy attack = channelReg?4 & 15;
-                envVol = envVol + 12 * pow(1.5625, (15 - attack) as f32) as i32;
-                if envVol >= 65535 | !attack {
+                envVol = envVol + 12 * pow(1.675, (15 - attack) as f32) as i32;
+                if envVol >= 65535 {
                     envVol = 65535;
                     envState = 0;
                 }
@@ -58,7 +58,7 @@ export fn gesSnd(t: i32) -> f32 {
             let inline freq = 440 as f32 * pow(2.0, (note - 69*256) as f32 / (12*256) as f32);
             let phaseInc = (freq * (65536.0 / 44100.0)) as i32;
 
-            let phase = i32.load16_u(channelState, GesChannelState.Phase) << 8;
+            let phase = channelState!GesChannelState.Phase;
 
             let inline pulseWidth = channelReg?1;
             let phaseShift = (pulseWidth - 128) * 255;
@@ -107,18 +107,18 @@ export fn gesSnd(t: i32) -> f32 {
                     }
                 } else {
                     loop noiseLoop {
-                        let s = (phase >> 12) & 4095;
+                        let s = phase >> 12;
                         let pulse = ((phase >> 8) & 255) >= pulseWidth;
                         s = s * 0x6746ba73;
                         s = s ^ (s >> 15) * pulse;
-                        i!(GesBufferOffset + 128*4) = (s * 0x83567a92 + (phase << 16)) >> 16;
+                        i!(GesBufferOffset + 128*4) = (s * 0x835776c7 + (phase << 16)) >> 16;
                         phase = phase + phaseInc;
                         branch_if (i := i + 4) < 64*4: noiseLoop;
                     }
                 }
             }
 
-            i32.store16(phase >> 8, channelState, GesChannelState.Phase);
+            channelState!GesChannelState.Phase = phase;
 
             let channelVol = ((ch >> 1)?0x68 >> ((ch & 1) * 4)) & 15;
             envVol = envVol * channelVol / 15;
