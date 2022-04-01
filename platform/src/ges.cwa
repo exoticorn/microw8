@@ -108,10 +108,10 @@ export fn gesSnd(t: i32) -> f32 {
                 } else {
                     loop noiseLoop {
                         let s = phase >> 12;
-                        let pulse = ((phase >> 8) & 255) >= pulseWidth;
+                        let inline pulse = ((phase >> 8) & 255) >= pulseWidth;
                         s = s * 0x6746ba73;
                         s = s ^ (s >> 15) * pulse;
-                        i!(GesBufferOffset + 128*4) = (s * 0x835776c7 + (phase << 16)) >> 16;
+                        i!(GesBufferOffset + 128*4) = (s * 0x835776c7) >> 16;
                         phase = phase + phaseInc;
                         branch_if (i := i + 4) < 64*4: noiseLoop;
                     }
@@ -123,20 +123,37 @@ export fn gesSnd(t: i32) -> f32 {
             let channelVol = ((ch >> 1)?0x68 >> ((ch & 1) * 4)) & 15;
             envVol = envVol * channelVol / 15;
 
-            let leftVol = (0x4c6a >> (ch * 4)) & 15;
+            let leftVol = (select(ctrl & 16, 0x3d5b, 0x6a79) >> (ch * 4)) & 15;
             let rightVol = 16 - leftVol;
 
-            let lazy filter = ((ctrl >> 2) & 3) - 1;
+            let lazy filter = (ctrl >> 2) & 3;
 
             i = 0;
-            if filter #> 1 {
-                loop mixLoop {
-                    let sample = (i!(GesBufferOffset + 128*4) * envVol) >> 18;
-                    (i * 2)!GesBufferOffset = (i * 2)!GesBufferOffset + ((sample * leftVol) >> 4);
-                    (i * 2)!(GesBufferOffset + 4) = (i * 2)!(GesBufferOffset + 4) + ((sample * rightVol) >> 4);
-                    branch_if (i := i + 4) < 64*4: mixLoop;
+            if filter < 2 {
+                if filter {
+                    let f = (4096 as f32 - min(4096 as f32, 4096 as f32 * exp(freq * (-8.0 * 3.141 / 44100.0)))) as i32;
+                    let low = (ch * 8)!(GesStateOffset + GesState.Filter);
+                    loop filterLoop {
+                        let in = (i!(GesBufferOffset + 128*4) * envVol) >> 18;
+                        low = low + (((in - low) * f) >> 12);
+                        (i * 2)!GesBufferOffset = (i * 2)!GesBufferOffset + ((low * leftVol) >> 4);
+                        (i * 2)!(GesBufferOffset + 4) = (i * 2)!(GesBufferOffset + 4) + ((low * rightVol) >> 4);
+                        branch_if (i := i + 4) < 64*4: filterLoop;
+                        (ch * 8)!(GesStateOffset + GesState.Filter) = low;
+                        (ch * 8)!(GesStateOffset + GesState.Filter + 4) = 0;
+                    }
+                } else {
+                    loop mixLoop {
+                        let sample = (i!(GesBufferOffset + 128*4) * envVol) >> 18;
+                        (i * 2)!GesBufferOffset = (i * 2)!GesBufferOffset + ((sample * leftVol) >> 4);
+                        (i * 2)!(GesBufferOffset + 4) = (i * 2)!(GesBufferOffset + 4) + ((sample * rightVol) >> 4);
+                        branch_if (i := i + 4) < 64*4: mixLoop;
+                        (ch * 8)!(GesStateOffset + GesState.Filter) = sample;
+                        (ch * 8)!(GesStateOffset + GesState.Filter + 4) = 0;
+                    }
                 }
             } else {
+                filter = filter - 2;
                 let ctrl = filter?0x6a;
                 let note = i32.load16_u(filter * 2, 0x6c);
                 let inline freq = 440 as f32 * pow(2.0, (note - 69*256) as f32 / (12*256) as f32);
@@ -162,9 +179,9 @@ export fn gesSnd(t: i32) -> f32 {
                     (i * 2)!GesBufferOffset = (i * 2)!GesBufferOffset + ((sample * leftVol) >> 4);
                     (i * 2)!(GesBufferOffset + 4) = (i * 2)!(GesBufferOffset + 4) + ((sample * rightVol) >> 4);
                     branch_if (i := i + 4) < 64*4: filterLoop;
+                    (ch * 8)!(GesStateOffset + GesState.Filter) = low;
+                    (ch * 8)!(GesStateOffset + GesState.Filter + 4) = band;
                 }
-                (ch * 8)!(GesStateOffset + GesState.Filter) = low;
-                (ch * 8)!(GesStateOffset + GesState.Filter + 4) = band;
             }
 
             branch_if (ch := ch + 1) < 4: channelLoop;

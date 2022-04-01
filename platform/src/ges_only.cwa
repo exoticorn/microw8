@@ -1,5 +1,6 @@
 import "env.memory" memory(1);
 import "env.sin" fn sin(f32) -> f32;
 import "env.pow" fn pow(f32, f32) -> f32;
+import "env.exp" fn exp(f32) -> f32;
 
 include "ges.cwa"

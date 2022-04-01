@@ -3,6 +3,7 @@ import "env.memory" memory(4);
 import "env.sin" fn sin(f32) -> f32;
 import "env.cos" fn cos(f32) -> f32;
 import "env.pow" fn pow(f32, f32) -> f32;
+import "env.exp" fn exp(f32) -> f32;
 
 export fn time() -> f32 {
     (0!64) as f32 / 1000 as f32
