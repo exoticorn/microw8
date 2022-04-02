@@ -55,7 +55,7 @@ export fn gesSnd(t: i32) -> f32 {
             i32.store16(envVol, channelState, GesChannelState.EnvVol);
 
             let inline note = i32.load16_u(channelReg, 2);
-            let inline freq = 440 as f32 * pow(2.0, (note - 69*256) as f32 / (12*256) as f32);
+            let lazy freq = 440 as f32 * pow(2.0, (note - 69*256) as f32 / (12*256) as f32);
             let phaseInc = (freq * (65536.0 / 44100.0)) as i32;
 
             let phase = channelState!GesChannelState.Phase;
@@ -119,6 +119,30 @@ export fn gesSnd(t: i32) -> f32 {
             }
 
             channelState!GesChannelState.Phase = phase;
+
+            if ctrl & 32 {
+                let lazy modSrc = (ch - 1) & 3;
+                let inline channelState = GesStateOffset + modSrc * GesChannelState.Size;
+                let inline channelReg = 80 + modSrc * 6;
+
+                let inline note = i32.load16_u(channelReg, 2);
+                let inline freq = 440 as f32 * pow(2.0, (note - 69*256) as f32 / (12*256) as f32);
+                let phaseInc = (freq * (65536.0 / 44100.0)) as i32;
+
+                let phase = channelState!GesChannelState.Phase;
+                if modSrc > ch {
+                    phase = phase - (phaseInc << 6);
+                }
+
+                i = 0;
+                loop ringLoop {
+                    let s = phase << 16;
+                    s = (s ^ (s >> 31));
+                    i!(GesBufferOffset + 128*4) = (i!(GesBufferOffset + 128*4) * ((s >> 15) - 32768)) >> 15;
+                    phase = phase + phaseInc;
+                    branch_if (i := i + 4) < 64*4: ringLoop;
+                }
+            }
 
             let channelVol = ((ch >> 1)?0x68 >> ((ch & 1) * 4)) & 15;
             envVol = envVol * channelVol / 15;
