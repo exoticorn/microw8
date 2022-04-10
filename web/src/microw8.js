@@ -99,9 +99,11 @@ export default function MicroW8(screen, config = {}) {
     
         let audioContext = new AudioContext({sampleRate: 44100});
         let keepRunning = true;
+        let abortController = new AbortController();
         cancelFunction = () => {
             audioContext.close();
             keepRunning = false;
+            abortController.abort();
         }
 
         let cartridgeSize = data.byteLength;
@@ -229,6 +231,24 @@ export default function MicroW8(screen, config = {}) {
             let nextFrame = startTime;
 
             audioNode.connect(audioContext.destination);
+
+            let isPaused = false;
+            let pauseTime = startTime;
+            let updateVisibility = isVisible => {
+                let now = Date.now();
+                if(isVisible) {
+                    isPaused = false;
+                    audioContext.resume();
+                    startTime += now - pauseTime;
+                } else {
+                    isPaused = true;
+                    audioContext.suspend();
+                    pauseTime = now;
+                }
+            };
+            window.addEventListener('focus', () => updateVisibility(true), { signal: abortController.signal });
+            window.addEventListener('blur', () => updateVisibility(false), { signal: abortController.signal });
+            updateVisibility(document.hasFocus());
     
             function mainloop() {
                 if (!keepRunning) {
@@ -238,7 +258,7 @@ export default function MicroW8(screen, config = {}) {
                 try {
                     let now = Date.now();
                     let restart = false;
-                    if (now >= nextFrame) {
+                    if (now >= nextFrame && !isPaused) {
                         let gamepads = navigator.getGamepads();
                         let gamepad = 0;
                         for (let i = 0; i < 4; ++i) {
