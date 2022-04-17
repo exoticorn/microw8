@@ -256,9 +256,8 @@ export default function MicroW8(screen, config = {}) {
                 }
     
                 try {
-                    let now = Date.now();
                     let restart = false;
-                    if (now >= nextFrame && !isPaused) {
+                    if (!isPaused) {
                         let gamepads = navigator.getGamepads();
                         let gamepad = 0;
                         for (let i = 0; i < 4; ++i) {
@@ -286,7 +285,7 @@ export default function MicroW8(screen, config = {}) {
                         }
     
                         let u32Mem = U32(memory.buffer);
-                        u32Mem[16] = now - startTime;
+                        u32Mem[16] = Date.now() - startTime;
                         u32Mem[17] = pad | gamepad;
                         if(instance.exports.upd) {
                             instance.exports.upd();
@@ -302,13 +301,14 @@ export default function MicroW8(screen, config = {}) {
                             buffer[i] = palette[memU8[i + 120]] | 0xff000000;
                         }
                         canvasCtx.putImageData(imageData, 0, 0);
-                        nextFrame = Math.max(nextFrame + timePerFrame, now);
                     }
+                    let now = Date.now();
+                    nextFrame = Math.max(nextFrame + timePerFrame, now);
     
                     if (restart) {
                         runModule(currentData);
                     } else {
-                        window.requestAnimationFrame(mainloop);
+                        window.setTimeout(mainloop, Math.round(nextFrame - now))
                     }
                 } catch (err) {
                     config.setMessage(cartridgeSize, err.toString());
