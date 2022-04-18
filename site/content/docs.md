@@ -19,10 +19,13 @@ The memory has to be imported as `env` `memory` and has a maximum size of 256kb 
 00040-00044: time since module start in ms
 00044-0004c: gamepad state
 0004c-00050: reserved
-00050-00070: sound registers
+00050-00070: sound data (synced to sound thread)
 00070-00078: reserved
 00078-12c78: frame buffer
-12c78-13000: reserved
+12c78-12c7c: sound registers/work area base address (for sndGes function)
+12c7c-12c80: reserved
+12c80-12ca0: sound data (synced from sound thread)
+12ca0-13000: reserved
 13000-13400: palette
 13400-13c00: font
 13c00-14000: reserved

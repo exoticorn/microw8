@@ -55,6 +55,7 @@ data 80 {
 include "../../platform/src/ges.cwa"
 
 import "env.pow" fn pow(f32, f32) -> f32;
+import "env.exp" fn exp(f32) -> f32;
 import "env.sin" fn sin(f32) -> f32;
 
 export fn snd(t: i32) -> f32 {
