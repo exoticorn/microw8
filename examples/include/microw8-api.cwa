@@ -33,6 +33,7 @@ import "env.setCursorPosition" fn setCursorPosition(i32, i32);
 import "env.rectangle_outline" fn rectangle_outline(f32, f32, f32, f32, i32);
 import "env.circle_outline" fn circle_outline(f32, f32, f32, i32);
 import "env.exp" fn exp(f32) -> f32;
+import "env.playNote" fn playNote(i32, i32);
 
 const TIME_MS = 0x40;
 const GAMEPAD = 0x44;

@@ -339,6 +339,11 @@ fn printSingleChar(char: i32) {
         return;
     }
 
+    if char == 7 {
+        80?0 = 80?0 ^ 2;
+        return;
+    }
+
     if char == 8 {
         textCursorX = textCursorX - 8;
         if !graphicsText & textCursorX < 0 {
@@ -509,6 +514,26 @@ export fn setCursorPosition(x: i32, y: i32) {
 
 include "ges.cwa"
 
+export fn playNote(channel: i32, note: i32) {
+    (channel * 6)?80 = (channel * 6)?80 & 0xfe ^ if note {
+        (channel * 6)?83 = note & 127;
+        2 | !(note >> 7)
+    } else {
+        0
+    };
+}
+
+data 80 {
+    i8(
+        0x80, 0xc0, 0, 81, 0xa0, 0x50,
+        0xc4, 0, 0, 69, 0x60, 0x40,
+        0x44, 0xb0, 0, 69, 0x90, 0x43,
+        0x4, 0xf0, 0, 69, 0xa4, 0x44,
+        0xff, 0xff,
+        1, 1, 0, 100, 0, 100
+    )
+}
+
 ///////////
 // SETUP //
 ///////////
@@ -563,17 +588,6 @@ start fn setup() {
 
     cls(0);
     randomSeed(random());
-}
-
-data 80 {
-    i8(
-        0, 128, 0, 69, 0x8, 0xc8,
-        0, 128, 0, 69, 0x8, 0xc8,
-        0, 128, 0, 69, 0x8, 0xc8,
-        0, 128, 0, 69, 0x8, 0xc8,
-        0xff, 0xff,
-        1, 1, 0, 100, 0, 100
-    )
 }
 
 data 0x12c78 {

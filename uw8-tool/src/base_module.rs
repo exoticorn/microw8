@@ -166,6 +166,8 @@ impl BaseModule {
 
         add_function(&mut functions, &type_map, "exp", &[F32], Some(F32));
 
+        add_function(&mut functions, &type_map, "playNote", &[I32, I32], None);
+
         for i in functions.len()..64 {
             add_function(
                 &mut functions,
@@ -291,7 +293,10 @@ impl BaseModule {
 
     pub fn write_as_cwa<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         fn inner(mut file: File, base: &BaseModule) -> Result<()> {
-            writeln!(file, "// MicroW8 APIs, to be `include`d in CurlyWas sources")?;
+            writeln!(
+                file,
+                "// MicroW8 APIs, to be `include`d in CurlyWas sources"
+            )?;
             writeln!(file, "import \"env.memory\" memory({});", base.memory)?;
             writeln!(file)?;
             for &(module, ref name, type_id) in &base.function_imports {
@@ -402,5 +407,5 @@ const CONSTANTS: &[(&str, u32)] = &[
     ("BUTTON_A", 4),
     ("BUTTON_B", 5),
     ("BUTTON_X", 6),
-    ("BUTTON_Y", 7)
+    ("BUTTON_Y", 7),
 ];
