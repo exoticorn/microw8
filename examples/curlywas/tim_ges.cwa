@@ -1,3 +1,7 @@
+// Steady On Tim, It's Only A Budget Game
+// original bytebeat by Gasman / Hooy-Program
+// ported to MicroW8/GES by exoticorn/icebird
+
 import "env.memory" memory(4);
 
 fn melody(ch: i32, t: i32, T: i32) {
@@ -9,7 +13,7 @@ fn melody(ch: i32, t: i32, T: i32) {
     let inline riff_note = 5514 >> (riff_pos % note_count * 4) & 15;
     let inline melody_note = shift + octave - riff_note;
 
-    ch?1 = 248 - riff_pos * 15;
+    ch?1 = 230 - riff_pos * 14;
     ch?3 = melody_note + 64;
 
     let inline arp_note = shift + ((0x85>>((t/2)%3*4)) & 15) - 1;
@@ -22,13 +26,13 @@ export fn upd() {
     melody(98, t, T - 3);
     melody(92, t, T);
 
-    80?0 = ((T >= 256) & (T/12+(T-3)/12)) * 2 | 0x44; // arp trigger
+    80?0 = ((T >= 256) & (T/12+(T-3)/12)) * 2 | 0x48; // arp trigger
 
     if T >= 128 {
         let inline bass_step = T % 8;
         86?3 = if bass_step / 2 == 2 {
-            86?0 = 0xc2;
-            80
+            86?0 = 0xd6;
+            81
         } else {
             86?0 = ((197 >> bass_step) & 1) | 0x48;
             ((T & 4) * ((T & 7) - 1)) / 2 + 28
@@ -38,12 +42,12 @@ export fn upd() {
 
 data 80 {
     i8(
-        0, 0x81, 0, 0, 0, 0x90,
-        0, 0x4c, 0, 0, 0, 0x5c,
-        5, 0, 0, 0, 0, 0x4c,
-        5, 0, 0, 0, 0, 0x4c,
-        0xfa, 0x85,
-        0x81, 0x81, 0, 110, 0, 90
+        0, 0x90, 0, 0, 0, 0x90,
+        0, 0x4c, 0, 0, 0, 0x4c,
+        0x19, 0, 0, 0, 0, 0x4c,
+        0x19, 0, 0, 0, 0, 0x4c,
+        0xfa, 0x84,
+        0xc1, 0xc1, 0, 107, 0, 0x4c
     )
 }
 
