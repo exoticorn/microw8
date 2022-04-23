@@ -234,7 +234,8 @@ Avoid the reserved control chars, they are currently NOPs but their behavior can
 | 2-3   | -          | Reserved                             |
 | 4     | -          | Switch to normal mode                |
 | 5     | -          | Switch to graphics mode              |
-| 6-7   | -          | Reserved                             |
+| 6     | -          | Reserved                             |
+| 7     | -          | Bell / trigger sound channel 0       |
 | 8     | -          | Move cursor left                     |
 | 9     | -          | Move cursor right                    |
 | 10    | -          | Move cursor down                     |
@@ -276,34 +277,120 @@ Sets the cursor position. In normal mode `x` and `y` are multiplied by 8 to get 
 
 ## Sound
 
+### Low level operation
+
+MicroW8 actually runs two instances of your module. On the first instance, it calls `upd` and displays the framebuffer found in its memory. On the
+second instance, it calls `snd` instead with an incrementing sample index and expects that function to return sound samples for the left and right
+channel at 44100 Hz. If your module does not export a `snd` function, it calls the api function `sndGes` instead.
+
+As the only means of communication, 32 bytes starting at address 0x00050 are copied from main to sound memory after `upd` returns. At the same time,
+32 bytes starting at 0x12c80 are copied from sound to main memory.
+
+By default, the `sndGes` function generates sound based on the 32 bytes at 0x00050. This means that in the default configuration those 32 bytes act
+as sound registers. See the `sndGes` function for the meaning of those registers.
+
+### fn playNote(channel: i32, note: i32)
+
+Triggers a note (1-127) on the given channel (0-3). Notes are semitones with 69 being A4 (same as MIDI). A note value of 0 stops the
+sound playing on that channel. A note value 128-255 will trigger note-128 and immediately stop it (playing attack+release parts of envelope).
+
+This function assumes the default setup, with the `sndGes` registers located at 0x00050.
+
+### fn sndGes(sampleIndex: i32) -> f32
+
+This implements a sound chip, generating sound based on 32 bytes of sound registers.
+
+The spec of this sound chip are:
+
+- 4 channels
+- rect, saw, tri, noise wave forms selectable per channel
+- each wave form supports some kind of pulse width modulation
+- each channel has an optional automatic low pass filter, or can be sent to one of two manually controllable filters
+- each channel can select between a narrow and a wide stereo positioning. The two stereo positions of each channel are fixed.
+
+This function requires 1024 bytes of working memory, the first 32 bytes of which are interpreted as the sound registers.
+The base address of its working memory can be configured by writing the address to 0x12c78. It defaults to 0x00050.
+
+Here is a short description of the 32 sound registers.
+
 ```
-Per channel:
+00 - CTRL0
+06 - CTRL1
+0c - CTRL2
+12 - CTRL3
+  | 7  6 |   5  |   4  |  3  2  |    1    |    0    |
+  | wave | ring | wide | filter | trigger | note on |
 
-00 : CTRL - wave form, ring, sync, filter send, trigger
-   bit 0: note on flag
-   bit 1: note trigger
-   bit 2,3: filter 0,1 send
-   bit 6,7: wave form (rect, saw, tri, noise)
-01 : PULS - pulse width
-02 : FINE - fine tuning
-03 : NOTE - note
-04 : ENVA - attack, decay
-05 : ENVR - sustain, release
+  note on: stay in decay/sustain part of envelope
+  trigger: the attack part of the envlope is triggered when either this changes
+           or note on is changed from 0 to 1.
+  filter : 0 - no filter
+           1 - fixed 6db 1-pole filter with cutoff two octaves above note
+           2 - programmable filter 0
+           3 - programmable filter 1
+  wide   : use wide stereo panning
+  ring   : ring modulate with triangle wave at frequency of previous channel
+  wave   : 0 - rectangle
+           1 - saw
+           2 - triangle
+           3 - noise
 
-50-56: channel 0
-56-5b: channel 1
-5c-61: channel 2
-62-67: channel 3
+01 - PULS0
+07 - PULS1
+0d - PULS2
+13 - PULS3
+  Pulse width 0-255, with 0 being the plain version of each wave form.
+  rectangle - 50%-100% pulse width
+  saw       - inverts 0%-100% of the saw wave form around the center
+  triangle  - morphs into an octave up triangle wave
+  noise     - blends into a decimated saw wave (just try it out)
 
-68: VO01 - volumes channel 0&1
-69: VO23 - volumes channel 2&3
+02 - FINE0
+08 - FINE1
+0e - FINE2
+14 - FINE3
+  Fractional note
 
-6a : FCTR 0 - type, resonance
-6b : FCTR 1 - type, resonance
-6c : FFIN 0 - cutoff fine tuning
-6d : FNOT 0 - cutoff note
-6e : FFIN 1 - cutoff fine tuning
-6f : FNOT 1 - cutoff note
+03 - NOTE0
+09 - NOTE1
+0f - NOTE2
+15 - NOTE3
+  Note, 69 = A4
+
+04 - ENVA0
+0a - ENVA1
+10 - ENVA2
+16 - ENVA3
+  | 7 6 5 4 | 3 2 1 0 |
+  | decay   | attack  |
+
+05 - ENVB0
+0b - ENVB1
+11 - ENVB2
+17 - ENVB3
+  | 7 6 5 4 | 3 2 1 0 |
+  | release | sustain |
+
+18 - VO01
+  | 7 6 5 4  | 3 2 1 0  |
+  | volume 1 | volume 0 |
+
+19 - VO23
+  | 7 6 5 4  | 3 2 1 0  |
+  | volume 3 | volume 2 |
+
+1a - FCTR0
+1b - FCTR1
+  | 7 6 5 4   | 3 | 2    | 1    | 0   |
+  | resonance | 0 | band | high | low |
+
+1c - FFIN0
+1e - FFIN1
+  cutoff frequency - fractional note
+
+1d - FNOT0
+1f - FNOT1
+  cutoff frequency - note
 ```
 
 # The `uw8` tool

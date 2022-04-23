@@ -16,7 +16,7 @@ export fn gesSnd(t: i32) -> f32 {
         let i: i32;
         loop clearLoop {
             (baseAddr + i)!GesBufferOffset = 0;
-            branch_if (i := i + 4) < 128*8: clearLoop;
+            branch_if (i := i + 4) < 128*4: clearLoop;
         }
 
         let ch: i32;
