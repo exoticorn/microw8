@@ -91,7 +91,6 @@ impl MicroW8 {
 struct Uw8Sound {
     stream: cpal::Stream,
     tx: mpsc::SyncSender<[u8; 32]>,
-    rx: mpsc::Receiver<[u8; 32]>,
 }
 
 impl super::Runtime for MicroW8 {
@@ -261,7 +260,6 @@ impl super::Runtime for MicroW8 {
             };
 
             let (tx, rx) = mpsc::sync_channel::<[u8; 32]>(1);
-            let (back_tx, back_rx) = mpsc::sync_channel::<[u8; 32]>(2);
 
             let start_time = Instant::now();
 
@@ -270,10 +268,8 @@ impl super::Runtime for MicroW8 {
                 device.build_output_stream(
                     &config,
                     move |buffer: &mut [f32], _| {
-                        if let Ok(mut regs) = rx.try_recv() {
+                        if let Ok(regs) = rx.try_recv() {
                             memory.write(&mut store, 80, &regs).unwrap();
-                            memory.read(&mut store, 0x12c80, &mut regs).unwrap();
-                            back_tx.send(regs).unwrap();
                         }
 
                         {
@@ -293,11 +289,7 @@ impl super::Runtime for MicroW8 {
                 )?
             };
 
-            Uw8Sound {
-                stream,
-                tx,
-                rx: back_rx,
-            }
+            Uw8Sound { stream, tx }
         };
 
         sound.stream.play()?;
@@ -319,13 +311,6 @@ impl super::Runtime for MicroW8 {
     fn run_frame(&mut self) -> Result<()> {
         let mut result = Ok(());
         if let Some(mut instance) = self.instance.take() {
-            while let Ok(regs) = instance.sound.rx.try_recv() {
-                instance
-                    .memory
-                    .write(&mut instance.store, 0x12c80, &regs)
-                    .unwrap();
-            }
-
             {
                 let time = instance.start_time.elapsed().as_millis() as i32;
                 let mut gamepad: u32 = 0;

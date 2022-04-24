@@ -211,13 +211,7 @@ export default function MicroW8(screen, config = {}) {
     
             let platform_data = await loadModuleURL(platformUrl);
 
-            audioNode.port.onmessage = (e) => {
-                if(isNaN(e.data)) {
-                    U8(memory.buffer, 0x12c80, 32).set(U8(e.data));
-                } else {
-                    updateAudioReady(e.data);
-                }
-            };
+            audioNode.port.onmessage = (e) => updateAudioReady(e.data);
             audioNode.port.postMessage([platform_data, data]);
 
             let platform_instance = await instantiate(platform_data);

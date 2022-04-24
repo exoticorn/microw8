@@ -6,10 +6,7 @@ class APU extends AudioWorkletProcessor {
         this.port.onmessage = (ev) => {
             if(this.memory) {
                 if(isNaN(ev.data)) {
-                    let data = U8(ev.data);
-                    U8(this.memory.buffer, 80, 32).set(data);
-                    data.set(U8(this.memory.buffer, 0x12c80, 32));
-                    this.port.postMessage(ev.data);
+                    U8(this.memory.buffer, 80, 32).set(U8(ev.data));
                 } else {
                     this.startTime = ev.data;
                 }

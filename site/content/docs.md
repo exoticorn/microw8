@@ -23,9 +23,7 @@ The memory has to be imported as `env` `memory` and has a maximum size of 256kb 
 00070-00078: reserved
 00078-12c78: frame buffer
 12c78-12c7c: sound registers/work area base address (for sndGes function)
-12c7c-12c80: reserved
-12c80-12ca0: sound data (synced from sound thread)
-12ca0-13000: reserved
+12c7c-13000: reserved
 13000-13400: palette
 13400-13c00: font
 13c00-14000: reserved
@@ -283,8 +281,7 @@ MicroW8 actually runs two instances of your module. On the first instance, it ca
 second instance, it calls `snd` instead with an incrementing sample index and expects that function to return sound samples for the left and right
 channel at 44100 Hz. If your module does not export a `snd` function, it calls the api function `sndGes` instead.
 
-As the only means of communication, 32 bytes starting at address 0x00050 are copied from main to sound memory after `upd` returns. At the same time,
-32 bytes starting at 0x12c80 are copied from sound to main memory.
+As the only means of communication, 32 bytes starting at address 0x00050 are copied from main to sound memory after `upd` returns.
 
 By default, the `sndGes` function generates sound based on the 32 bytes at 0x00050. This means that in the default configuration those 32 bytes act
 as sound registers. See the `sndGes` function for the meaning of those registers.
@@ -302,11 +299,12 @@ This implements a sound chip, generating sound based on 32 bytes of sound regist
 
 The spec of this sound chip are:
 
-- 4 channels
+- 4 channels with individual volume control (0-15)
 - rect, saw, tri, noise wave forms selectable per channel
 - each wave form supports some kind of pulse width modulation
 - each channel has an optional automatic low pass filter, or can be sent to one of two manually controllable filters
 - each channel can select between a narrow and a wide stereo positioning. The two stereo positions of each channel are fixed.
+- optional ring modulation
 
 This function requires 1024 bytes of working memory, the first 32 bytes of which are interpreted as the sound registers.
 The base address of its working memory can be configured by writing the address to 0x12c78. It defaults to 0x00050.
