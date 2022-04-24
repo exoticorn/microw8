@@ -90,6 +90,9 @@ export default function MicroW8(screen, config = {}) {
         keyboardElement.onkeydown = keyHandler;
         keyboardElement.onkeyup = keyHandler;
     }
+
+    let audioContext;
+    let audioNode;
     
     async function runModule(data, keepUrl) {
         if (cancelFunction) {
@@ -97,7 +100,7 @@ export default function MicroW8(screen, config = {}) {
             cancelFunction = null;
         }
     
-        let audioContext = new AudioContext({sampleRate: 44100});
+        audioContext = new AudioContext({sampleRate: 44100});
         let keepRunning = true;
         let abortController = new AbortController();
         cancelFunction = () => {
@@ -114,7 +117,7 @@ export default function MicroW8(screen, config = {}) {
         }
     
         await audioContext.audioWorklet.addModule(audioWorkletUrl);
-        let audioNode = new AudioNode(audioContext);
+        audioNode = new AudioNode(audioContext);
 
         let audioReadyFlags = 0;
         let audioReadyResolve;
@@ -334,14 +337,25 @@ export default function MicroW8(screen, config = {}) {
     
     let videoRecorder;
     let videoStartTime;
+    let videoAudioSourceNode;
+    let videoAudioStreamNode;
     function recordVideo() {
         if(videoRecorder) {
             videoRecorder.stop();
             videoRecorder = null;
+            videoAudioSourceNode.disconnect(videoAudioStreamNode);
+            videoAudioSourceNode = null;
+            videoAudioStreamNode = null;
             return;
         }
+
+        let stream = screen.captureStream();
+        videoAudioStreamNode = audioContext.createMediaStreamDestination();
+        videoAudioSourceNode = audioNode;
+        audioNode.connect(videoAudioStreamNode);
+        stream.addTrack(videoAudioStreamNode.stream.getAudioTracks()[0]);
     
-        videoRecorder = new MediaRecorder(screen.captureStream(), {
+        videoRecorder = new MediaRecorder(stream, {
             mimeType: 'video/webm',
             videoBitsPerSecond: 25000000
         });
