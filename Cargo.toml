@@ -7,13 +7,13 @@ edition = "2021"
 
 [features]
 default = ["native", "browser"]
-native = ["wasmtime"]
+native = ["wasmtime", "minifb", "cpal", "rubato"]
 browser = ["warp", "tokio", "tokio-stream", "webbrowser"]
 
 [dependencies]
 wasmtime = { version = "0.35.3", optional = true }
 anyhow = "1"
-minifb = { version = "0.22", default-features = false, features = ["x11"] }
+minifb = { version = "0.22", default-features = false, features = ["x11"], optional = true }
 notify = "4"
 pico-args = "0.4"
 curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "aac7bbd" }
@@ -25,4 +25,5 @@ tokio = { version = "1.17.0", features = ["sync", "rt"], optional = true }
 tokio-stream = { version = "0.1.8", features = ["sync"], optional = true }
 webbrowser = { version = "0.6.0", optional = true }
 ansi_term = "0.12.1"
-cpal = "0.13.5"
+cpal = { version = "0.13.5", optional = true }
+rubato = { version = "0.11.0", optional = true }

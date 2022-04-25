@@ -5,6 +5,7 @@ use std::{thread, time::Instant};
 use anyhow::{anyhow, Result};
 use cpal::traits::*;
 use minifb::{Key, Window, WindowOptions};
+use rubato::Resampler;
 use wasmtime::{
     Engine, GlobalType, Memory, MemoryType, Module, Mutability, Store, TypedFunc, ValType,
 };
@@ -27,6 +28,7 @@ pub struct MicroW8 {
     window_buffer: Vec<u32>,
     instance: Option<UW8Instance>,
     timeout: u32,
+    disable_audio: bool,
 }
 
 struct UW8Instance {
@@ -37,7 +39,7 @@ struct UW8Instance {
     start_time: Instant,
     module: Vec<u8>,
     watchdog: Arc<Mutex<UW8WatchDog>>,
-    sound: Uw8Sound,
+    sound: Option<Uw8Sound>,
 }
 
 impl Drop for UW8Instance {
@@ -77,6 +79,7 @@ impl MicroW8 {
             window_buffer: vec![0u32; 320 * 240],
             instance: None,
             timeout: 30,
+            disable_audio: false,
         })
     }
 
@@ -86,11 +89,10 @@ impl MicroW8 {
             *v = 0;
         }
     }
-}
 
-struct Uw8Sound {
-    stream: cpal::Stream,
-    tx: mpsc::SyncSender<[u8; 32]>,
+    pub fn disable_audio(&mut self) {
+        self.disable_audio = true;
+    }
 }
 
 impl super::Runtime for MicroW8 {
@@ -126,59 +128,7 @@ impl super::Runtime for MicroW8 {
         let module_length = load_uw8.call(&mut store, module_data.len() as i32)? as u32 as usize;
         let module = wasmtime::Module::new(&self.engine, &memory.data(&store)[..module_length])?;
 
-        fn add_native_functions(
-            linker: &mut wasmtime::Linker<()>,
-            store: &mut wasmtime::Store<()>,
-        ) -> Result<()> {
-            linker.func_wrap("env", "acos", |v: f32| v.acos())?;
-            linker.func_wrap("env", "asin", |v: f32| v.asin())?;
-            linker.func_wrap("env", "atan", |v: f32| v.atan())?;
-            linker.func_wrap("env", "atan2", |x: f32, y: f32| x.atan2(y))?;
-            linker.func_wrap("env", "cos", |v: f32| v.cos())?;
-            linker.func_wrap("env", "exp", |v: f32| v.exp())?;
-            linker.func_wrap("env", "log", |v: f32| v.ln())?;
-            linker.func_wrap("env", "sin", |v: f32| v.sin())?;
-            linker.func_wrap("env", "tan", |v: f32| v.tan())?;
-            linker.func_wrap("env", "pow", |a: f32, b: f32| a.powf(b))?;
-            for i in 10..64 {
-                linker.func_wrap("env", &format!("reserved{}", i), || {})?;
-            }
-            for i in 0..16 {
-                linker.define(
-                    "env",
-                    &format!("g_reserved{}", i),
-                    wasmtime::Global::new(
-                        &mut *store,
-                        GlobalType::new(ValType::I32, Mutability::Const),
-                        0.into(),
-                    )?,
-                )?;
-            }
-
-            Ok(())
-        }
-
         add_native_functions(&mut linker, &mut store)?;
-
-        fn instantiate_platform(
-            linker: &mut wasmtime::Linker<()>,
-            store: &mut wasmtime::Store<()>,
-            platform_module: &wasmtime::Module,
-        ) -> Result<wasmtime::Instance> {
-            let platform_instance = linker.instantiate(&mut *store, &platform_module)?;
-
-            for export in platform_instance.exports(&mut *store) {
-                linker.define(
-                    "env",
-                    export.name(),
-                    export
-                        .into_func()
-                        .expect("platform surely only exports functions"),
-                )?;
-            }
-
-            Ok(platform_instance)
-        }
 
         let platform_instance = instantiate_platform(&mut linker, &mut store, &platform_module)?;
 
@@ -215,84 +165,20 @@ impl super::Runtime for MicroW8 {
         let end_frame = platform_instance.get_typed_func::<(), (), _>(&mut store, "endFrame")?;
         let update = instance.get_typed_func::<(), (), _>(&mut store, "upd").ok();
 
-        let sound = {
-            let mut store = wasmtime::Store::new(&self.engine, ());
-
-            let memory = wasmtime::Memory::new(&mut store, MemoryType::new(4, Some(4)))?;
-
-            let mut linker = wasmtime::Linker::new(&self.engine);
-            linker.define("env", "memory", memory)?;
-            add_native_functions(&mut linker, &mut store)?;
-
-            let platform_instance =
-                instantiate_platform(&mut linker, &mut store, &platform_module)?;
-            let instance = linker.instantiate(&mut store, &module)?;
-
-            let snd = instance
-                .get_typed_func::<(i32,), f32, _>(&mut store, "snd")
-                .or_else(|_| {
-                    platform_instance.get_typed_func::<(i32,), f32, _>(&mut store, "gesSnd")
-                })?;
-
-            let host = cpal::default_host();
-            let device = host
-                .default_output_device()
-                .ok_or_else(|| anyhow!("No audio output device available"))?;
-            let config = device
-                .supported_output_configs()?
-                .find(|config| {
-                    config.min_sample_rate().0 <= 44100
-                        && config.max_sample_rate().0 >= 44100
-                        && config.channels() == 2
-                        && config.sample_format() == cpal::SampleFormat::F32
-                })
-                .ok_or_else(|| anyhow!("Could not find 44.1kHz float config"))?;
-            let config = config.with_sample_rate(cpal::SampleRate(44100));
-            let buffer_size = match *config.buffer_size() {
-                cpal::SupportedBufferSize::Unknown => cpal::BufferSize::Default,
-                cpal::SupportedBufferSize::Range { min, max } => {
-                    cpal::BufferSize::Fixed(256.max(min).min(max))
+        let sound = if self.disable_audio {
+            None
+        } else {
+            match init_sound(&self.engine, &platform_module, &module) {
+                Ok(sound) => {
+                    sound.stream.play()?;
+                    Some(sound)
                 }
-            };
-            let config = cpal::StreamConfig {
-                buffer_size,
-                ..config.config()
-            };
-
-            let (tx, rx) = mpsc::sync_channel::<[u8; 32]>(1);
-
-            let start_time = Instant::now();
-
-            let mut sample_index = 0;
-            let stream = {
-                device.build_output_stream(
-                    &config,
-                    move |buffer: &mut [f32], _| {
-                        if let Ok(regs) = rx.try_recv() {
-                            memory.write(&mut store, 80, &regs).unwrap();
-                        }
-
-                        {
-                            let time = start_time.elapsed().as_millis() as i32;
-                            let mem = memory.data_mut(&mut store);
-                            mem[64..68].copy_from_slice(&time.to_le_bytes());
-                        }
-
-                        for v in buffer {
-                            *v = snd.call(&mut store, (sample_index,)).unwrap_or(0.0);
-                            sample_index = sample_index.wrapping_add(1);
-                        }
-                    },
-                    move |err| {
-                        dbg!(err);
-                    },
-                )?
-            };
-
-            Uw8Sound { stream, tx }
+                Err(err) => {
+                    eprintln!("Failed to init sound: {}", err);
+                    None
+                }
+            }
         };
-
-        sound.stream.play()?;
 
         self.instance = Some(UW8Instance {
             store,
@@ -345,7 +231,9 @@ impl super::Runtime for MicroW8 {
 
             let mut sound_regs = [0u8; 32];
             sound_regs.copy_from_slice(&memory[80..112]);
-            instance.sound.tx.send(sound_regs)?;
+            if let Some(ref sound) = instance.sound {
+                sound.tx.send(sound_regs)?;
+            }
 
             let framebuffer = &memory[120..(120 + 320 * 240)];
             let palette = &memory[0x13000..];
@@ -370,4 +258,211 @@ impl super::Runtime for MicroW8 {
         result?;
         Ok(())
     }
+}
+
+fn add_native_functions(
+    linker: &mut wasmtime::Linker<()>,
+    store: &mut wasmtime::Store<()>,
+) -> Result<()> {
+    linker.func_wrap("env", "acos", |v: f32| v.acos())?;
+    linker.func_wrap("env", "asin", |v: f32| v.asin())?;
+    linker.func_wrap("env", "atan", |v: f32| v.atan())?;
+    linker.func_wrap("env", "atan2", |x: f32, y: f32| x.atan2(y))?;
+    linker.func_wrap("env", "cos", |v: f32| v.cos())?;
+    linker.func_wrap("env", "exp", |v: f32| v.exp())?;
+    linker.func_wrap("env", "log", |v: f32| v.ln())?;
+    linker.func_wrap("env", "sin", |v: f32| v.sin())?;
+    linker.func_wrap("env", "tan", |v: f32| v.tan())?;
+    linker.func_wrap("env", "pow", |a: f32, b: f32| a.powf(b))?;
+    for i in 10..64 {
+        linker.func_wrap("env", &format!("reserved{}", i), || {})?;
+    }
+    for i in 0..16 {
+        linker.define(
+            "env",
+            &format!("g_reserved{}", i),
+            wasmtime::Global::new(
+                &mut *store,
+                GlobalType::new(ValType::I32, Mutability::Const),
+                0.into(),
+            )?,
+        )?;
+    }
+
+    Ok(())
+}
+
+fn instantiate_platform(
+    linker: &mut wasmtime::Linker<()>,
+    store: &mut wasmtime::Store<()>,
+    platform_module: &wasmtime::Module,
+) -> Result<wasmtime::Instance> {
+    let platform_instance = linker.instantiate(&mut *store, &platform_module)?;
+
+    for export in platform_instance.exports(&mut *store) {
+        linker.define(
+            "env",
+            export.name(),
+            export
+                .into_func()
+                .expect("platform surely only exports functions"),
+        )?;
+    }
+
+    Ok(platform_instance)
+}
+
+struct Uw8Sound {
+    stream: cpal::Stream,
+    tx: mpsc::SyncSender<[u8; 32]>,
+}
+
+fn init_sound(
+    engine: &wasmtime::Engine,
+    platform_module: &wasmtime::Module,
+    module: &wasmtime::Module,
+) -> Result<Uw8Sound> {
+    let mut store = wasmtime::Store::new(engine, ());
+
+    let memory = wasmtime::Memory::new(&mut store, MemoryType::new(4, Some(4)))?;
+
+    let mut linker = wasmtime::Linker::new(engine);
+    linker.define("env", "memory", memory)?;
+    add_native_functions(&mut linker, &mut store)?;
+
+    let platform_instance = instantiate_platform(&mut linker, &mut store, platform_module)?;
+    let instance = linker.instantiate(&mut store, module)?;
+
+    let snd = instance
+        .get_typed_func::<(i32,), f32, _>(&mut store, "snd")
+        .or_else(|_| platform_instance.get_typed_func::<(i32,), f32, _>(&mut store, "gesSnd"))?;
+
+    let host = cpal::default_host();
+    let device = host
+        .default_output_device()
+        .ok_or_else(|| anyhow!("No audio output device available"))?;
+    let mut configs: Vec<_> = device
+        .supported_output_configs()?
+        .filter(|config| {
+            config.channels() == 2 && config.sample_format() == cpal::SampleFormat::F32
+        })
+        .collect();
+    configs.sort_by_key(|config| {
+        let rate = 44100
+            .max(config.min_sample_rate().0)
+            .min(config.max_sample_rate().0);
+        if rate >= 44100 {
+            rate - 44100
+        } else {
+            (44100 - rate) * 1000
+        }
+    });
+    let config = configs
+        .into_iter()
+        .next()
+        .ok_or_else(|| anyhow!("Could not find float output config"))?;
+    let sample_rate = cpal::SampleRate(44100)
+        .max(config.min_sample_rate())
+        .max(config.max_sample_rate());
+    let config = config.with_sample_rate(sample_rate);
+    let buffer_size = match *config.buffer_size() {
+        cpal::SupportedBufferSize::Unknown => cpal::BufferSize::Default,
+        cpal::SupportedBufferSize::Range { min, max } => {
+            cpal::BufferSize::Fixed(256.max(min).min(max))
+        }
+    };
+    let config = cpal::StreamConfig {
+        buffer_size,
+        ..config.config()
+    };
+
+    let sample_rate = config.sample_rate.0 as usize;
+
+    let (tx, rx) = mpsc::sync_channel::<[u8; 32]>(1);
+
+    let start_time = Instant::now();
+
+    struct Resampler {
+        resampler: rubato::FftFixedIn<f32>,
+        input_buffers: Vec<Vec<f32>>,
+        output_buffers: Vec<Vec<f32>>,
+        output_index: usize,
+    }
+    let mut resampler: Option<Resampler> = if sample_rate == 44100 {
+        None
+    } else {
+        let rs = rubato::FftFixedIn::new(44100, sample_rate, 128, 1, 2)?;
+        let input_buffers = rs.input_buffer_allocate();
+        let output_buffers = rs.output_buffer_allocate();
+        Some(Resampler {
+            resampler: rs,
+            input_buffers,
+            output_buffers,
+            output_index: usize::MAX,
+        })
+    };
+
+    let mut sample_index = 0;
+    let stream = device.build_output_stream(
+        &config,
+        move |mut buffer: &mut [f32], _| {
+            if let Ok(regs) = rx.try_recv() {
+                memory.write(&mut store, 80, &regs).unwrap();
+            }
+
+            {
+                let time = start_time.elapsed().as_millis() as i32;
+                let mem = memory.data_mut(&mut store);
+                mem[64..68].copy_from_slice(&time.to_le_bytes());
+            }
+
+            if let Some(ref mut resampler) = resampler {
+                while !buffer.is_empty() {
+                    let copy_size = resampler.output_buffers[0]
+                        .len()
+                        .saturating_sub(resampler.output_index)
+                        .min(buffer.len() / 2);
+                    if copy_size == 0 {
+                        resampler.input_buffers[0].clear();
+                        resampler.input_buffers[1].clear();
+                        for _ in 0..resampler.resampler.input_frames_next() {
+                            resampler.input_buffers[0]
+                                .push(snd.call(&mut store, (sample_index,)).unwrap_or(0.0));
+                            resampler.input_buffers[1]
+                                .push(snd.call(&mut store, (sample_index + 1,)).unwrap_or(0.0));
+                            sample_index = sample_index.wrapping_add(2);
+                        }
+
+                        resampler
+                            .resampler
+                            .process_into_buffer(
+                                &resampler.input_buffers,
+                                &mut resampler.output_buffers,
+                                None,
+                            )
+                            .unwrap();
+                        resampler.output_index = 0;
+                    } else {
+                        for i in 0..copy_size {
+                            buffer[i * 2] = resampler.output_buffers[0][resampler.output_index + i];
+                            buffer[i * 2 + 1] =
+                                resampler.output_buffers[1][resampler.output_index + i];
+                        }
+                        resampler.output_index += copy_size;
+                        buffer = &mut buffer[copy_size * 2..];
+                    }
+                }
+            } else {
+                for v in buffer {
+                    *v = snd.call(&mut store, (sample_index,)).unwrap_or(0.0);
+                    sample_index = sample_index.wrapping_add(1);
+                }
+            }
+        },
+        move |err| {
+            dbg!(err);
+        },
+    )?;
+
+    Ok(Uw8Sound { stream, tx })
 }

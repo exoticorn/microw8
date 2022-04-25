@@ -16,7 +16,7 @@ fn main() -> Result<()> {
     let mut args = Arguments::from_env();
 
     // try to enable ansi support in win10 cmd shell
-    #[cfg(target_os="windows")]
+    #[cfg(target_os = "windows")]
     let _ = ansi_term::enable_ansi_support();
 
     match args.subcommand()?.as_deref() {
@@ -79,6 +79,8 @@ fn run(mut args: Arguments) -> Result<()> {
     #[cfg(not(feature = "native"))]
     let run_browser = args.contains(["-b", "--browser"]) || true;
 
+    let disable_audio = args.contains(["-m", "--disable-audio"]);
+
     let filename = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
 
     let mut watcher = uw8::FileWatcher::new()?;
@@ -89,7 +91,13 @@ fn run(mut args: Arguments) -> Result<()> {
         #[cfg(not(feature = "native"))]
         unimplemented!();
         #[cfg(feature = "native")]
-        Box::new(MicroW8::new()?)
+        {
+            let mut microw8 = MicroW8::new()?;
+            if disable_audio {
+                microw8.disable_audio();
+            }
+            Box::new(microw8)
+        }
     } else {
         #[cfg(not(feature = "browser"))]
         unimplemented!();
