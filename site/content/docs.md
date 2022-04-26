@@ -286,6 +286,12 @@ As the only means of communication, 32 bytes starting at address 0x00050 are cop
 By default, the `sndGes` function generates sound based on the 32 bytes at 0x00050. This means that in the default configuration those 32 bytes act
 as sound registers. See the `sndGes` function for the meaning of those registers.
 
+### export fn snd(sampleIndex: i32) -> f32
+
+If the module exports a `snd` function, it is called 88200 times per second to provide PCM sample data for playback (44.1kHz stereo).
+The `sampleIndex` will start at 0 and increments by 1 for each call. On even indices the function is expected to return a sample value for
+the left channel, on odd indices for the right channel.
+
 ### fn playNote(channel: i32, note: i32)
 
 Triggers a note (1-127) on the given channel (0-3). Notes are semitones with 69 being A4 (same as MIDI). A note value of 0 stops the
