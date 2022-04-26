@@ -29,6 +29,19 @@ Examplers for older versions:
 
 ## Versions
 
+### v0.2.0-rc1
+
+* [Web runtime](v0.2.0-rc1)
+
+Changes:
+
+* [add sound support](docs#sound)
+* "integer constant cast to float" literal syntax in CurlyWas (ex. `1_f` is equivalent to `1 as f32`)
+
+Known issues:
+
+* timing accuracy/update frequency of sound support currently depends on sound buffer size
+
 ### v0.1.2
 
 * [Web runtime](v0.1.2)
