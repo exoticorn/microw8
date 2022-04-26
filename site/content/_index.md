@@ -32,6 +32,9 @@ Examplers for older versions:
 ### v0.2.0-rc1
 
 * [Web runtime](v0.2.0-rc1)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.2.0-rc1/microw8-0.2.0-rc1-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.2.0-rc1/microw8-0.2.0-rc1-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.2.0-rc1/microw8-0.2.0-rc1-windows.zip)
 
 Changes:
 
