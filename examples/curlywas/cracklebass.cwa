@@ -1,0 +1,55 @@
+// port of cracklebass by pestis (originally on TIC-80)
+
+include "../include/microw8-api.cwa"
+
+const MUSIC_DATA = 0x20000;
+
+export fn upd() {
+    let inline t = 32!32 / 16;
+    let inline p = t / 1024;
+
+    let channel:i32;
+
+    loop channels {
+        let inline e = t * channel?MUSIC_DATA / 8;
+        let lazy pattern = (8 * channel + p)?(MUSIC_DATA + 56);
+        let lazy n = !!pattern * (8 * pattern + e / 16 % 8)?MUSIC_DATA;
+        let inline prev_ctrl = (channel * 6)?80;
+        (channel * 6)?80 = if n {
+            let inline base_note = 12 + 12 * channel?(MUSIC_DATA + 4) + n;
+            let inline pitch_drop = e % 16 * channel?(MUSIC_DATA + 94);
+            let inline key_pattern = p?(MUSIC_DATA + 8*4 + 56);
+            let inline key = select(key_pattern, (8 * key_pattern + t / 128 % 8)?MUSIC_DATA, 1);
+            (channel * 6)?83 = base_note - pitch_drop / 4 + key;
+            prev_ctrl & 0xfc | (e / 8 & 2) | 1
+        } else {
+            prev_ctrl & 0xfe
+        };
+
+        branch_if (channel := channel + 1) < 4: channels;
+    }
+}
+
+data 80 {
+    i8(
+        0x44, 0, 0, 0, 0x50, 0x40,
+        0x4, 0x50, 0, 0, 0x80, 0x80,
+        0x40, 0x80, 0, 0, 0x40, 0x40,
+        0, 0, 0, 0, 0x50, 0x50
+    )
+}
+
+data MUSIC_DATA {
+    i8(
+ 16, 2, 8, 8, 1, 2, 2, 3, 1, 0,
+  1,13,16, 0, 1, 8, 1, 0, 1,13,
+ 16, 1, 1, 8, 1, 0, 8,13,13, 0,
+ 16,13, 1, 0, 1, 0, 1, 0, 1, 1,
+  1, 0, 0, 0, 1, 0,13, 1, 1, 1,
+  6, 8, 1, 1, 6, 8, 1, 1, 2, 1,
+  2, 1, 2, 0, 0, 0, 0, 3, 3, 3,
+  5, 0, 0, 2, 1, 2, 1, 2, 1, 2,
+  0, 4, 4, 0, 4, 4, 4, 4, 0, 0,
+  0, 0, 6, 6, 0, 0, 0, 8
+    )
+}
