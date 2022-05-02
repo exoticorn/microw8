@@ -197,8 +197,8 @@ impl super::Runtime for MicroW8 {
     fn run_frame(&mut self) -> Result<()> {
         let mut result = Ok(());
         if let Some(mut instance) = self.instance.take() {
+            let time = instance.start_time.elapsed().as_millis() as i32;
             {
-                let time = instance.start_time.elapsed().as_millis() as i32;
                 let mut gamepad: u32 = 0;
                 for key in self.window.get_keys() {
                     if let Some(index) = GAMEPAD_KEYS
@@ -232,7 +232,10 @@ impl super::Runtime for MicroW8 {
             let mut sound_regs = [0u8; 32];
             sound_regs.copy_from_slice(&memory[80..112]);
             if let Some(ref sound) = instance.sound {
-                sound.tx.send(sound_regs)?;
+                sound.tx.send(RegisterUpdate {
+                    time,
+                    data: sound_regs,
+                })?;
             }
 
             let framebuffer = &memory[120..(120 + 320 * 240)];
@@ -312,9 +315,14 @@ fn instantiate_platform(
     Ok(platform_instance)
 }
 
+struct RegisterUpdate {
+    time: i32,
+    data: [u8; 32],
+}
+
 struct Uw8Sound {
     stream: cpal::Stream,
-    tx: mpsc::SyncSender<[u8; 32]>,
+    tx: mpsc::SyncSender<RegisterUpdate>,
 }
 
 fn init_sound(
@@ -368,7 +376,7 @@ fn init_sound(
     let buffer_size = match *config.buffer_size() {
         cpal::SupportedBufferSize::Unknown => cpal::BufferSize::Default,
         cpal::SupportedBufferSize::Range { min, max } => {
-            cpal::BufferSize::Fixed(256.max(min).min(max))
+            cpal::BufferSize::Fixed(65536.max(min).min(max))
         }
     };
     let config = cpal::StreamConfig {
@@ -378,9 +386,7 @@ fn init_sound(
 
     let sample_rate = config.sample_rate.0 as usize;
 
-    let (tx, rx) = mpsc::sync_channel::<[u8; 32]>(1);
-
-    let start_time = Instant::now();
+    let (tx, rx) = mpsc::sync_channel::<RegisterUpdate>(30);
 
     struct Resampler {
         resampler: rubato::FftFixedIn<f32>,
@@ -403,60 +409,91 @@ fn init_sound(
     };
 
     let mut sample_index = 0;
+    let mut pending_updates: Vec<RegisterUpdate> = Vec::with_capacity(30);
+    let mut current_time = 0;
     let stream = device.build_output_stream(
         &config,
-        move |mut buffer: &mut [f32], _| {
-            if let Ok(regs) = rx.try_recv() {
-                memory.write(&mut store, 80, &regs).unwrap();
+        move |mut outer_buffer: &mut [f32], _| {
+            let mut first_update = true;
+            while let Ok(update) = rx.try_recv() {
+                if first_update {
+                    current_time += update.time.wrapping_sub(current_time) / 8;
+                    first_update = false;
+                }
+                pending_updates.push(update);
             }
 
-            {
-                let time = start_time.elapsed().as_millis() as i32;
-                let mem = memory.data_mut(&mut store);
-                mem[64..68].copy_from_slice(&time.to_le_bytes());
-            }
+            while !outer_buffer.is_empty() {
+                while pending_updates
+                    .first()
+                    .into_iter()
+                    .any(|u| u.time.wrapping_sub(current_time) <= 0)
+                {
+                    let update = pending_updates.remove(0);
+                    memory.write(&mut store, 80, &update.data).unwrap();
+                }
 
-            if let Some(ref mut resampler) = resampler {
-                while !buffer.is_empty() {
-                    let copy_size = resampler.output_buffers[0]
-                        .len()
-                        .saturating_sub(resampler.output_index)
-                        .min(buffer.len() / 2);
-                    if copy_size == 0 {
-                        resampler.input_buffers[0].clear();
-                        resampler.input_buffers[1].clear();
-                        for _ in 0..resampler.resampler.input_frames_next() {
-                            resampler.input_buffers[0]
-                                .push(snd.call(&mut store, (sample_index,)).unwrap_or(0.0));
-                            resampler.input_buffers[1]
-                                .push(snd.call(&mut store, (sample_index + 1,)).unwrap_or(0.0));
-                            sample_index = sample_index.wrapping_add(2);
-                        }
+                let duration = if let Some(update) = pending_updates.first() {
+                    ((update.time.wrapping_sub(current_time) as usize) * sample_rate + 999) / 1000
+                } else {
+                    outer_buffer.len()
+                };
+                let step_size = (duration.max(64) * 2).min(outer_buffer.len());
 
-                        resampler
-                            .resampler
-                            .process_into_buffer(
-                                &resampler.input_buffers,
-                                &mut resampler.output_buffers,
-                                None,
-                            )
-                            .unwrap();
-                        resampler.output_index = 0;
-                    } else {
-                        for i in 0..copy_size {
-                            buffer[i * 2] = resampler.output_buffers[0][resampler.output_index + i];
-                            buffer[i * 2 + 1] =
-                                resampler.output_buffers[1][resampler.output_index + i];
+                let mut buffer = &mut outer_buffer[..step_size];
+
+                {
+                    let mem = memory.data_mut(&mut store);
+                    mem[64..68].copy_from_slice(&current_time.to_le_bytes());
+                }
+
+                if let Some(ref mut resampler) = resampler {
+                    while !buffer.is_empty() {
+                        let copy_size = resampler.output_buffers[0]
+                            .len()
+                            .saturating_sub(resampler.output_index)
+                            .min(buffer.len() / 2);
+                        if copy_size == 0 {
+                            resampler.input_buffers[0].clear();
+                            resampler.input_buffers[1].clear();
+                            for _ in 0..resampler.resampler.input_frames_next() {
+                                resampler.input_buffers[0]
+                                    .push(snd.call(&mut store, (sample_index,)).unwrap_or(0.0));
+                                resampler.input_buffers[1]
+                                    .push(snd.call(&mut store, (sample_index + 1,)).unwrap_or(0.0));
+                                sample_index = sample_index.wrapping_add(2);
+                            }
+
+                            resampler
+                                .resampler
+                                .process_into_buffer(
+                                    &resampler.input_buffers,
+                                    &mut resampler.output_buffers,
+                                    None,
+                                )
+                                .unwrap();
+                            resampler.output_index = 0;
+                        } else {
+                            for i in 0..copy_size {
+                                buffer[i * 2] =
+                                    resampler.output_buffers[0][resampler.output_index + i];
+                                buffer[i * 2 + 1] =
+                                    resampler.output_buffers[1][resampler.output_index + i];
+                            }
+                            resampler.output_index += copy_size;
+                            buffer = &mut buffer[copy_size * 2..];
                         }
-                        resampler.output_index += copy_size;
-                        buffer = &mut buffer[copy_size * 2..];
+                    }
+                } else {
+                    for v in buffer {
+                        *v = snd.call(&mut store, (sample_index,)).unwrap_or(0.0);
+                        sample_index = sample_index.wrapping_add(1);
                     }
                 }
-            } else {
-                for v in buffer {
-                    *v = snd.call(&mut store, (sample_index,)).unwrap_or(0.0);
-                    sample_index = sample_index.wrapping_add(1);
-                }
+
+                outer_buffer = &mut outer_buffer[step_size..];
+                current_time =
+                    current_time.wrapping_add((step_size * 500 / sample_rate).max(1) as i32);
             }
         },
         move |err| {
