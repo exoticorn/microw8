@@ -3,13 +3,17 @@ class APU extends AudioWorkletProcessor {
     constructor() {
         super();
         this.sampleIndex = 0;
+        this.currentTime = 0;
+        this.isFirstMessage = true;
+        this.pendingUpdates = [];
         this.port.onmessage = (ev) => {
             if(this.memory) {
-                if(isNaN(ev.data)) {
-                    U8(this.memory.buffer, 80, 32).set(U8(ev.data));
-                } else {
-                    this.startTime = ev.data;
+                if(this.isFirstMessage)
+                {
+                    this.currentTime += (ev.data.t - this.currentTime) / 8;
+                    this.isFirstMessage = false;
                 }
+                this.pendingUpdates.push(ev.data);
             } else {
                 this.load(ev.data[0], ev.data[1]);
             }
@@ -55,9 +59,13 @@ class APU extends AudioWorkletProcessor {
     }
 
     process(inputs, outputs, parameters) {
-        if(this.snd && this.startTime) {
+        this.isFirstMessage = true;
+        if(this.snd) {
+            while(this.pendingUpdates.length > 0 && this.pendingUpdates[0].t <= this.currentTime) {
+                U8(this.memory.buffer, 80, 32).set(U8(this.pendingUpdates.shift().r));
+            }
             let u32Mem = new Uint32Array(this.memory.buffer);
-            u32Mem[16] = Date.now() - this.startTime;
+            u32Mem[16] = this.currentTime;
             let channels = outputs[0];
             let index = this.sampleIndex;
             let numSamples = channels[0].length;
@@ -66,6 +74,7 @@ class APU extends AudioWorkletProcessor {
                 channels[1][i] = this.snd(index++);
             }
             this.sampleIndex = index & 0xffffffff;
+            this.currentTime += numSamples / 44.1;
         }
 
         return true;

@@ -107,7 +107,7 @@ export default function MicroW8(screen, config = {}) {
             audioContext.close();
             keepRunning = false;
             abortController.abort();
-        }
+        };
 
         let cartridgeSize = data.byteLength;
     
@@ -232,7 +232,6 @@ export default function MicroW8(screen, config = {}) {
             let startTime = Date.now();
     
             const timePerFrame = 1000 / 60;
-            let nextFrame = startTime;
 
             audioNode.connect(audioContext.destination);
 
@@ -244,18 +243,16 @@ export default function MicroW8(screen, config = {}) {
                     isPaused = false;
                     audioContext.resume();
                     startTime += now - pauseTime;
-                    audioNode.port.postMessage(startTime);
                 } else {
                     isPaused = true;
                     audioContext.suspend();
                     pauseTime = now;
-                    audioNode.port.postMessage(0);
                 }
             };
             window.addEventListener('focus', () => updateVisibility(true), { signal: abortController.signal });
             window.addEventListener('blur', () => updateVisibility(false), { signal: abortController.signal });
             updateVisibility(document.hasFocus());
-    
+
             function mainloop() {
                 if (!keepRunning) {
                     return;
@@ -263,6 +260,7 @@ export default function MicroW8(screen, config = {}) {
     
                 try {
                     let restart = false;
+                    let thisFrame;
                     if (!isPaused) {
                         let gamepads = navigator.getGamepads();
                         let gamepad = 0;
@@ -291,7 +289,8 @@ export default function MicroW8(screen, config = {}) {
                         }
     
                         let u32Mem = U32(memory.buffer);
-                        u32Mem[16] = Date.now() - startTime;
+                        let time = Date.now() - startTime;
+                        u32Mem[16] = time;
                         u32Mem[17] = pad | gamepad;
                         if(instance.exports.upd) {
                             instance.exports.upd();
@@ -300,16 +299,21 @@ export default function MicroW8(screen, config = {}) {
 
                         let soundRegisters = new ArrayBuffer(32);
                         U8(soundRegisters).set(U8(memory.buffer, 80, 32));
-                        audioNode.port.postMessage(soundRegisters, [soundRegisters]);
+                        audioNode.port.postMessage({t: time, r: soundRegisters}, [soundRegisters]);
     
                         let palette = U32(memory.buffer, 0x13000, 1024);
                         for (let i = 0; i < 320 * 240; ++i) {
                             buffer[i] = palette[memU8[i + 120]] | 0xff000000;
                         }
                         canvasCtx.putImageData(imageData, 0, 0);
+
+                        let timeOffset = ((time * 6) % 100 - 50) / 6;
+                        thisFrame = startTime + time - timeOffset / 2;
+                    } else {
+                        thisFrame = Date.now();
                     }
                     let now = Date.now();
-                    nextFrame = Math.max(nextFrame + timePerFrame, now);
+                    let nextFrame = Math.max(thisFrame + timePerFrame, now);
     
                     if (restart) {
                         runModule(currentData);
