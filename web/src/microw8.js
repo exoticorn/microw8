@@ -308,7 +308,7 @@ export default function MicroW8(screen, config = {}) {
                         canvasCtx.putImageData(imageData, 0, 0);
 
                         let timeOffset = ((time * 6) % 100 - 50) / 6;
-                        thisFrame = startTime + time - timeOffset / 2;
+                        thisFrame = startTime + time - timeOffset / 8;
                     } else {
                         thisFrame = Date.now();
                     }

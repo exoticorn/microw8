@@ -29,6 +29,17 @@ Examplers for older versions:
 
 ## Versions
 
+### v0.2.0-rc2
+
+* [Web runtime](v0.2.0-rc2)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.2.0-rc2/microw8-0.2.0-rc2-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.2.0-rc2/microw8-0.2.0-rc2-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.2.0-rc2/microw8-0.2.0-rc2-windows.zip)
+
+Changes:
+
+* fix timing issues of sound playback, especially on systems with large sound buffers
+
 ### v0.2.0-rc1
 
 * [Web runtime](v0.2.0-rc1)
