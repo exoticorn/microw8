@@ -37,6 +37,7 @@ struct UW8Instance {
     end_frame: TypedFunc<(), ()>,
     update: Option<TypedFunc<(), ()>>,
     start_time: Instant,
+    next_frame: Instant,
     module: Vec<u8>,
     watchdog: Arc<Mutex<UW8WatchDog>>,
     sound: Option<Uw8Sound>,
@@ -69,8 +70,7 @@ impl MicroW8 {
             resize: true,
             ..Default::default()
         };
-        let mut window = Window::new("MicroW8", 320, 240, options)?;
-        window.limit_update_rate(Some(std::time::Duration::from_micros(16666)));
+        let window = Window::new("MicroW8", 320, 240, options)?;
 
         Ok(MicroW8 {
             engine,
@@ -186,6 +186,7 @@ impl super::Runtime for MicroW8 {
             end_frame,
             update,
             start_time: Instant::now(),
+            next_frame: Instant::now(),
             module: module_data.into(),
             watchdog,
             sound,
@@ -197,7 +198,19 @@ impl super::Runtime for MicroW8 {
     fn run_frame(&mut self) -> Result<()> {
         let mut result = Ok(());
         if let Some(mut instance) = self.instance.take() {
-            let time = instance.start_time.elapsed().as_millis() as i32;
+            {
+                if let Some(sleep) = instance.next_frame.checked_duration_since(Instant::now()) {
+                    std::thread::sleep(sleep);
+                }
+            }
+
+            let now = Instant::now();
+            let time = (now - instance.start_time).as_millis() as i32;
+            {
+                let offset = ((time as u32 as i64 * 6) % 100 - 50) / 6;
+                instance.next_frame = now + Duration::from_millis((16 - offset) as u64);
+            }
+
             {
                 let mut gamepad: u32 = 0;
                 for key in self.window.get_keys() {

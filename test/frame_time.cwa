@@ -1,0 +1,20 @@
+include "../examples/include/microw8-api.cwa"
+
+global mut pos = 0;
+global mut next = 0;
+
+export fn upd() {
+    let lazy t = 32!32;
+    let lazy tick = t * 6 / 100;
+    let lazy rel = t - tick * 100 / 6;
+
+    setBackgroundColor(select(tick == next, 0, select(tick < next, 0x35, 0x55)));
+    setCursorPosition(pos % 13 * 3, pos / 13 % 30);
+    if rel < 10 {
+        printChar(32);
+    }
+    printInt(rel);
+
+    pos = pos + 1;
+    next = tick + 1;
+}

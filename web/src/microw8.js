@@ -318,7 +318,7 @@ export default function MicroW8(screen, config = {}) {
                     if (restart) {
                         runModule(currentData);
                     } else {
-                        window.setTimeout(mainloop, Math.round(nextFrame - now))
+                        window.setTimeout(mainloop, nextFrame - now)
                     }
                 } catch (err) {
                     config.setMessage(cartridgeSize, err.toString());
