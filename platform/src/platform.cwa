@@ -32,11 +32,9 @@ export fn random() -> i32 {
 }
 
 export fn random64() -> i64 {
-    let state: i64;
-    randomState = (state := (
-                          state := randomState ^ (randomState #>> 12i64)
-                      ) ^ (state << 25i64)
-                  ) ^ (state #>> 27i64);
+    let lazy state = randomState ^ (randomState #>> 12i64);
+    let lazy state = state ^ (state << 25i64);
+    randomState = state ^ (state #>> 27i64);
     randomState * 0x2545f4914f6cdd1di64
 }
 

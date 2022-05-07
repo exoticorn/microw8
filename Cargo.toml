@@ -16,7 +16,7 @@ anyhow = "1"
 minifb = { version = "0.22", default-features = false, features = ["x11"], optional = true }
 notify = "4"
 pico-args = "0.4"
-curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "aac7bbd" }
+curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "c22297e" }
 wat = "1"
 uw8-tool = { path = "uw8-tool" }
 same-file = "1"
