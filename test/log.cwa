@@ -1,0 +1,7 @@
+include "../examples/include/microw8-api.cwa"
+
+export fn upd() {
+    printChar('\06f: ');
+    printInt(32!32 * 6 / 100);
+    printChar('\n\4');
+}

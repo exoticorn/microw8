@@ -206,6 +206,16 @@ export default function MicroW8(screen, config = {}) {
                 importObject.env['reserved' + i] = () => { };
             }
     
+            let logLine = '';
+            importObject.env['logChar'] = (c) => {
+                if(c == 10) {
+                    console.log(logLine);
+                    logLine = '';
+                } else {
+                    logLine += String.fromCharCode(c);
+                }
+            };
+    
             for (let i = 0; i < 16; ++i) {
                 importObject.env['g_reserved' + i] = 0;
             }

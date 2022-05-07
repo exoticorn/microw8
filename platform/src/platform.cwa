@@ -4,6 +4,7 @@ import "env.sin" fn sin(f32) -> f32;
 import "env.cos" fn cos(f32) -> f32;
 import "env.pow" fn pow(f32, f32) -> f32;
 import "env.exp" fn exp(f32) -> f32;
+import "env.logChar" fn logChar(i32);
 
 export fn time() -> f32 {
     (0!64) as f32 / 1000 as f32
@@ -60,7 +61,7 @@ export fn cls(col: i32) {
     let i: i32;
     textCursorX = 0;
     textCursorY = 0;
-    graphicsText = 0;
+    outputChannel = 0;
     col = (col & 255) * 0x1010101;
     loop pixels {
         i!120 = col;
@@ -305,7 +306,7 @@ global mut textCursorX = 0;
 global mut textCursorY = 0;
 global mut textColor = 15;
 global mut bgColor = 0;
-global mut graphicsText = 0;
+global mut outputChannel = 0;
 
 export fn printChar(char: i32) {
     loop chars {
@@ -317,6 +318,18 @@ export fn printChar(char: i32) {
 global mut controlCodeLength = 0;
 
 fn printSingleChar(char: i32) {
+    if char >= 4 & char <= 6 {
+        outputChannel = char - 4;
+	    textCursorX = 0;
+        textCursorY = 0;
+        return;
+    }
+
+    if outputChannel >= 2 {
+        logChar(char);
+        return;
+    }
+
     controlCodeLength?0x12d20 = char;
     controlCodeLength = controlCodeLength + 1;
     char = 0x12d20?0;
@@ -330,13 +343,6 @@ fn printSingleChar(char: i32) {
         return;
     }
 
-    if char == 4 | char == 5 {
-        graphicsText = char == 5;
-	    textCursorX = 0;
-        textCursorY = 0;
-        return;
-    }
-
     if char == 7 {
         80?0 = 80?0 ^ 2;
         return;
@@ -344,7 +350,7 @@ fn printSingleChar(char: i32) {
 
     if char == 8 {
         textCursorX = textCursorX - 8;
-        if !graphicsText & textCursorX < 0 {
+        if !outputChannel & textCursorX < 0 {
             textCursorX = 320-8;
             printSingleChar(11);
         }
@@ -352,7 +358,7 @@ fn printSingleChar(char: i32) {
     }
 
     if char == 9 {
-        if !graphicsText & textCursorX >= 320 {
+        if !outputChannel & textCursorX >= 320 {
             printChar(0xd0a);
         }
         textCursorX = textCursorX + 8;
@@ -361,7 +367,7 @@ fn printSingleChar(char: i32) {
 
     if char == 10 {
         textCursorY = textCursorY + 8;
-        if !graphicsText & textCursorY >= 240 {
+        if !outputChannel & textCursorY >= 240 {
             textCursorY = 240 - 8;
             let i: i32;
             loop scroll_copy {
@@ -375,7 +381,7 @@ fn printSingleChar(char: i32) {
 
     if char == 11 {
         textCursorY = textCursorY - 8;
-        if !graphicsText & textCursorY < 0 {
+        if !outputChannel & textCursorY < 0 {
             textCursorY = 0;
             let i = 320 * (240 - 8);
             loop scroll_copy {
@@ -415,8 +421,8 @@ fn printSingleChar(char: i32) {
     }
 
     if char == 31 {
-        textCursorX = 0x12d20?1 * (8 - graphicsText * 6);
-        textCursorY = 0x12d20?2 * (8 - graphicsText * 7);
+        textCursorX = 0x12d20?1 * (8 - outputChannel * 6);
+        textCursorY = 0x12d20?2 * (8 - outputChannel * 7);
         return;
     }
 
@@ -441,7 +447,7 @@ data(0x12d00) {
 }
 
 fn drawChar(char: i32) {
-    if !graphicsText & textCursorX >= 320 {
+    if !outputChannel & textCursorX >= 320 {
         printChar(0xd0a);
     }
 
@@ -449,7 +455,7 @@ fn drawChar(char: i32) {
     loop rows {
         let bits = (char * 8 + y)?0x13400;
         let x = 0;
-        if graphicsText {
+        if outputChannel {
             loop pixels {
                 if (bits := bits << 1) & 256 {
                     setPixel(textCursorX + x, textCursorY + y, textColor);
@@ -501,7 +507,7 @@ export fn setBackgroundColor(col: i32) {
 }
 
 export fn setCursorPosition(x: i32, y: i32) {
-    let lazy scale = select(graphicsText, 1, 8);
+    let lazy scale = select(outputChannel, 1, 8);
     textCursorX = x * scale;
     textCursorY = y * scale;
 }

@@ -293,6 +293,16 @@ fn add_native_functions(
     for i in 10..64 {
         linker.func_wrap("env", &format!("reserved{}", i), || {})?;
     }
+    let log_line = std::sync::Mutex::new(String::new());
+    linker.func_wrap("env", "logChar", move |c: i32| {
+        let mut log_line = log_line.lock().unwrap();
+        if c == 10 {
+            println!("{}", log_line);
+            log_line.clear();
+        } else {
+            log_line.push(c as u8 as char);
+        }
+    })?;
     for i in 0..16 {
         linker.define(
             "env",
