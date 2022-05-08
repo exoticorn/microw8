@@ -599,7 +599,7 @@ checksum = "b365fabc795046672053e29c954733ec3b05e4be654ab130fe8f1f94d7051f35"
 [[package]]
 name = "curlywas"
 version = "0.1.0"
-source = "git+https://github.com/exoticorn/curlywas.git?rev=c22297e#c22297ea82977ac06373d629fb273a795322d788"
+source = "git+https://github.com/exoticorn/curlywas.git?rev=0a0d90c#0a0d90c8013f1d7856a9b71a19d3d006300f31f9"
 dependencies = [
  "anyhow",
  "ariadne",

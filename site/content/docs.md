@@ -225,29 +225,44 @@ Moving/printing past any border does not cause any special operation, the cursor
 Characters 0-31 are control characters and don't print by default. They take the next 0-2 following characters as parameters.
 Avoid the reserved control chars, they are currently NOPs but their behavior can change in later MicroW8 versions.
 
-| Code  | Parameters | Operation                            |
-| ----- | ---------- | ------------------------------------ |
-| 0     | -          | Nop                                  |
-| 1     | char       | Print char (including control chars) |
-| 2-3   | -          | Reserved                             |
-| 4     | -          | Switch to normal mode                |
-| 5     | -          | Switch to graphics mode              |
-| 6     | -          | Reserved                             |
-| 7     | -          | Bell / trigger sound channel 0       |
-| 8     | -          | Move cursor left                     |
-| 9     | -          | Move cursor right                    |
-| 10    | -          | Move cursor down                     |
-| 11    | -          | Move cursor up                       |
-| 12    | -          | do `cls(background_color)`           |
-| 13    | -          | Move cursor to the left border       |
-| 14    | color      | Set the background color             |
-| 15    | color      | Set the text color                   |
-| 16-23 | -          | Reserved                             |
-| 24    | -          | Swap text/background colors          |
-| 25-30 | -          | Reserved                             |
-| 31    | x, y       | Set cursor position (*)              |
+| Code  | Parameters | Operation                                  |
+| ----- | ---------- | ------------------------------------------ |
+| 0     | -          | Nop                                        |
+| 1     | char       | Print char (including control chars)       |
+| 2-3   | -          | Reserved                                   |
+| 4     | -          | Switch to normal mode, reset cursor to 0,0 |
+| 5     | -          | Switch to graphics mode                    |
+| 6     | -          | Switch output to (debug) console           |
+| 7     | -          | Bell / trigger sound channel 0             |
+| 8     | -          | Move cursor left                           |
+| 9     | -          | Move cursor right                          |
+| 10    | -          | Move cursor down                           |
+| 11    | -          | Move cursor up                             |
+| 12    | -          | do `cls(background_color)`                 |
+| 13    | -          | Move cursor to the left border             |
+| 14    | color      | Set the background color                   |
+| 15    | color      | Set the text color                         |
+| 16-23 | -          | Reserved                                   |
+| 24    | -          | Swap text/background colors                |
+| 25-30 | -          | Reserved                                   |
+| 31    | x, y       | Set cursor position (*)                    |
 
 (*) In graphics mode, the x coordinate is doubled when using control char 31 to be able to cover the whole screen with one byte.
+
+#### Debug output
+
+Control code 6 switches all text output (except codes 4 and 5 to switch output back to the screen) to the console. Where exactly this ends
+up (if at all) is an implementation detail of the runtimes. The native dev-runtime writes the debug output to `stdout`, the web runtime to
+the debug console using `console.log`. Both implementation buffer the output until they encounter a newline character (10) in the output stream.
+
+There may be future runtimes that ignore the debug output completely.
+
+In CurlyWas, a simple way to log some value might look like this:
+```
+printChar('\06V: '); // switch to console out, print some prefix
+printInt(some_value);
+printChar('\n\4'); // newline and switch back to screen
+```
 
 ### fn printChar(char: i32)
 
