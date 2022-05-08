@@ -402,7 +402,7 @@ fn init_sound(
     let buffer_size = match *config.buffer_size() {
         cpal::SupportedBufferSize::Unknown => cpal::BufferSize::Default,
         cpal::SupportedBufferSize::Range { min, max } => {
-            cpal::BufferSize::Fixed(65536.max(min).min(max))
+            cpal::BufferSize::Fixed(256.max(min).min(max))
         }
     };
     let config = cpal::StreamConfig {

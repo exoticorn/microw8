@@ -8,7 +8,7 @@ global mut f: f32 = 2.0;
 
 export fn upd() {
     let y: i32;
-    let inline zero = 0.0;
+    let inline zero = 0_f;
 
     let lazy control_speed = 0.03125;
     s = s + 0.1875 - (f + control_speed) * isButtonPressed(4 <| cls(4)) as f32;
@@ -30,6 +30,7 @@ export fn upd() {
 
         if y == 180 & py > zero {
             if x > w | x < zero {
+                80?0 = 0xc1;
                 return;
             }
             py = zero;
@@ -42,6 +43,10 @@ export fn upd() {
 
     circle(160 as f32, 160 as f32 + py, 22 as f32, -28);
     circle((160 - 6) as f32, (160 - 6) as f32 + py, 6 as f32, -26);
+
+    86?0 = py < zero;
+    86?3 = 32 - py as i32;
+    80?3 = 32;
 
     px = px + (isButtonPressed(3) - isButtonPressed(2)) as f32 * control_speed;
     py = py + s;
