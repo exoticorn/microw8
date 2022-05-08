@@ -41,11 +41,11 @@ Changes:
 * [add sound support!](docs#sound)
 * add support to redirect text output to the console for debugging using control code 6
 * update curlywas:
-* * add support for `else if`
-* * add support for escape sequences in strings
-* * add support for char literals
-* * add support for binop-assignment, eg. `+=`, `^=`, `<<=` etc. (also support for the tee operator: `+:=`)
-* * "integer constant cast to float" literal syntax in CurlyWas (ex. `1_f` is equivalent to `1 as f32`)
+  * add support for `else if`
+  * add support for escape sequences in strings
+  * add support for char literals
+  * add support for binop-assignment, eg. `+=`, `^=`, `<<=` etc. (also support for the tee operator: `+:=`)
+  * "integer constant cast to float" literal syntax in CurlyWas (ex. `1_f` is equivalent to `1 as f32`)
 
 ### Older versions
 
