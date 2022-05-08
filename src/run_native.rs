@@ -59,6 +59,9 @@ struct UW8WatchDog {
 
 impl MicroW8 {
     pub fn new() -> Result<MicroW8> {
+        #[cfg(target_os = "windows")]
+        unsafe { winapi::um::timeapi::timeBeginPeriod(1); }
+
         let engine = wasmtime::Engine::new(wasmtime::Config::new().interruptable(true))?;
 
         let loader_module =
