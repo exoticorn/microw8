@@ -1,5 +1,7 @@
 <html>
     <button onclick="go()">Go!</button>
+    <canvas id="screen" width="320" height="240"></canvas>
+    <video id="video"></video>
     <script>
         function go() {
             let audioContext = new AudioContext({sampleRate: 44100});
@@ -8,28 +10,48 @@
             let gain = new GainNode(audioContext, {gain: 1});
             oscillator.connect(gain);
             gain.connect(audioContext.destination);
-            for(let i = 0; i < 4; ++i ) {
+            for(let i = 0; i < 8; ++i ) {
                 gain.gain.setValueAtTime(1, i / 2);
                 gain.gain.setValueAtTime(0, i / 2 + 0.3);
             }
             oscillator.start();
-            oscillator.stop(2);
+            oscillator.stop(4);
 
+            let screen = document.getElementById('screen');
+            let context = screen.getContext('2d');
+            let startTime = Date.now();
+            let drawFrame = () => {
+                let time = Date.now() - startTime;
+                context.fillStyle = 'white';
+                context.fillRect(0, 0, 320, 240);
+                if(time < 4000) {
+                    if(time % 500 < 300) {
+                        context.fillStyle = 'black';
+                        context.fillRect(time / 15, 50, 50, 50);
+                    }
+                    window.requestAnimationFrame(drawFrame);
+                }
+            };
+            drawFrame();
+
+            let stream = screen.captureStream();
             let audioStreamNode = audioContext.createMediaStreamDestination();
             gain.connect(audioStreamNode);
-            let recorder = new MediaRecorder(audioStreamNode.stream, { mimeType: 'audio/ogg; codecs=opus' });
+            stream.addTrack(audioStreamNode.stream.getAudioTracks()[0]);
+            let recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
 
             let chunks = [];
             recorder.ondataavailable = e => chunks.push(e.data);
             recorder.onstop = () => {
-                let blob = new Blob(chunks, {type: 'audio/ogg; codecs=opus'});
+                let blob = new Blob(chunks, {type: 'video/webm'});
                 let url = URL.createObjectURL(blob);
-                let audio = new Audio(url);
-                audio.play();
+                let video = document.getElementById('video');
+                video.src = url;
+                video.play();
             };
 
             recorder.start();
-            setTimeout(() => recorder.stop(), 2000);
+            setTimeout(() => recorder.stop(), 4000);
         }
     </script>
 </html>
