@@ -52,17 +52,23 @@ impl Drop for UW8Instance {
 }
 
 struct UW8WatchDog {
-    interupt: wasmtime::InterruptHandle,
-    timeout: u32,
+    engine: Engine,
     stop: bool,
 }
 
 impl MicroW8 {
-    pub fn new() -> Result<MicroW8> {
+    pub fn new(timeout: Option<u32>) -> Result<MicroW8> {
         #[cfg(target_os = "windows")]
-        unsafe { winapi::um::timeapi::timeBeginPeriod(1); }
+        unsafe {
+            winapi::um::timeapi::timeBeginPeriod(1);
+        }
 
-        let engine = wasmtime::Engine::new(wasmtime::Config::new().interruptable(true))?;
+        let mut config = wasmtime::Config::new();
+        config.cranelift_opt_level(wasmtime::OptLevel::Speed);
+        if timeout.is_some() {
+            config.epoch_interruption(true);
+        }
+        let engine = wasmtime::Engine::new(&config)?;
 
         let loader_module =
             wasmtime::Module::new(&engine, include_bytes!("../platform/bin/loader.wasm"))?;
@@ -81,7 +87,7 @@ impl MicroW8 {
             window,
             window_buffer: vec![0u32; 320 * 240],
             instance: None,
-            timeout: 30,
+            timeout: timeout.unwrap_or(0),
             disable_audio: false,
         })
     }
@@ -103,14 +109,11 @@ impl super::Runtime for MicroW8 {
         self.window.is_open() && !self.window.is_key_down(Key::Escape)
     }
 
-    fn set_timeout(&mut self, timeout: u32) {
-        self.timeout = timeout;
-    }
-
     fn load(&mut self, module_data: &[u8]) -> Result<()> {
         self.reset();
 
         let mut store = wasmtime::Store::new(&self.engine, ());
+        store.set_epoch_deadline(60);
 
         let memory = wasmtime::Memory::new(&mut store, MemoryType::new(4, Some(4)))?;
 
@@ -136,8 +139,7 @@ impl super::Runtime for MicroW8 {
         let platform_instance = instantiate_platform(&mut linker, &mut store, &platform_module)?;
 
         let watchdog = Arc::new(Mutex::new(UW8WatchDog {
-            interupt: store.interrupt_handle()?,
-            timeout: self.timeout,
+            engine: self.engine.clone(),
             stop: false,
         }));
 
@@ -145,16 +147,11 @@ impl super::Runtime for MicroW8 {
             let watchdog = watchdog.clone();
             thread::spawn(move || loop {
                 thread::sleep(Duration::from_millis(17));
-                if let Ok(mut watchdog) = watchdog.lock() {
+                if let Ok(watchdog) = watchdog.lock() {
                     if watchdog.stop {
                         break;
                     }
-                    if watchdog.timeout > 0 {
-                        watchdog.timeout -= 1;
-                        if watchdog.timeout == 0 {
-                            watchdog.interupt.interrupt();
-                        }
-                    }
+                    watchdog.engine.increment_epoch();
                 } else {
                     break;
                 }
@@ -162,9 +159,6 @@ impl super::Runtime for MicroW8 {
         }
 
         let instance = linker.instantiate(&mut store, &module)?;
-        if let Ok(mut watchdog) = watchdog.lock() {
-            watchdog.timeout = 0;
-        }
         let end_frame = platform_instance.get_typed_func::<(), (), _>(&mut store, "endFrame")?;
         let update = instance.get_typed_func::<(), (), _>(&mut store, "upd").ok();
 
@@ -232,14 +226,9 @@ impl super::Runtime for MicroW8 {
                 mem[68..72].copy_from_slice(&gamepad.to_le_bytes());
             }
 
-            if let Ok(mut watchdog) = instance.watchdog.lock() {
-                watchdog.timeout = self.timeout;
-            }
+            instance.store.set_epoch_deadline(self.timeout as u64);
             if let Some(ref update) = instance.update {
                 result = update.call(&mut instance.store, ());
-            }
-            if let Ok(mut watchdog) = instance.watchdog.lock() {
-                watchdog.timeout = 0;
             }
             instance.end_frame.call(&mut instance.store, ())?;
 
@@ -357,6 +346,7 @@ fn init_sound(
     module: &wasmtime::Module,
 ) -> Result<Uw8Sound> {
     let mut store = wasmtime::Store::new(engine, ());
+    store.set_epoch_deadline(60);
 
     let memory = wasmtime::Memory::new(&mut store, MemoryType::new(4, Some(4)))?;
 
@@ -450,6 +440,7 @@ fn init_sound(
             }
 
             while !outer_buffer.is_empty() {
+                store.set_epoch_deadline(30);
                 while pending_updates
                     .first()
                     .into_iter()

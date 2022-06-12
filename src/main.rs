@@ -52,6 +52,7 @@ fn main() -> Result<()> {
 #[cfg(any(feature = "native", feature = "browser"))]
 fn run(mut args: Arguments) -> Result<()> {
     let watch_mode = args.contains(["-w", "--watch"]);
+    #[allow(unused)]
     let timeout: Option<u32> = args.opt_value_from_str(["-t", "--timeout"])?;
 
     let mut config = Config::default();
@@ -92,7 +93,7 @@ fn run(mut args: Arguments) -> Result<()> {
         unimplemented!();
         #[cfg(feature = "native")]
         {
-            let mut microw8 = MicroW8::new()?;
+            let mut microw8 = MicroW8::new(timeout)?;
             if disable_audio {
                 microw8.disable_audio();
             }
@@ -104,10 +105,6 @@ fn run(mut args: Arguments) -> Result<()> {
         #[cfg(feature = "browser")]
         Box::new(RunWebServer::new())
     };
-
-    if let Some(timeout) = timeout {
-        runtime.set_timeout(timeout);
-    }
 
     let mut first_run = true;
 

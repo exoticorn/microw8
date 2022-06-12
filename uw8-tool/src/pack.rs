@@ -962,6 +962,8 @@ fn remap_function(
             De::I64TruncSatF32U => En::I64TruncSatF32U,
             De::I64TruncSatF64S => En::I64TruncSatF64S,
             De::I64TruncSatF64U => En::I64TruncSatF64U,
+            De::MemoryCopy { src, dst } => En::MemoryCopy { src, dst },
+            De::MemoryFill { mem } => En::MemoryFill(mem),
             other => bail!("Unsupported instruction {:?}", other),
         });
     }

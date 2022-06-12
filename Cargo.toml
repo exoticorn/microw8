@@ -11,12 +11,12 @@ native = ["wasmtime", "minifb", "cpal", "rubato", "winapi" ]
 browser = ["warp", "tokio", "tokio-stream", "webbrowser"]
 
 [dependencies]
-wasmtime = { version = "0.35.3", optional = true }
+wasmtime = { version = "0.37.0", optional = true }
 anyhow = "1"
 minifb = { version = "0.22", default-features = false, features = ["x11"], optional = true }
 notify = "4"
 pico-args = "0.4"
-curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "0a0d90c" }
+curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "0e7ea50" }
 wat = "1"
 uw8-tool = { path = "uw8-tool" }
 same-file = "1"

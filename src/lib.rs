@@ -14,9 +14,6 @@ use anyhow::Result;
 
 pub trait Runtime {
     fn is_open(&self) -> bool;
-    fn set_timeout(&mut self, _timeout: u32) {
-        eprintln!("Warning: runtime doesn't support timeout");
-    }
     fn load(&mut self, module_data: &[u8]) -> Result<()>;
     fn run_frame(&mut self) -> Result<()>;
 }
