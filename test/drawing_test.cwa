@@ -1,0 +1,62 @@
+include "../examples/include/microw8-api.cwa"
+
+global mut counter = 0;
+
+export fn upd() {
+    cls(0);
+    
+    let col: i32 = 1;
+    
+    loop colors {
+        if !testCircle(counter, col) {
+            printInt(counter);
+            return;
+        }
+        counter += 1;
+        branch_if (col +:= 1) < 256: colors;
+    }
+}
+
+fn testCircle(seed: i32, col: i32) -> i32 {
+    randomSeed(seed);
+    let cx = randomf() * 640_f - 160_f;
+    let cy = randomf() * 480_f - 120_f;
+    let radius = randomf() * 4_f;
+    radius *= radius;
+    radius *= radius;
+    
+    circle(cx, cy, radius, col);
+    
+    let min_x = max(0_f, floor(cx - radius - 1_f)) as i32;
+    let min_y = max(0_f, floor(cy - radius - 1_f)) as i32;
+    let max_x = min(320_f, ceil(cx + radius + 1_f)) as i32;
+    let max_y = min(240_f, ceil(cy + radius + 1_f)) as i32;
+    
+    let x = min_x;
+    loop xloop {
+        if x < max_x {
+            let y = min_y;
+            loop yloop {
+                if y < max_y {
+                    let rx = x as f32 + 0.5 - cx;
+                    let ry = y as f32 + 0.5 - cy;
+                    let d = sqrt(rx*rx + ry*ry) - radius;
+                    if abs(d) > 0.001 {
+                        let is_inside = d < 0_f;
+                        let is_plotted = getPixel(x, y) == col;
+                        if is_inside != is_plotted {
+                            return 0;
+                        }
+                    }                    
+                
+                    y += 1;
+                    branch yloop;
+                }
+            }
+            x += 1;
+            branch xloop;
+        }
+    }
+    
+    1
+}
