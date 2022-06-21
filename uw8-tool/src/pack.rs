@@ -63,6 +63,7 @@ pub fn pack(data: &[u8], config: &PackConfig) -> Result<Vec<u8>> {
         uw8.extend_from_slice(&upkr::pack(
             &result[8..],
             level,
+            false,
             Some(&mut |pos| {
                 pb.set(pos as u64);
             }),
@@ -89,7 +90,7 @@ pub fn unpack(data: Vec<u8>) -> Result<Vec<u8>> {
     let (version, data) = match data[0] {
         0 => return Ok(data),
         1 => (1, data[1..].to_vec()),
-        2 => (1, upkr::unpack(&data[1..])),
+        2 => (1, upkr::unpack(&data[1..], false)),
         other => bail!("Uknown format version {}", other),
     };
 

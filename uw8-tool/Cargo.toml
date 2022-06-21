@@ -11,5 +11,5 @@ wasm-encoder = "0.8"
 walrus = "0.19"
 anyhow = "1"
 pico-args = "0.4"
-upkr = { git = "https://github.com/exoticorn/upkr.git", rev = "2e7983fc" }
+upkr = { git = "https://github.com/exoticorn/upkr.git", rev = "d93aec186c9fb91d962c488682a2db125c61306c" }
 pbr = "1"
