@@ -4,31 +4,13 @@ use std::{thread, time::Instant};
 
 use anyhow::{anyhow, Result};
 use cpal::traits::*;
-use minifb::{Key, Window, WindowOptions};
 use rubato::Resampler;
 use wasmtime::{
     Engine, GlobalType, Memory, MemoryType, Module, Mutability, Store, TypedFunc, ValType,
 };
 
-static GAMEPAD_KEYS: &[Key] = &[
-    Key::Up,
-    Key::Down,
-    Key::Left,
-    Key::Right,
-    Key::Z,
-    Key::X,
-    Key::A,
-    Key::S,
-];
-
 pub struct MicroW8 {
-    engine: Engine,
-    loader_module: Module,
-    window: Window,
-    window_buffer: Vec<u32>,
-    instance: Option<UW8Instance>,
-    timeout: u32,
-    disable_audio: bool,
+    tx: mpsc::SyncSender<Vec<u8>>,
 }
 
 struct UW8Instance {
@@ -37,7 +19,6 @@ struct UW8Instance {
     end_frame: TypedFunc<(), ()>,
     update: Option<TypedFunc<(), ()>>,
     start_time: Instant,
-    next_frame: Instant,
     module: Vec<u8>,
     watchdog: Arc<Mutex<UW8WatchDog>>,
     sound: Option<Uw8Sound>,
@@ -58,11 +39,6 @@ struct UW8WatchDog {
 
 impl MicroW8 {
     pub fn new(timeout: Option<u32>) -> Result<MicroW8> {
-        #[cfg(target_os = "windows")]
-        unsafe {
-            winapi::um::timeapi::timeBeginPeriod(1);
-        }
-
         let mut config = wasmtime::Config::new();
         config.cranelift_opt_level(wasmtime::OptLevel::Speed);
         if timeout.is_some() {
@@ -73,44 +49,65 @@ impl MicroW8 {
         let loader_module =
             wasmtime::Module::new(&engine, include_bytes!("../platform/bin/loader.wasm"))?;
 
-        let options = WindowOptions {
-            scale: minifb::Scale::X2,
-            scale_mode: minifb::ScaleMode::AspectRatioStretch,
-            resize: true,
-            ..Default::default()
-        };
-        let window = Window::new("MicroW8", 320, 240, options)?;
+        let (tx, rx) = mpsc::sync_channel::<Vec<u8>>(1);
 
-        Ok(MicroW8 {
-            engine,
-            loader_module,
-            window,
-            window_buffer: vec![0u32; 320 * 240],
-            instance: None,
-            timeout: timeout.unwrap_or(0),
-            disable_audio: false,
-        })
+        std::thread::spawn(move || {
+            let mut state = State {
+                engine,
+                loader_module,
+                disable_audio: false,
+                instance: None,
+                timeout: timeout.unwrap_or(0),
+            };
+
+            uw8_window::run(move |framebuffer, gamepad, reset| {
+                if let Ok(module_data) = rx.try_recv() {
+                    if let Err(err) = state.load(&module_data) {
+                        eprintln!("Failed to load module: {}", err);
+                    }
+                }
+
+                state
+                    .run_frame(framebuffer, gamepad, reset)
+                    .unwrap_or_else(|err| {
+                        eprintln!("Runtime error: {}", err);
+                        Instant::now()
+                    })
+            });
+        });
+
+        Ok(MicroW8 { tx })
     }
 
-    fn reset(&mut self) {
-        self.instance = None;
-        for v in &mut self.window_buffer {
-            *v = 0;
-        }
-    }
-
-    pub fn disable_audio(&mut self) {
-        self.disable_audio = true;
-    }
+    pub fn disable_audio(&mut self) {}
 }
 
 impl super::Runtime for MicroW8 {
     fn is_open(&self) -> bool {
-        self.window.is_open() && !self.window.is_key_down(Key::Escape)
+        true
     }
 
     fn load(&mut self, module_data: &[u8]) -> Result<()> {
-        self.reset();
+        self.tx.send(module_data.into())?;
+        Ok(())
+    }
+
+    fn run_frame(&mut self) -> Result<()> {
+        Ok(())
+    }
+}
+
+struct State {
+    engine: Engine,
+    loader_module: Module,
+    disable_audio: bool,
+    instance: Option<UW8Instance>,
+    timeout: u32,
+}
+
+impl State {
+    fn load(&mut self, module_data: &[u8]) -> Result<()> {
+        self.instance = None;
 
         let mut store = wasmtime::Store::new(&self.engine, ());
         store.set_epoch_deadline(60);
@@ -183,7 +180,6 @@ impl super::Runtime for MicroW8 {
             end_frame,
             update,
             start_time: Instant::now(),
-            next_frame: Instant::now(),
             module: module_data.into(),
             watchdog,
             sound,
@@ -191,36 +187,22 @@ impl super::Runtime for MicroW8 {
 
         Ok(())
     }
-
-    fn run_frame(&mut self) -> Result<()> {
-        let mut result = Ok(());
+    fn run_frame(
+        &mut self,
+        framebuffer: &mut dyn uw8_window::Framebuffer,
+        gamepad: u32,
+        reset: bool,
+    ) -> Result<Instant> {
+        let now = Instant::now();
+        let mut result = Ok(now);
         if let Some(mut instance) = self.instance.take() {
-            {
-                if let Some(sleep) = instance.next_frame.checked_duration_since(Instant::now()) {
-                    std::thread::sleep(sleep);
-                }
-            }
-
-            let now = Instant::now();
             let time = (now - instance.start_time).as_millis() as i32;
             {
                 let offset = ((time as u32 as i64 * 6) % 100 - 50) / 6;
-                instance.next_frame = now + Duration::from_millis((16 - offset) as u64);
+                result = Ok(now + Duration::from_millis((16 - offset) as u64));
             }
 
             {
-                let mut gamepad: u32 = 0;
-                for key in self.window.get_keys() {
-                    if let Some(index) = GAMEPAD_KEYS
-                        .iter()
-                        .enumerate()
-                        .find(|(_, &k)| k == key)
-                        .map(|(i, _)| i)
-                    {
-                        gamepad |= 1 << index;
-                    }
-                }
-
                 let mem = instance.memory.data_mut(&mut instance.store);
                 mem[64..68].copy_from_slice(&time.to_le_bytes());
                 mem[68..72].copy_from_slice(&gamepad.to_le_bytes());
@@ -228,7 +210,9 @@ impl super::Runtime for MicroW8 {
 
             instance.store.set_epoch_deadline(self.timeout as u64);
             if let Some(ref update) = instance.update {
-                result = update.call(&mut instance.store, ());
+                if let Err(err) = update.call(&mut instance.store, ()) {
+                    result = Err(err);
+                }
             }
             instance.end_frame.call(&mut instance.store, ())?;
 
@@ -243,28 +227,18 @@ impl super::Runtime for MicroW8 {
                 })?;
             }
 
-            let framebuffer = &memory[120..(120 + 320 * 240)];
-            let palette = &memory[0x13000..];
-            for (i, &color_index) in framebuffer.iter().enumerate() {
-                let offset = color_index as usize * 4;
-                self.window_buffer[i] = 0xff000000
-                    | ((palette[offset] as u32) << 16)
-                    | ((palette[offset + 1] as u32) << 8)
-                    | palette[offset + 2] as u32;
-            }
+            let framebuffer_mem = &memory[120..(120 + 320 * 240)];
+            let palette_mem = &memory[0x13000..];
+            framebuffer.update(framebuffer_mem, palette_mem);
 
-            if self.window.is_key_pressed(Key::R, minifb::KeyRepeat::No) {
+            if reset {
                 self.load(&instance.module)?;
             } else if result.is_ok() {
                 self.instance = Some(instance);
             }
         }
 
-        self.window
-            .update_with_buffer(&self.window_buffer, 320, 240)?;
-
-        result?;
-        Ok(())
+        Ok(result?)
     }
 }
 

@@ -10,6 +10,9 @@ use winit::{
     window::{Fullscreen, WindowBuilder},
 };
 
+#[cfg(unix)]
+use winit::platform::unix::EventLoopExtUnix;
+
 pub struct Window {
     event_loop: EventLoop<()>,
     window: winit::window::Window,
@@ -23,7 +26,7 @@ pub struct Window {
 impl Window {
     pub fn new() -> Result<Window> {
         async fn create() -> Result<Window> {
-            let event_loop = EventLoop::new();
+            let event_loop = EventLoop::new_any_thread();
             let window = WindowBuilder::new()
                 .with_inner_size(PhysicalSize::new(640u32, 480))
                 .with_min_inner_size(PhysicalSize::new(320u32, 240))

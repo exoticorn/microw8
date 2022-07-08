@@ -3,6 +3,17 @@ use std::time::Instant;
 use crate::Framebuffer;
 use minifb::{Key, Window, WindowOptions};
 
+static GAMEPAD_KEYS: &[Key] = &[
+    Key::Up,
+    Key::Down,
+    Key::Left,
+    Key::Right,
+    Key::Z,
+    Key::X,
+    Key::A,
+    Key::S,
+];
+
 pub fn run(mut update: Box<dyn FnMut(&mut dyn Framebuffer, u32, bool) -> Instant + 'static>) -> ! {
     #[cfg(target_os = "windows")]
     unsafe {
