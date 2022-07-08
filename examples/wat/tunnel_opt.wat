@@ -35,24 +35,24 @@
       f32.convert_i32_s
       f32.sqrt
       f32.div
+      call $time
       i32.const 163
       f32.convert_i32_s
-      call $time
       f32.mul
       f32.add
       i32.trunc_sat_f32_s
 
-      i32.const 163
-      f32.convert_i32_s
       local.get $x
       f32.convert_i32_s
       local.get $y
       f32.convert_i32_s
       call $atan2
+      i32.const 163
+      f32.convert_i32_s
       f32.mul
+      call $time
       i32.const 64
       f32.convert_i32_s
-      call $time
       f32.mul
       f32.add
       i32.trunc_f32_s
