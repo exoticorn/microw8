@@ -300,6 +300,9 @@ impl Window {
 
         surface.configure(&device, &surface_config);
 
+        let mut reset = false;
+        let mut gamepad = 0;
+
         event_loop.run(move |event, _, control_flow| {
             let _ = (&window, &instance, &surface, &adapter, &device);
 
@@ -314,6 +317,19 @@ impl Window {
                     }
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::KeyboardInput { input, .. } => {
+                        fn gamepad_button(input: &winit::event::KeyboardInput) -> u32 {
+                            match input.scancode {
+                                103 => 1,
+                                108 => 2,
+                                105 => 4,
+                                106 => 8,
+                                44 => 16,
+                                45 => 32,
+                                30 => 64,
+                                31 => 128,
+                                _ => 0,
+                            }
+                        }
                         if input.state == winit::event::ElementState::Pressed {
                             match input.virtual_keycode {
                                 Some(VirtualKeyCode::Escape) => *control_flow = ControlFlow::Exit,
@@ -324,8 +340,13 @@ impl Window {
                                         Some(Fullscreen::Borderless(None))
                                     });
                                 }
+                                Some(VirtualKeyCode::R) => reset = true,
                                 _ => (),
                             }
+
+                            gamepad |= gamepad_button(&input);
+                        } else {
+                            gamepad &= !gamepad_button(&input);
                         }
                     }
                     _ => (),
@@ -342,9 +363,10 @@ impl Window {
                             framebuffer: &framebuffer_texture,
                             palette: &palette_texture,
                         },
-                        0,
-                        false,
+                        gamepad,
+                        reset,
                     );
+                    reset = false;
                     *control_flow = ControlFlow::WaitUntil(next_frame);
 
                     let output = surface.get_current_texture().unwrap();
