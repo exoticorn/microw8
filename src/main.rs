@@ -35,7 +35,7 @@ fn main() -> Result<()> {
             println!();
             println!("Usage:");
             #[cfg(any(feature = "native", feature = "browser"))]
-            println!("  uw8 run [-t/--timeout <frames>] [--b/--browser] [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
+            println!("  uw8 run [-t/--timeout <frames>] [--no-gpu] [--b/--browser] [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
             println!("  uw8 pack [-u/--uncompressed] [-l/--level] <in-file> <out-file>");
             println!("  uw8 unpack <in-file> <out-file>");
             println!("  uw8 compile [-d/--debug] <in-file> <out-file>");
@@ -54,6 +54,8 @@ fn run(mut args: Arguments) -> Result<()> {
     let watch_mode = args.contains(["-w", "--watch"]);
     #[allow(unused)]
     let timeout: Option<u32> = args.opt_value_from_str(["-t", "--timeout"])?;
+    #[allow(unused)]
+    let gpu = !args.contains("--no-gpu");
 
     let mut config = Config::default();
     if args.contains(["-p", "--pack"]) {
@@ -93,7 +95,7 @@ fn run(mut args: Arguments) -> Result<()> {
         unimplemented!();
         #[cfg(feature = "native")]
         {
-            let mut microw8 = MicroW8::new(timeout)?;
+            let mut microw8 = MicroW8::new(timeout, gpu)?;
             if disable_audio {
                 microw8.disable_audio();
             }

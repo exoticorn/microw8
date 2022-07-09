@@ -35,12 +35,25 @@ pub fn run(mut update: Box<dyn FnMut(&mut dyn Framebuffer, u32, bool) -> Instant
         if let Some(sleep) = next_frame.checked_duration_since(Instant::now()) {
             std::thread::sleep(sleep);
         }
+
+        let mut gamepad = 0;
+        for key in window.get_keys() {
+            if let Some(index) = GAMEPAD_KEYS
+                .iter()
+                .enumerate()
+                .find(|(_, &k)| k == key)
+                .map(|(i, _)| i)
+            {
+                gamepad |= 1 << index;
+            }
+        }
+
         next_frame = update(
             &mut CpuFramebuffer {
                 buffer: &mut buffer,
             },
-            0,
-            false,
+            gamepad,
+            window.is_key_pressed(Key::R, minifb::KeyRepeat::No),
         );
         window.update_with_buffer(&buffer, 320, 240).unwrap();
     }

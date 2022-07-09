@@ -48,7 +48,7 @@ struct UW8WatchDog {
 }
 
 impl MicroW8 {
-    pub fn new(timeout: Option<u32>) -> Result<MicroW8> {
+    pub fn new(timeout: Option<u32>, gpu: bool) -> Result<MicroW8> {
         let mut config = wasmtime::Config::new();
         config.cranelift_opt_level(wasmtime::OptLevel::Speed);
         if timeout.is_some() {
@@ -68,7 +68,7 @@ impl MicroW8 {
                 timeout: timeout.unwrap_or(0),
             };
 
-            uw8_window::run(move |framebuffer, gamepad, reset| {
+            uw8_window::run(gpu, move |framebuffer, gamepad, reset| {
                 while let Ok(instance) = to_ui_rx.try_recv() {
                     state.instance = instance;
                 }
@@ -245,10 +245,10 @@ impl State {
             let mut sound_regs = [0u8; 32];
             sound_regs.copy_from_slice(&memory[80..112]);
             if let Some(ref sound_tx) = instance.sound_tx {
-                sound_tx.send(RegisterUpdate {
+                let _ = sound_tx.send(RegisterUpdate {
                     time,
                     data: sound_regs,
-                })?;
+                });
             }
 
             let framebuffer_mem = &memory[120..(120 + 320 * 240)];
