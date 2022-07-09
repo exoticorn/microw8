@@ -10,7 +10,18 @@ use wasmtime::{
 };
 
 pub struct MicroW8 {
-    tx: mpsc::SyncSender<Vec<u8>>,
+    tx: mpsc::SyncSender<Option<UW8Instance>>,
+    rx: mpsc::Receiver<UIEvent>,
+    stream: Option<cpal::Stream>,
+    engine: Engine,
+    loader_module: Module,
+    disable_audio: bool,
+    module_data: Option<Vec<u8>>,
+}
+
+enum UIEvent {
+    Error(Result<()>),
+    Reset,
 }
 
 struct UW8Instance {
@@ -19,9 +30,8 @@ struct UW8Instance {
     end_frame: TypedFunc<(), ()>,
     update: Option<TypedFunc<(), ()>>,
     start_time: Instant,
-    module: Vec<u8>,
     watchdog: Arc<Mutex<UW8WatchDog>>,
-    sound: Option<Uw8Sound>,
+    sound_tx: Option<mpsc::SyncSender<RegisterUpdate>>,
 }
 
 impl Drop for UW8Instance {
@@ -49,37 +59,45 @@ impl MicroW8 {
         let loader_module =
             wasmtime::Module::new(&engine, include_bytes!("../platform/bin/loader.wasm"))?;
 
-        let (tx, rx) = mpsc::sync_channel::<Vec<u8>>(1);
+        let (to_ui_tx, to_ui_rx) = mpsc::sync_channel(2);
+        let (from_ui_tx, from_ui_rx) = mpsc::sync_channel(1);
 
         std::thread::spawn(move || {
             let mut state = State {
-                engine,
-                loader_module,
-                disable_audio: false,
                 instance: None,
                 timeout: timeout.unwrap_or(0),
             };
 
             uw8_window::run(move |framebuffer, gamepad, reset| {
-                if let Ok(module_data) = rx.try_recv() {
-                    if let Err(err) = state.load(&module_data) {
-                        eprintln!("Failed to load module: {}", err);
-                    }
+                while let Ok(instance) = to_ui_rx.try_recv() {
+                    state.instance = instance;
                 }
 
-                state
-                    .run_frame(framebuffer, gamepad, reset)
-                    .unwrap_or_else(|err| {
-                        eprintln!("Runtime error: {}", err);
-                        Instant::now()
-                    })
+                if reset {
+                    from_ui_tx.send(UIEvent::Reset).unwrap();
+                }
+
+                state.run_frame(framebuffer, gamepad).unwrap_or_else(|err| {
+                    from_ui_tx.send(UIEvent::Error(Err(err))).unwrap();
+                    Instant::now()
+                })
             });
         });
 
-        Ok(MicroW8 { tx })
+        Ok(MicroW8 {
+            tx: to_ui_tx,
+            rx: from_ui_rx,
+            stream: None,
+            engine,
+            loader_module,
+            disable_audio: false,
+            module_data: None,
+        })
     }
 
-    pub fn disable_audio(&mut self) {}
+    pub fn disable_audio(&mut self) {
+        self.disable_audio = true;
+    }
 }
 
 impl super::Runtime for MicroW8 {
@@ -88,26 +106,8 @@ impl super::Runtime for MicroW8 {
     }
 
     fn load(&mut self, module_data: &[u8]) -> Result<()> {
-        self.tx.send(module_data.into())?;
-        Ok(())
-    }
-
-    fn run_frame(&mut self) -> Result<()> {
-        Ok(())
-    }
-}
-
-struct State {
-    engine: Engine,
-    loader_module: Module,
-    disable_audio: bool,
-    instance: Option<UW8Instance>,
-    timeout: u32,
-}
-
-impl State {
-    fn load(&mut self, module_data: &[u8]) -> Result<()> {
-        self.instance = None;
+        self.stream = None;
+        self.tx.send(None)?;
 
         let mut store = wasmtime::Store::new(&self.engine, ());
         store.set_epoch_deadline(60);
@@ -159,39 +159,63 @@ impl State {
         let end_frame = platform_instance.get_typed_func::<(), (), _>(&mut store, "endFrame")?;
         let update = instance.get_typed_func::<(), (), _>(&mut store, "upd").ok();
 
-        let sound = if self.disable_audio {
-            None
+        let (sound_tx, stream) = if self.disable_audio {
+            (None, None)
         } else {
             match init_sound(&self.engine, &platform_module, &module) {
                 Ok(sound) => {
                     sound.stream.play()?;
-                    Some(sound)
+                    (Some(sound.tx), Some(sound.stream))
                 }
                 Err(err) => {
                     eprintln!("Failed to init sound: {}", err);
-                    None
+                    (None, None)
                 }
             }
         };
 
-        self.instance = Some(UW8Instance {
+        self.tx.send(Some(UW8Instance {
             store,
             memory,
             end_frame,
             update,
             start_time: Instant::now(),
-            module: module_data.into(),
             watchdog,
-            sound,
-        });
-
+            sound_tx,
+        }))?;
+        self.stream = stream;
+        self.module_data = Some(module_data.into());
         Ok(())
     }
+
+    fn run_frame(&mut self) -> Result<()> {
+        if let Ok(event) = self.rx.try_recv() {
+            match event {
+                UIEvent::Error(err) => err,
+                UIEvent::Reset => {
+                    if let Some(module_data) = self.module_data.take() {
+                        self.load(&module_data)
+                    } else {
+                        Ok(())
+                    }
+                }
+            }
+        } else {
+            Ok(())
+        }
+    }
+}
+
+struct State {
+    instance: Option<UW8Instance>,
+    timeout: u32,
+}
+
+impl State {
     fn run_frame(
         &mut self,
         framebuffer: &mut dyn uw8_window::Framebuffer,
         gamepad: u32,
-        reset: bool,
     ) -> Result<Instant> {
         let now = Instant::now();
         let mut result = Ok(now);
@@ -220,8 +244,8 @@ impl State {
 
             let mut sound_regs = [0u8; 32];
             sound_regs.copy_from_slice(&memory[80..112]);
-            if let Some(ref sound) = instance.sound {
-                sound.tx.send(RegisterUpdate {
+            if let Some(ref sound_tx) = instance.sound_tx {
+                sound_tx.send(RegisterUpdate {
                     time,
                     data: sound_regs,
                 })?;
@@ -231,9 +255,7 @@ impl State {
             let palette_mem = &memory[0x13000..];
             framebuffer.update(framebuffer_mem, palette_mem);
 
-            if reset {
-                self.load(&instance.module)?;
-            } else if result.is_ok() {
+            if result.is_ok() {
                 self.instance = Some(instance);
             }
         }
