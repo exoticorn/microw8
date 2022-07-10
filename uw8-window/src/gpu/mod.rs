@@ -2,7 +2,6 @@ use crate::Framebuffer;
 use anyhow::{anyhow, Result};
 use std::{num::NonZeroU32, time::Instant};
 
-use wgpu::util::DeviceExt;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, VirtualKeyCode, WindowEvent},
@@ -10,8 +9,16 @@ use winit::{
     window::{Fullscreen, WindowBuilder},
 };
 
-#[cfg(unix)]
+#[cfg(target_os = "macos")]
+use winit::platform::macos::EventLoopExtMacOS;
+#[cfg(target_os = "linux")]
 use winit::platform::unix::EventLoopExtUnix;
+#[cfg(target_os = "windows")]
+use winit::platform::windows::EventLoopExtWindows;
+
+mod crt;
+
+use crt::CrtFilter;
 
 pub struct Window {
     event_loop: EventLoop<()>,
@@ -80,70 +87,6 @@ impl Window {
 
         let palette_screen_mode = PaletteScreenMode::new(&device);
 
-        let mut uniforms = Uniforms {
-            texture_scale: texture_scale_from_resolution(window.inner_size()),
-        };
-
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&[uniforms]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let crt_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                ],
-                label: None,
-            });
-
-        let crt_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &crt_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&palette_screen_mode.screen_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: uniform_buffer.as_entire_binding(),
-                },
-            ],
-            label: None,
-        });
-
-        let crt_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(include_str!("crt.wgsl").into()),
-        });
-
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: None,
-                bind_group_layouts: &[&crt_bind_group_layout],
-                push_constant_ranges: &[],
-            });
-
         let mut surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface.get_supported_formats(&adapter)[0],
@@ -152,28 +95,12 @@ impl Window {
             present_mode: wgpu::PresentMode::AutoNoVsync,
         };
 
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &crt_shader,
-                entry_point: "vs_main",
-                buffers: &[],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &crt_shader,
-                entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: surface_config.format,
-                    blend: None,
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: Default::default(),
-            depth_stencil: None,
-            multisample: Default::default(),
-            multiview: None,
-        });
+        let filter: Box<dyn Filter> = Box::new(CrtFilter::new(
+            &device,
+            &palette_screen_mode.screen_view,
+            window.inner_size(),
+            surface_config.format,
+        ));
 
         surface.configure(&device, &surface_config);
 
@@ -189,8 +116,7 @@ impl Window {
                         surface_config.width = new_size.width;
                         surface_config.height = new_size.height;
                         surface.configure(&device, &surface_config);
-                        uniforms.texture_scale = texture_scale_from_resolution(new_size);
-                        queue.write_buffer(&uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+                        filter.resize(&queue, new_size);
                     }
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::KeyboardInput { input, .. } => {
@@ -274,9 +200,7 @@ impl Window {
                                 depth_stencil_attachment: None,
                             });
 
-                        render_pass.set_pipeline(&render_pipeline);
-                        render_pass.set_bind_group(0, &crt_bind_group, &[]);
-                        render_pass.draw(0..6, 0..1);
+                        filter.render(&mut render_pass);
                     }
 
                     queue.submit(std::iter::once(encoder.finish()));
@@ -300,21 +224,11 @@ impl<'a> Framebuffer for GpuFramebuffer<'a> {
     }
 }
 
-fn texture_scale_from_resolution(res: PhysicalSize<u32>) -> [f32; 4] {
-    let scale = ((res.width as f32) / 160.0).min((res.height as f32) / 120.0);
-    [
-        res.width as f32 / scale,
-        res.height as f32 / scale,
-        2.0 / scale,
-        0.0,
-    ]
+trait Filter {
+    fn resize(&self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>);
+    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>);
 }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct Uniforms {
-    texture_scale: [f32; 4],
-}
 struct PaletteScreenMode {
     framebuffer: wgpu::Texture,
     palette: wgpu::Texture,
