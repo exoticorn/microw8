@@ -17,8 +17,10 @@ use winit::platform::unix::EventLoopExtUnix;
 use winit::platform::windows::EventLoopExtWindows;
 
 mod crt;
+mod square;
 
 use crt::CrtFilter;
+use square::SquareFilter;
 
 pub struct Window {
     event_loop: EventLoop<()>,
@@ -95,7 +97,7 @@ impl Window {
             present_mode: wgpu::PresentMode::AutoNoVsync,
         };
 
-        let filter: Box<dyn Filter> = Box::new(CrtFilter::new(
+        let mut filter: Box<dyn Filter> = Box::new(CrtFilter::new(
             &device,
             &palette_screen_mode.screen_view,
             window.inner_size(),
@@ -144,6 +146,22 @@ impl Window {
                                     });
                                 }
                                 Some(VirtualKeyCode::R) => reset = true,
+                                Some(VirtualKeyCode::Key1) => {
+                                    filter = Box::new(SquareFilter::new(
+                                        &device,
+                                        &palette_screen_mode.screen_view,
+                                        window.inner_size(),
+                                        surface_config.format,
+                                    ))
+                                }
+                                Some(VirtualKeyCode::Key2) => {
+                                    filter = Box::new(CrtFilter::new(
+                                        &device,
+                                        &palette_screen_mode.screen_view,
+                                        window.inner_size(),
+                                        surface_config.format,
+                                    ))
+                                }
                                 _ => (),
                             }
 
