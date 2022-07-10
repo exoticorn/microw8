@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -15,13 +15,22 @@ fn main() {
         palette[i as usize] = r + (g << 8) + (b << 16);
     }
 
-    let mut prev_frame = Instant::now();
+    let mut fps_start = Instant::now();
+    let mut fps_counter = 0;
 
-    uw8_window::run(move |gpu_framebuffer, _gamepads, _reset| {
-        draw_frame(&mut framebuffer, start_time.elapsed().as_secs_f32());
+    uw8_window::run(true, move |gpu_framebuffer, _gamepads, _reset| {
+        for _ in 0..1 {
+            draw_frame(&mut framebuffer, start_time.elapsed().as_secs_f32());
+        }
         gpu_framebuffer.update(&framebuffer, bytemuck::cast_slice(&palette));
-        prev_frame += Duration::from_secs_f32(1.0 / 60.0);
-        prev_frame
+        fps_counter += 1;
+        let elapsed = fps_start.elapsed().as_secs_f32();
+        if elapsed >= 1.0 {
+            println!("{:.1} fps", fps_counter as f32 / elapsed);
+            fps_start = Instant::now();
+            fps_counter = 0;
+        }
+        Instant::now()
     });
 }
 

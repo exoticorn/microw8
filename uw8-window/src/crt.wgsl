@@ -14,10 +14,11 @@ fn vs_main(
     @builtin(vertex_index) in_vertex_index: u32,
 ) -> VertexOutput {
     var out: VertexOutput;
-    let x = (1.0 - f32(in_vertex_index)) * 3.0;
-    let y = f32(in_vertex_index & 1u) * 3.0 - 1.0;
-    out.clip_position = vec4<f32>(x, y, 0.0, 1.0);
-    out.tex_coords = vec2<f32>(x, y) * uniforms.texture_scale.xy + vec2<f32>(160.0, 120.0);
+    let i = in_vertex_index / 3u + in_vertex_index % 3u;
+    let x = -1.0 + f32(i % 2u) * 322.0;
+    let y = -1.0 + f32(i / 2u) * 242.0;
+    out.clip_position = vec4<f32>((vec2<f32>(x, y) - vec2<f32>(160.0, 120.0)) / uniforms.texture_scale.xy, 0.0, 1.0);
+    out.tex_coords = vec2<f32>(x, y);
     return out;
 }
 
@@ -38,10 +39,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let pixel = floor(in.tex_coords);
     let o = vec2<f32>(0.5) - (in.tex_coords - pixel);
     let pixel = vec2<i32>(pixel);
-    
-    if(pixel.x < -1 || pixel.y < -1 || pixel.x > 320 || pixel.y > 240) {
-        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
-    }
     
     let offset_x = o.xxxx + vec4<f32>(-0.125, 0.375, 0.125, -0.375) * uniforms.texture_scale.z;
     let offset_y = o.yyyy + vec4<f32>(-0.375, -0.125, 0.375, 0.125) * uniforms.texture_scale.z;

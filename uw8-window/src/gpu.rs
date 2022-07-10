@@ -404,7 +404,12 @@ impl Window {
                                     view: &view,
                                     resolve_target: None,
                                     ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Load,
+                                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                                            r: 0.0,
+                                            g: 0.0,
+                                            b: 0.0,
+                                            a: 1.0,
+                                        }),
                                         store: true,
                                     },
                                 })],
@@ -413,7 +418,7 @@ impl Window {
 
                         render_pass.set_pipeline(&render_pipeline);
                         render_pass.set_bind_group(0, &crt_bind_group, &[]);
-                        render_pass.draw(0..3, 0..1);
+                        render_pass.draw(0..6, 0..1);
                     }
 
                     queue.submit(std::iter::once(encoder.finish()));
