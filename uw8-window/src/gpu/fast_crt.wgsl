@@ -29,6 +29,11 @@ fn row_factor(offset: f32) -> f32 {
     return 1.0 / (1.0 + offset * offset * 16.0);
 }
 
+fn col_factor(offset: f32) -> f32 {
+    let offset = max(0.0, abs(offset) - 0.4);
+    return 1.0 / (1.0 + offset * offset * 16.0);
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let base = round(in.tex_coords) - vec2<f32>(0.5);
@@ -39,8 +44,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     
     let v = base.y + bottom_factor / (bottom_factor + top_factor);
     
-    let u = in.tex_coords.x;
+    let left_factor = col_factor(frac.x);
+    let right_factor = col_factor(frac.x - 1.0);
     
-    return textureSample(screen_texture, linear_sampler, vec2<f32>(u, v) / vec2<f32>(320.0, 240.0)) * (top_factor + bottom_factor) * 2.0;
+    let u = base.x + right_factor / (right_factor + left_factor);
+    
+    return textureSample(screen_texture, linear_sampler, vec2<f32>(u, v) / vec2<f32>(320.0, 240.0)) * (top_factor + bottom_factor) * (left_factor + right_factor) * 1.1;
 }
 

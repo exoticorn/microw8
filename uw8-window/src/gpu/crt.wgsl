@@ -29,7 +29,7 @@ fn sample_pixel(coords: vec2<i32>, offset: vec4<f32>) -> vec3<f32> {
     if(is_outside) {
         return vec3<f32>(0.0);
     } else {
-        let f = max(vec4<f32>(0.01) / offset - vec4<f32>(0.003), vec4<f32>(0.0));
+        let f = max(vec4<f32>(0.008) / offset - vec4<f32>(0.0024), vec4<f32>(0.0));
         return textureLoad(screen_texture, coords, 0).rgb * (f.x + f.y + f.z + f.w);
     }
 }
