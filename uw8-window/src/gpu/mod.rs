@@ -17,9 +17,11 @@ use winit::platform::unix::EventLoopExtUnix;
 use winit::platform::windows::EventLoopExtWindows;
 
 mod crt;
+mod fast_crt;
 mod square;
 
 use crt::CrtFilter;
+use fast_crt::FastCrtFilter;
 use square::SquareFilter;
 
 pub struct Window {
@@ -155,6 +157,14 @@ impl Window {
                                     ))
                                 }
                                 Some(VirtualKeyCode::Key2) => {
+                                    filter = Box::new(FastCrtFilter::new(
+                                        &device,
+                                        &palette_screen_mode.screen_view,
+                                        window.inner_size(),
+                                        surface_config.format,
+                                    ))
+                                }
+                                Some(VirtualKeyCode::Key3) => {
                                     filter = Box::new(CrtFilter::new(
                                         &device,
                                         &palette_screen_mode.screen_view,

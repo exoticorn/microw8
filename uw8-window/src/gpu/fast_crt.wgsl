@@ -25,20 +25,22 @@ fn vs_main(
 @group(0) @binding(0) var screen_texture: texture_2d<f32>;
 @group(0) @binding(1) var linear_sampler: sampler;
 
-fn aa_tex_coord(c: f32) -> f32 {
-    let low = c - uniforms.texture_scale.z * 0.5;
-    let high = c + uniforms.texture_scale.z * 0.5;
-    let base = floor(low);
-    let center = base + 0.5;
-    let next = base + 1.0;
-    if high > next {
-        return center + (high - next) / (high - base);
-    } else {
-        return center;
-    }
+fn row_factor(offset: f32) -> f32 {
+    return 1.0 / (1.0 + offset * offset * 16.0);
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(screen_texture, linear_sampler, vec2<f32>(aa_tex_coord(in.tex_coords.x), aa_tex_coord(in.tex_coords.y)) / vec2<f32>(320.0, 240.0));
+    let base = round(in.tex_coords) - vec2<f32>(0.5);
+    let frac = in.tex_coords - base;
+    
+    let top_factor = row_factor(frac.y);
+    let bottom_factor = row_factor(frac.y - 1.0);
+    
+    let v = base.y + bottom_factor / (bottom_factor + top_factor);
+    
+    let u = in.tex_coords.x;
+    
+    return textureSample(screen_texture, linear_sampler, vec2<f32>(u, v) / vec2<f32>(320.0, 240.0)) * (top_factor + bottom_factor) * 2.0;
 }
+
