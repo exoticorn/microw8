@@ -32,7 +32,7 @@ fn aa_tex_coord(c: f32) -> f32 {
     let center = base + 0.5;
     let next = base + 1.0;
     if high > next {
-        return center + (high - next) / (high - base);
+        return center + (high - next) / (high - low);
     } else {
         return center;
     }

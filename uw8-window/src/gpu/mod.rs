@@ -126,15 +126,17 @@ impl Window {
                     WindowEvent::KeyboardInput { input, .. } => {
                         fn gamepad_button(input: &winit::event::KeyboardInput) -> u32 {
                             match input.scancode {
-                                103 => 1,
-                                108 => 2,
-                                105 => 4,
-                                106 => 8,
                                 44 => 16,
                                 45 => 32,
                                 30 => 64,
                                 31 => 128,
-                                _ => 0,
+                                _ => match input.virtual_keycode {
+                                    Some(VirtualKeyCode::Up) => 1,
+                                    Some(VirtualKeyCode::Down) => 2,
+                                    Some(VirtualKeyCode::Left) => 4,
+                                    Some(VirtualKeyCode::Right) => 8,
+                                    _ => 0,
+                                },
                             }
                         }
                         if input.state == winit::event::ElementState::Pressed {
