@@ -223,7 +223,9 @@ impl State {
             let time = (now - instance.start_time).as_millis() as i32;
             {
                 let offset = ((time as u32 as i64 * 6) % 100 - 50) / 6;
-                result = Ok(now + Duration::from_millis((16 - offset) as u64));
+                let max = now + Duration::from_millis(17);
+                let next_center = now + Duration::from_millis((16 - offset) as u64);
+                result = Ok(next_center.min(max));
             }
 
             {
