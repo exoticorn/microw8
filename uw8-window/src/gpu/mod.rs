@@ -182,13 +182,14 @@ impl WindowImpl for Window {
 
                             self.gamepads[0] |= gamepad_button(&input);
                         } else {
-                            self.gamepads[1] &= !gamepad_button(&input);
+                            self.gamepads[0] &= !gamepad_button(&input);
                         }
                     }
                     _ => (),
                 },
                 Event::RedrawEventsCleared => {
                     if Instant::now() >= self.next_frame
+                        // workaround needed on Wayland until the next winit release
                         && self.window.fullscreen().is_some() == self.is_fullscreen
                     {
                         *control_flow = ControlFlow::Exit
