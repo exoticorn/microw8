@@ -1,7 +1,8 @@
 use std::time::Instant;
 
-use crate::Framebuffer;
-use minifb::{Key, Window, WindowOptions};
+use crate::{Input, WindowImpl};
+use anyhow::Result;
+use minifb::{Key, WindowOptions};
 
 static GAMEPAD_KEYS: &[Key] = &[
     Key::Up,
@@ -14,58 +15,53 @@ static GAMEPAD_KEYS: &[Key] = &[
     Key::S,
 ];
 
-pub fn run(mut update: Box<dyn FnMut(&mut dyn Framebuffer, u32, bool) -> Instant + 'static>) -> ! {
-    #[cfg(target_os = "windows")]
-    unsafe {
-        winapi::um::timeapi::timeBeginPeriod(1);
-    }
+pub struct Window {
+    window: minifb::Window,
+    buffer: Vec<u32>,
+}
 
-    let mut buffer: Vec<u32> = vec![0; 320 * 240];
-
-    let options = WindowOptions {
-        scale: minifb::Scale::X2,
-        scale_mode: minifb::ScaleMode::AspectRatioStretch,
-        resize: true,
-        ..Default::default()
-    };
-    let mut window = Window::new("MicroW8", 320, 240, options).unwrap();
-
-    let mut next_frame = Instant::now();
-    while window.is_open() && !window.is_key_down(Key::Escape) {
-        if let Some(sleep) = next_frame.checked_duration_since(Instant::now()) {
-            std::thread::sleep(sleep);
+impl Window {
+    pub fn new() -> Result<Window> {
+        #[cfg(target_os = "windows")]
+        unsafe {
+            winapi::um::timeapi::timeBeginPeriod(1);
         }
 
-        let mut gamepad = 0;
-        for key in window.get_keys() {
+        let buffer: Vec<u32> = vec![0; 320 * 240];
+
+        let options = WindowOptions {
+            scale: minifb::Scale::X2,
+            scale_mode: minifb::ScaleMode::AspectRatioStretch,
+            resize: true,
+            ..Default::default()
+        };
+        let window = minifb::Window::new("MicroW8", 320, 240, options).unwrap();
+
+        Ok(Window { window, buffer })
+    }
+}
+
+impl WindowImpl for Window {
+    fn begin_frame(&mut self) -> Input {
+        let mut gamepads = [0u8; 4];
+        for key in self.window.get_keys() {
             if let Some(index) = GAMEPAD_KEYS
                 .iter()
                 .enumerate()
                 .find(|(_, &k)| k == key)
                 .map(|(i, _)| i)
             {
-                gamepad |= 1 << index;
+                gamepads[0] |= 1 << index;
             }
         }
 
-        next_frame = update(
-            &mut CpuFramebuffer {
-                buffer: &mut buffer,
-            },
-            gamepad,
-            window.is_key_pressed(Key::R, minifb::KeyRepeat::No),
-        );
-        window.update_with_buffer(&buffer, 320, 240).unwrap();
+        Input {
+            gamepads,
+            reset: self.window.is_key_pressed(Key::R, minifb::KeyRepeat::No),
+        }
     }
-    std::process::exit(0);
-}
 
-struct CpuFramebuffer<'a> {
-    buffer: &'a mut Vec<u32>,
-}
-
-impl<'a> Framebuffer for CpuFramebuffer<'a> {
-    fn update(&mut self, framebuffer: &[u8], palette: &[u8]) {
+    fn end_frame(&mut self, framebuffer: &[u8], palette: &[u8], next_frame: Instant) {
         for (i, &color_index) in framebuffer.iter().enumerate() {
             let offset = color_index as usize * 4;
             self.buffer[i] = 0xff000000
@@ -73,5 +69,15 @@ impl<'a> Framebuffer for CpuFramebuffer<'a> {
                 | ((palette[offset + 1] as u32) << 8)
                 | palette[offset + 2] as u32;
         }
+        self.window
+            .update_with_buffer(&self.buffer, 320, 240)
+            .unwrap();
+        if let Some(sleep) = next_frame.checked_duration_since(Instant::now()) {
+            std::thread::sleep(sleep);
+        }
+    }
+
+    fn is_open(&self) -> bool {
+        self.window.is_open()
     }
 }

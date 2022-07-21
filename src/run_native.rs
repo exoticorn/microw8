@@ -5,23 +5,20 @@ use std::{thread, time::Instant};
 use anyhow::{anyhow, Result};
 use cpal::traits::*;
 use rubato::Resampler;
+use uw8_window::Window;
 use wasmtime::{
     Engine, GlobalType, Memory, MemoryType, Module, Mutability, Store, TypedFunc, ValType,
 };
 
 pub struct MicroW8 {
-    tx: mpsc::SyncSender<Option<UW8Instance>>,
-    rx: mpsc::Receiver<UIEvent>,
+    window: Window,
     stream: Option<cpal::Stream>,
     engine: Engine,
     loader_module: Module,
     disable_audio: bool,
     module_data: Option<Vec<u8>>,
-}
-
-enum UIEvent {
-    Error(Result<()>),
-    Reset,
+    timeout: u32,
+    instance: Option<UW8Instance>,
 }
 
 struct UW8Instance {
@@ -59,39 +56,17 @@ impl MicroW8 {
         let loader_module =
             wasmtime::Module::new(&engine, include_bytes!("../platform/bin/loader.wasm"))?;
 
-        let (to_ui_tx, to_ui_rx) = mpsc::sync_channel(2);
-        let (from_ui_tx, from_ui_rx) = mpsc::sync_channel(1);
-
-        std::thread::spawn(move || {
-            let mut state = State {
-                instance: None,
-                timeout: timeout.unwrap_or(0),
-            };
-
-            uw8_window::run(gpu, move |framebuffer, gamepad, reset| {
-                while let Ok(instance) = to_ui_rx.try_recv() {
-                    state.instance = instance;
-                }
-
-                if reset {
-                    from_ui_tx.send(UIEvent::Reset).unwrap();
-                }
-
-                state.run_frame(framebuffer, gamepad).unwrap_or_else(|err| {
-                    from_ui_tx.send(UIEvent::Error(Err(err))).unwrap();
-                    Instant::now()
-                })
-            });
-        });
+        let window = Window::new(gpu)?;
 
         Ok(MicroW8 {
-            tx: to_ui_tx,
-            rx: from_ui_rx,
+            window,
             stream: None,
             engine,
             loader_module,
             disable_audio: false,
             module_data: None,
+            timeout: timeout.unwrap_or(0),
+            instance: None,
         })
     }
 
@@ -102,12 +77,12 @@ impl MicroW8 {
 
 impl super::Runtime for MicroW8 {
     fn is_open(&self) -> bool {
-        true
+        self.window.is_open()
     }
 
     fn load(&mut self, module_data: &[u8]) -> Result<()> {
         self.stream = None;
-        self.tx.send(None)?;
+        self.instance = None;
 
         let mut store = wasmtime::Store::new(&self.engine, ());
         store.set_epoch_deadline(60);
@@ -174,7 +149,7 @@ impl super::Runtime for MicroW8 {
             }
         };
 
-        self.tx.send(Some(UW8Instance {
+        self.instance = Some(UW8Instance {
             store,
             memory,
             end_frame,
@@ -182,56 +157,36 @@ impl super::Runtime for MicroW8 {
             start_time: Instant::now(),
             watchdog,
             sound_tx,
-        }))?;
+        });
         self.stream = stream;
         self.module_data = Some(module_data.into());
         Ok(())
     }
 
     fn run_frame(&mut self) -> Result<()> {
-        if let Ok(event) = self.rx.try_recv() {
-            match event {
-                UIEvent::Error(err) => err,
-                UIEvent::Reset => {
-                    if let Some(module_data) = self.module_data.take() {
-                        self.load(&module_data)
-                    } else {
-                        Ok(())
-                    }
-                }
+        let input = self.window.begin_frame();
+
+        if input.reset {
+            if let Some(module_data) = self.module_data.take() {
+                self.load(&module_data)?;
             }
-        } else {
-            Ok(())
         }
-    }
-}
 
-struct State {
-    instance: Option<UW8Instance>,
-    timeout: u32,
-}
-
-impl State {
-    fn run_frame(
-        &mut self,
-        framebuffer: &mut dyn uw8_window::Framebuffer,
-        gamepad: u32,
-    ) -> Result<Instant> {
         let now = Instant::now();
-        let mut result = Ok(now);
+        let mut result = Ok(());
         if let Some(mut instance) = self.instance.take() {
             let time = (now - instance.start_time).as_millis() as i32;
-            {
+            let next_frame = {
                 let offset = ((time as u32 as i64 * 6) % 100 - 50) / 6;
                 let max = now + Duration::from_millis(17);
                 let next_center = now + Duration::from_millis((16 - offset) as u64);
-                result = Ok(next_center.min(max));
-            }
+                next_center.min(max)
+            };
 
             {
                 let mem = instance.memory.data_mut(&mut instance.store);
                 mem[64..68].copy_from_slice(&time.to_le_bytes());
-                mem[68..72].copy_from_slice(&gamepad.to_le_bytes());
+                mem[68..72].copy_from_slice(&input.gamepads);
             }
 
             instance.store.set_epoch_deadline(self.timeout as u64);
@@ -255,14 +210,16 @@ impl State {
 
             let framebuffer_mem = &memory[120..(120 + 320 * 240)];
             let palette_mem = &memory[0x13000..];
-            framebuffer.update(framebuffer_mem, palette_mem);
+            self.window
+                .end_frame(framebuffer_mem, palette_mem, next_frame);
 
             if result.is_ok() {
                 self.instance = Some(instance);
             }
         }
 
-        Ok(result?)
+        result?;
+        Ok(())
     }
 }
 

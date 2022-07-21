@@ -1,4 +1,4 @@
-use crate::Framebuffer;
+use crate::{Input, WindowImpl};
 use anyhow::{anyhow, Result};
 use std::{num::NonZeroU32, time::Instant};
 
@@ -9,12 +9,7 @@ use winit::{
     window::{Fullscreen, WindowBuilder},
 };
 
-#[cfg(target_os = "macos")]
-use winit::platform::macos::EventLoopExtMacOS;
-#[cfg(target_os = "linux")]
-use winit::platform::unix::EventLoopExtUnix;
-#[cfg(target_os = "windows")]
-use winit::platform::windows::EventLoopExtWindows;
+use winit::platform::run_return::EventLoopExtRunReturn;
 
 mod crt;
 mod fast_crt;
@@ -25,19 +20,26 @@ use fast_crt::FastCrtFilter;
 use square::SquareFilter;
 
 pub struct Window {
-    event_loop: EventLoop<()>,
-    window: winit::window::Window,
-    instance: wgpu::Instance,
+    _instance: wgpu::Instance,
     surface: wgpu::Surface,
-    adapter: wgpu::Adapter,
+    _adapter: wgpu::Adapter,
     device: wgpu::Device,
     queue: wgpu::Queue,
+    palette_screen_mode: PaletteScreenMode,
+    surface_config: wgpu::SurfaceConfiguration,
+    filter: Box<dyn Filter>,
+    event_loop: EventLoop<()>,
+    window: winit::window::Window,
+    gamepads: [u8; 4],
+    next_frame: Instant,
+    is_fullscreen: bool,
+    is_open: bool,
 }
 
 impl Window {
     pub fn new() -> Result<Window> {
         async fn create() -> Result<Window> {
-            let event_loop = EventLoop::new_any_thread();
+            let event_loop = EventLoop::new();
             let window = WindowBuilder::new()
                 .with_inner_size(PhysicalSize::new(640u32, 480))
                 .with_min_inner_size(PhysicalSize::new(320u32, 240))
@@ -61,70 +63,66 @@ impl Window {
                 .request_device(&wgpu::DeviceDescriptor::default(), None)
                 .await?;
 
+            let palette_screen_mode = PaletteScreenMode::new(&device);
+
+            let surface_config = wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: surface.get_supported_formats(&adapter)[0],
+                width: window.inner_size().width,
+                height: window.inner_size().height,
+                present_mode: wgpu::PresentMode::AutoNoVsync,
+            };
+
+            let filter: Box<dyn Filter> = Box::new(CrtFilter::new(
+                &device,
+                &palette_screen_mode.screen_view,
+                window.inner_size(),
+                surface_config.format,
+            ));
+
+            surface.configure(&device, &surface_config);
+
             Ok(Window {
                 event_loop,
                 window,
-                instance,
+                _instance: instance,
                 surface,
-                adapter,
+                _adapter: adapter,
                 device,
                 queue,
+                palette_screen_mode,
+                surface_config,
+                filter,
+                gamepads: [0; 4],
+                next_frame: Instant::now(),
+                is_fullscreen: false,
+                is_open: true,
             })
         }
 
         pollster::block_on(create())
     }
+}
 
-    pub fn run(
-        self,
-        mut update: Box<dyn FnMut(&mut dyn Framebuffer, u32, bool) -> Instant + 'static>,
-    ) -> ! {
-        let Window {
-            event_loop,
-            window,
-            instance,
-            surface,
-            adapter,
-            device,
-            queue,
-        } = self;
-
-        let palette_screen_mode = PaletteScreenMode::new(&device);
-
-        let mut surface_config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface.get_supported_formats(&adapter)[0],
-            width: window.inner_size().width,
-            height: window.inner_size().height,
-            present_mode: wgpu::PresentMode::AutoNoVsync,
-        };
-
-        let mut filter: Box<dyn Filter> = Box::new(CrtFilter::new(
-            &device,
-            &palette_screen_mode.screen_view,
-            window.inner_size(),
-            surface_config.format,
-        ));
-
-        surface.configure(&device, &surface_config);
-
+impl WindowImpl for Window {
+    fn begin_frame(&mut self) -> Input {
         let mut reset = false;
-        let mut gamepad = 0;
-
-        event_loop.run(move |event, _, control_flow| {
-            let _ = (&window, &instance, &surface, &adapter, &device);
-
+        self.event_loop.run_return(|event, _, control_flow| {
+            *control_flow = ControlFlow::WaitUntil(self.next_frame);
             match event {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(new_size) => {
-                        surface_config.width = new_size.width;
-                        surface_config.height = new_size.height;
-                        surface.configure(&device, &surface_config);
-                        filter.resize(&queue, new_size);
+                        self.surface_config.width = new_size.width;
+                        self.surface_config.height = new_size.height;
+                        self.surface.configure(&self.device, &self.surface_config);
+                        self.filter.resize(&self.queue, new_size);
                     }
-                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    WindowEvent::CloseRequested => {
+                        self.is_open = false;
+                        *control_flow = ControlFlow::Exit;
+                    }
                     WindowEvent::KeyboardInput { input, .. } => {
-                        fn gamepad_button(input: &winit::event::KeyboardInput) -> u32 {
+                        fn gamepad_button(input: &winit::event::KeyboardInput) -> u8 {
                             match input.scancode {
                                 44 => 16,
                                 45 => 32,
@@ -141,116 +139,114 @@ impl Window {
                         }
                         if input.state == winit::event::ElementState::Pressed {
                             match input.virtual_keycode {
-                                Some(VirtualKeyCode::Escape) => *control_flow = ControlFlow::Exit,
+                                Some(VirtualKeyCode::Escape) => {
+                                    self.is_open = false;
+                                    *control_flow = ControlFlow::Exit;
+                                }
                                 Some(VirtualKeyCode::F) => {
-                                    window.set_fullscreen(if window.fullscreen().is_some() {
+                                    let fullscreen = if self.window.fullscreen().is_some() {
                                         None
                                     } else {
                                         Some(Fullscreen::Borderless(None))
-                                    });
+                                    };
+                                    self.is_fullscreen = fullscreen.is_some();
+                                    self.window.set_fullscreen(fullscreen);
                                 }
                                 Some(VirtualKeyCode::R) => reset = true,
                                 Some(VirtualKeyCode::Key1) => {
-                                    filter = Box::new(SquareFilter::new(
-                                        &device,
-                                        &palette_screen_mode.screen_view,
-                                        window.inner_size(),
-                                        surface_config.format,
+                                    self.filter = Box::new(SquareFilter::new(
+                                        &self.device,
+                                        &self.palette_screen_mode.screen_view,
+                                        self.window.inner_size(),
+                                        self.surface_config.format,
                                     ))
                                 }
                                 Some(VirtualKeyCode::Key2) => {
-                                    filter = Box::new(FastCrtFilter::new(
-                                        &device,
-                                        &palette_screen_mode.screen_view,
-                                        window.inner_size(),
-                                        surface_config.format,
+                                    self.filter = Box::new(FastCrtFilter::new(
+                                        &self.device,
+                                        &self.palette_screen_mode.screen_view,
+                                        self.window.inner_size(),
+                                        self.surface_config.format,
                                     ))
                                 }
                                 Some(VirtualKeyCode::Key3) => {
-                                    filter = Box::new(CrtFilter::new(
-                                        &device,
-                                        &palette_screen_mode.screen_view,
-                                        window.inner_size(),
-                                        surface_config.format,
+                                    self.filter = Box::new(CrtFilter::new(
+                                        &self.device,
+                                        &self.palette_screen_mode.screen_view,
+                                        self.window.inner_size(),
+                                        self.surface_config.format,
                                     ))
                                 }
                                 _ => (),
                             }
 
-                            gamepad |= gamepad_button(&input);
+                            self.gamepads[0] |= gamepad_button(&input);
                         } else {
-                            gamepad &= !gamepad_button(&input);
+                            self.gamepads[1] &= !gamepad_button(&input);
                         }
                     }
                     _ => (),
                 },
-                Event::MainEventsCleared => {
-                    if let ControlFlow::WaitUntil(t) = *control_flow {
-                        if Instant::now() < t {
-                            return;
-                        }
-                    }
-                    let next_frame = update(
-                        &mut GpuFramebuffer {
-                            queue: &queue,
-                            framebuffer: &palette_screen_mode,
-                        },
-                        gamepad,
-                        reset,
-                    );
-                    reset = false;
-                    *control_flow = ControlFlow::WaitUntil(next_frame);
-
-                    let output = surface.get_current_texture().unwrap();
-                    let view = output
-                        .texture
-                        .create_view(&wgpu::TextureViewDescriptor::default());
-                    let mut encoder = device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-
-                    palette_screen_mode.resolve_screen(&mut encoder);
-
+                Event::RedrawEventsCleared => {
+                    if Instant::now() >= self.next_frame
+                        && self.window.fullscreen().is_some() == self.is_fullscreen
                     {
-                        let mut render_pass =
-                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                label: None,
-                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                    view: &view,
-                                    resolve_target: None,
-                                    ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                                            r: 0.0,
-                                            g: 0.0,
-                                            b: 0.0,
-                                            a: 1.0,
-                                        }),
-                                        store: true,
-                                    },
-                                })],
-                                depth_stencil_attachment: None,
-                            });
-
-                        filter.render(&mut render_pass);
+                        *control_flow = ControlFlow::Exit
                     }
-
-                    queue.submit(std::iter::once(encoder.finish()));
-                    output.present();
                 }
                 _ => (),
             }
         });
+        Input {
+            gamepads: self.gamepads,
+            reset,
+        }
     }
-}
 
-struct GpuFramebuffer<'a> {
-    framebuffer: &'a PaletteScreenMode,
-    queue: &'a wgpu::Queue,
-}
+    fn end_frame(&mut self, framebuffer: &[u8], palette: &[u8], next_frame: Instant) {
+        self.next_frame = next_frame;
+        self.palette_screen_mode
+            .write_framebuffer(&self.queue, framebuffer);
+        self.palette_screen_mode.write_palette(&self.queue, palette);
 
-impl<'a> Framebuffer for GpuFramebuffer<'a> {
-    fn update(&mut self, pixels: &[u8], palette: &[u8]) {
-        self.framebuffer.write_framebuffer(self.queue, pixels);
-        self.framebuffer.write_palette(self.queue, palette);
+        let output = self.surface.get_current_texture().unwrap();
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        self.palette_screen_mode.resolve_screen(&mut encoder);
+
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        }),
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: None,
+            });
+
+            self.filter.render(&mut render_pass);
+        }
+
+        self.queue.submit(std::iter::once(encoder.finish()));
+        output.present();
+    }
+
+    fn is_open(&self) -> bool {
+        self.is_open
     }
 }
 
