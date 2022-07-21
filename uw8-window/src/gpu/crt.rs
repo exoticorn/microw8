@@ -112,7 +112,7 @@ impl CrtFilter {
 }
 
 impl Filter for CrtFilter {
-    fn resize(&self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>) {
+    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>) {
         let uniforms = Uniforms {
             texture_scale: texture_scale_from_resolution(new_size),
         };

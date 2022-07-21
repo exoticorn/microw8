@@ -34,10 +34,9 @@ fn col_factor(offset: f32) -> f32 {
     return 1.0 / (1.0 + offset * offset * 16.0);
 }
 
-@fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let base = round(in.tex_coords) - vec2<f32>(0.5);
-    let frac = in.tex_coords - base;
+fn sample_screen(tex_coords: vec2<f32>) -> vec4<f32> {
+    let base = round(tex_coords) - vec2<f32>(0.5);
+    let frac = tex_coords - base;
     
     let top_factor = row_factor(frac.y);
     let bottom_factor = row_factor(frac.y - 1.0);
@@ -50,5 +49,18 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let u = base.x + right_factor / (right_factor + left_factor);
     
     return textureSample(screen_texture, linear_sampler, vec2<f32>(u, v) / vec2<f32>(320.0, 240.0)) * (top_factor + bottom_factor) * (left_factor + right_factor) * 1.1;
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    return sample_screen(in.tex_coords);
+}
+
+@fragment
+fn fs_main_chromatic(in: VertexOutput) -> @location(0) vec4<f32> {
+    let r = sample_screen(in.tex_coords + vec2<f32>(0.2, 0.2)).r;
+    let g = sample_screen(in.tex_coords + vec2<f32>(0.07, -0.27)).g;
+    let b = sample_screen(in.tex_coords + vec2<f32>(-0.27, 0.07)).b;
+    return vec4<f32>(r, g, b, 1.0);
 }
 

@@ -15,6 +15,7 @@ impl FastCrtFilter {
         screen: &wgpu::TextureView,
         resolution: PhysicalSize<u32>,
         surface_format: wgpu::TextureFormat,
+        chromatic: bool,
     ) -> FastCrtFilter {
         let uniforms = Uniforms {
             texture_scale: texture_scale_from_resolution(resolution),
@@ -104,7 +105,11 @@ impl FastCrtFilter {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: if chromatic {
+                    "fs_main_chromatic"
+                } else {
+                    "fs_main"
+                },
                 targets: &[Some(wgpu::ColorTargetState {
                     format: surface_format,
                     blend: None,
@@ -126,7 +131,7 @@ impl FastCrtFilter {
 }
 
 impl Filter for FastCrtFilter {
-    fn resize(&self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>) {
+    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>) {
         let uniforms = Uniforms {
             texture_scale: texture_scale_from_resolution(new_size),
         };

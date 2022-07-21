@@ -73,7 +73,7 @@ impl Window {
                 present_mode: wgpu::PresentMode::AutoNoVsync,
             };
 
-            let filter: Box<dyn Filter> = Box::new(CrtFilter::new(
+            let filter: Box<dyn Filter> = Box::new(AutoCrtFilter::new(
                 &device,
                 &palette_screen_mode.screen_view,
                 window.inner_size(),
@@ -167,10 +167,28 @@ impl WindowImpl for Window {
                                         &self.palette_screen_mode.screen_view,
                                         self.window.inner_size(),
                                         self.surface_config.format,
+                                        false,
                                     ))
                                 }
                                 Some(VirtualKeyCode::Key3) => {
                                     self.filter = Box::new(CrtFilter::new(
+                                        &self.device,
+                                        &self.palette_screen_mode.screen_view,
+                                        self.window.inner_size(),
+                                        self.surface_config.format,
+                                    ))
+                                }
+                                Some(VirtualKeyCode::Key4) => {
+                                    self.filter = Box::new(FastCrtFilter::new(
+                                        &self.device,
+                                        &self.palette_screen_mode.screen_view,
+                                        self.window.inner_size(),
+                                        self.surface_config.format,
+                                        true,
+                                    ))
+                                }
+                                Some(VirtualKeyCode::Key5) => {
+                                    self.filter = Box::new(AutoCrtFilter::new(
                                         &self.device,
                                         &self.palette_screen_mode.screen_view,
                                         self.window.inner_size(),
@@ -252,8 +270,47 @@ impl WindowImpl for Window {
 }
 
 trait Filter {
-    fn resize(&self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>);
+    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>);
     fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>);
+}
+
+struct AutoCrtFilter {
+    small: CrtFilter,
+    large: FastCrtFilter,
+    resolution: PhysicalSize<u32>,
+}
+
+impl AutoCrtFilter {
+    fn new(
+        device: &wgpu::Device,
+        screen: &wgpu::TextureView,
+        resolution: PhysicalSize<u32>,
+        surface_format: wgpu::TextureFormat,
+    ) -> AutoCrtFilter {
+        let small = CrtFilter::new(device, screen, resolution, surface_format);
+        let large = FastCrtFilter::new(device, screen, resolution, surface_format, true);
+        AutoCrtFilter {
+            small,
+            large,
+            resolution,
+        }
+    }
+}
+
+impl Filter for AutoCrtFilter {
+    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>) {
+        self.small.resize(queue, new_size);
+        self.large.resize(queue, new_size);
+        self.resolution = new_size;
+    }
+
+    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+        if self.resolution.width < 960 || self.resolution.height < 720 {
+            self.small.render(render_pass);
+        } else {
+            self.large.render(render_pass);
+        }
+    }
 }
 
 struct PaletteScreenMode {
