@@ -167,7 +167,8 @@ fn load_cart(filename: &Path, config: &Config) -> (Result<Vec<u8>>, Vec<PathBuf>
         if let Some(ref pack_config) = config.pack {
             cart = uw8_tool::pack(&cart, pack_config)?;
             println!(
-                "\npacked size: {:.2} bytes",
+                "\npacked size: {} bytes ({:.2})",
+                cart.len(),
                 uw8_tool::compressed_size(&cart)
             );
         }
