@@ -1,4 +1,4 @@
-use crate::{Input, WindowImpl};
+use crate::{Input, WindowConfig, WindowImpl};
 use anyhow::{anyhow, Result};
 use std::{num::NonZeroU32, time::Instant};
 
@@ -37,13 +37,18 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new() -> Result<Window> {
-        async fn create() -> Result<Window> {
+    pub fn new(window_config: WindowConfig) -> Result<Window> {
+        async fn create(window_config: WindowConfig) -> Result<Window> {
             let event_loop = EventLoop::new();
             let window = WindowBuilder::new()
                 .with_inner_size(PhysicalSize::new(640u32, 480))
                 .with_min_inner_size(PhysicalSize::new(320u32, 240))
                 .with_title("MicroW8")
+                .with_fullscreen(if window_config.fullscreen {
+                    Some(Fullscreen::Borderless(None))
+                } else {
+                    None
+                })
                 .build(&event_loop)?;
 
             window.set_cursor_visible(false);
@@ -73,12 +78,13 @@ impl Window {
                 present_mode: wgpu::PresentMode::AutoNoVsync,
             };
 
-            let filter: Box<dyn Filter> = Box::new(AutoCrtFilter::new(
+            let filter: Box<dyn Filter> = create_filter(
                 &device,
                 &palette_screen_mode.screen_view,
                 window.inner_size(),
                 surface_config.format,
-            ));
+                window_config.filter,
+            );
 
             surface.configure(&device, &surface_config);
 
@@ -95,12 +101,12 @@ impl Window {
                 filter,
                 gamepads: [0; 4],
                 next_frame: Instant::now(),
-                is_fullscreen: false,
+                is_fullscreen: window_config.fullscreen,
                 is_open: true,
             })
         }
 
-        pollster::block_on(create())
+        pollster::block_on(create(window_config))
     }
 }
 
@@ -109,6 +115,7 @@ impl WindowImpl for Window {
         let mut reset = false;
         self.event_loop.run_return(|event, _, control_flow| {
             *control_flow = ControlFlow::WaitUntil(self.next_frame);
+            let mut new_filter = None;
             match event {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(new_size) => {
@@ -153,48 +160,11 @@ impl WindowImpl for Window {
                                     self.window.set_fullscreen(fullscreen);
                                 }
                                 Some(VirtualKeyCode::R) => reset = true,
-                                Some(VirtualKeyCode::Key1) => {
-                                    self.filter = Box::new(SquareFilter::new(
-                                        &self.device,
-                                        &self.palette_screen_mode.screen_view,
-                                        self.window.inner_size(),
-                                        self.surface_config.format,
-                                    ))
-                                }
-                                Some(VirtualKeyCode::Key2) => {
-                                    self.filter = Box::new(FastCrtFilter::new(
-                                        &self.device,
-                                        &self.palette_screen_mode.screen_view,
-                                        self.window.inner_size(),
-                                        self.surface_config.format,
-                                        false,
-                                    ))
-                                }
-                                Some(VirtualKeyCode::Key3) => {
-                                    self.filter = Box::new(CrtFilter::new(
-                                        &self.device,
-                                        &self.palette_screen_mode.screen_view,
-                                        self.window.inner_size(),
-                                        self.surface_config.format,
-                                    ))
-                                }
-                                Some(VirtualKeyCode::Key4) => {
-                                    self.filter = Box::new(FastCrtFilter::new(
-                                        &self.device,
-                                        &self.palette_screen_mode.screen_view,
-                                        self.window.inner_size(),
-                                        self.surface_config.format,
-                                        true,
-                                    ))
-                                }
-                                Some(VirtualKeyCode::Key5) => {
-                                    self.filter = Box::new(AutoCrtFilter::new(
-                                        &self.device,
-                                        &self.palette_screen_mode.screen_view,
-                                        self.window.inner_size(),
-                                        self.surface_config.format,
-                                    ))
-                                }
+                                Some(VirtualKeyCode::Key1) => new_filter = Some(1),
+                                Some(VirtualKeyCode::Key2) => new_filter = Some(2),
+                                Some(VirtualKeyCode::Key3) => new_filter = Some(3),
+                                Some(VirtualKeyCode::Key4) => new_filter = Some(4),
+                                Some(VirtualKeyCode::Key5) => new_filter = Some(5),
                                 _ => (),
                             }
 
@@ -214,6 +184,15 @@ impl WindowImpl for Window {
                     }
                 }
                 _ => (),
+            }
+            if let Some(new_filter) = new_filter {
+                self.filter = create_filter(
+                    &self.device,
+                    &self.palette_screen_mode.screen_view,
+                    self.window.inner_size(),
+                    self.surface_config.format,
+                    new_filter,
+                );
             }
         });
         Input {
@@ -266,6 +245,49 @@ impl WindowImpl for Window {
 
     fn is_open(&self) -> bool {
         self.is_open
+    }
+}
+
+fn create_filter(
+    device: &wgpu::Device,
+    screen_texture: &wgpu::TextureView,
+    window_size: PhysicalSize<u32>,
+    surface_format: wgpu::TextureFormat,
+    filter: u32,
+) -> Box<dyn Filter> {
+    match filter {
+        1 => Box::new(SquareFilter::new(
+            device,
+            screen_texture,
+            window_size,
+            surface_format,
+        )),
+        2 => Box::new(FastCrtFilter::new(
+            device,
+            screen_texture,
+            window_size,
+            surface_format,
+            false,
+        )),
+        3 => Box::new(CrtFilter::new(
+            device,
+            screen_texture,
+            window_size,
+            surface_format,
+        )),
+        4 => Box::new(FastCrtFilter::new(
+            device,
+            screen_texture,
+            window_size,
+            surface_format,
+            true,
+        )),
+        _ => Box::new(AutoCrtFilter::new(
+            device,
+            screen_texture,
+            window_size,
+            surface_format,
+        )),
     }
 }
 

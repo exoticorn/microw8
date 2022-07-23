@@ -5,7 +5,7 @@ use std::{thread, time::Instant};
 use anyhow::{anyhow, Result};
 use cpal::traits::*;
 use rubato::Resampler;
-use uw8_window::Window;
+use uw8_window::{Window, WindowConfig};
 use wasmtime::{
     Engine, GlobalType, Memory, MemoryType, Module, Mutability, Store, TypedFunc, ValType,
 };
@@ -45,7 +45,7 @@ struct UW8WatchDog {
 }
 
 impl MicroW8 {
-    pub fn new(timeout: Option<u32>, gpu: bool) -> Result<MicroW8> {
+    pub fn new(timeout: Option<u32>, window_config: WindowConfig) -> Result<MicroW8> {
         let mut config = wasmtime::Config::new();
         config.cranelift_opt_level(wasmtime::OptLevel::Speed);
         if timeout.is_some() {
@@ -56,7 +56,7 @@ impl MicroW8 {
         let loader_module =
             wasmtime::Module::new(&engine, include_bytes!("../platform/bin/loader.wasm"))?;
 
-        let window = Window::new(gpu)?;
+        let window = Window::new(window_config)?;
 
         Ok(MicroW8 {
             window,

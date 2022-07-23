@@ -13,6 +13,7 @@ use uw8::RunWebServer;
 use uw8::Runtime;
 
 fn main() -> Result<()> {
+    env_logger::Builder::from_env(env_logger::Env::default()).init();
     let mut args = Arguments::from_env();
 
     // try to enable ansi support in win10 cmd shell
@@ -35,7 +36,7 @@ fn main() -> Result<()> {
             println!();
             println!("Usage:");
             #[cfg(any(feature = "native", feature = "browser"))]
-            println!("  uw8 run [-t/--timeout <frames>] [--no-gpu] [--b/--browser] [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
+            println!("  uw8 run [-t/--timeout <frames>] [--b/--browser] [-w/--watch] [-p/--pack] [-u/--uncompressed] [-l/--level] [-o/--output <out-file>] <file>");
             println!("  uw8 pack [-u/--uncompressed] [-l/--level] <in-file> <out-file>");
             println!("  uw8 unpack <in-file> <out-file>");
             println!("  uw8 compile [-d/--debug] <in-file> <out-file>");
@@ -54,8 +55,6 @@ fn run(mut args: Arguments) -> Result<()> {
     let watch_mode = args.contains(["-w", "--watch"]);
     #[allow(unused)]
     let timeout: Option<u32> = args.opt_value_from_str(["-t", "--timeout"])?;
-    #[allow(unused)]
-    let gpu = !args.contains("--no-gpu");
 
     let mut config = Config::default();
     if args.contains(["-p", "--pack"]) {
@@ -82,7 +81,16 @@ fn run(mut args: Arguments) -> Result<()> {
     #[cfg(not(feature = "native"))]
     let run_browser = args.contains(["-b", "--browser"]) || true;
 
-    let disable_audio = args.contains(["-m", "--disable-audio"]);
+    let disable_audio = args.contains(["-m", "--no-audio"]);
+
+    #[cfg(feature = "native")]
+    let window_config = {
+        let mut config = WindowConfig::default();
+        if !run_browser {
+            config.parse_arguments(&mut args);
+        }
+        config
+    };
 
     let filename = args.free_from_os_str::<PathBuf, bool>(|s| Ok(s.into()))?;
 
@@ -90,12 +98,14 @@ fn run(mut args: Arguments) -> Result<()> {
 
     use std::process::exit;
 
+    use uw8_window::WindowConfig;
+
     let mut runtime: Box<dyn Runtime> = if !run_browser {
         #[cfg(not(feature = "native"))]
         unimplemented!();
         #[cfg(feature = "native")]
         {
-            let mut microw8 = MicroW8::new(timeout, gpu)?;
+            let mut microw8 = MicroW8::new(timeout, window_config)?;
             if disable_audio {
                 microw8.disable_audio();
             }

@@ -436,6 +436,30 @@ and execution of the cart is stopped. Defaults to 30 (0.5s)
 * `-l LEVEL`, `--level LEVEL`: Compression level (0-9). Higher compression levels are really slow.
 * `-o FILE`, `--output FILE`: Write the loaded and optionally packed cart back to disk.
 
+when using the native runtime:
+
+* `-m`, `--no-audio`: Disable audio, also reduces cpu load a bit
+* `--no-gpu`:  Force old cpu-only window code
+* `--filter FILTER`:  Select an upscale filter at startup
+* `--fullscreen`:  Start in fullscreen mode
+
+Note that the cpu-only window does not support fullscreen nor upscale filters.
+
+Unless --no-gpu is given, uw8 will first try to open a gpu accelerated window, falling back to the old cpu-only window if that fails.
+Therefore you should rarely need to manually pass --no-gpu. If you prefer the old pixel doubling look to the now default crt filter,
+you can just pass `--filter nearest` or `--filter 1`.
+
+The upscale filter options are:
+```
+1, nearest              : Anti-aliased nearest filter
+2, fast_crt             : Very simple, cheap crt filter, not very good below a window size of 960x720
+3, ss_crt               : Super sampled crt filter, a little more demanding on the GPU but scales well to smaller window sizes
+4, chromatic_crt        : Variant of fast_crt with a slight offset of the three color dots of a pixel, still pretty cheap
+5, auto_crt (default)   : ss_crt below 960x720, chromatic_crt otherwise
+```
+
+You can switch the upscale filter at any time using the keys 1-5. You can toggle fullscreen with F.
+
 ## `uw8 pack`
 
 Usage:

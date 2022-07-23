@@ -1,7 +1,10 @@
 use std::time::Instant;
+use uw8_window::WindowConfig;
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
+    let mut args = pico_args::Arguments::from_env();
 
     let mut framebuffer = vec![0u8; 320 * 240];
     let mut start_time = Instant::now();
@@ -18,7 +21,10 @@ fn main() {
     let mut fps_start = Instant::now();
     let mut fps_counter = 0;
 
-    let mut window = uw8_window::Window::new(true).unwrap();
+    let mut window_config = WindowConfig::default();
+    window_config.parse_arguments(&mut args);
+
+    let mut window = uw8_window::Window::new(window_config).unwrap();
 
     while window.is_open() {
         let input = window.begin_frame();

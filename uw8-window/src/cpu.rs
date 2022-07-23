@@ -78,6 +78,6 @@ impl WindowImpl for Window {
     }
 
     fn is_open(&self) -> bool {
-        self.window.is_open()
+        self.window.is_open() && !self.window.is_key_down(Key::Escape)
     }
 }
