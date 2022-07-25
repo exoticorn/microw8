@@ -29,6 +29,19 @@ Examplers for older versions:
 
 ## Versions
 
+### v0.2.1
+
+* [Web runtime](v0.2.1)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.2.1/microw8-0.2.1-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.2.1/microw8-0.2.1-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.2.1/microw8-0.2.1-windows.zip)
+
+Changes:
+
+* new gpu accelerated renderer with (optional) crt filter
+* optimized `hline` function, a big speed-up when drawing large filled circles or rectangles
+* print fractional size of packed `uw8` cart
+
 ### v0.2.0
 
 * [Web runtime](v0.2.0)
