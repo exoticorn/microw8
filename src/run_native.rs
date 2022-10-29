@@ -342,7 +342,7 @@ fn init_sound(
         .ok_or_else(|| anyhow!("Could not find float output config"))?;
     let sample_rate = cpal::SampleRate(44100)
         .max(config.min_sample_rate())
-        .max(config.max_sample_rate());
+        .min(config.max_sample_rate());
     let config = config.with_sample_rate(sample_rate);
     let buffer_size = match *config.buffer_size() {
         cpal::SupportedBufferSize::Unknown => cpal::BufferSize::Default,

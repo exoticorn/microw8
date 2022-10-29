@@ -81,11 +81,12 @@ fn run(mut args: Arguments) -> Result<()> {
     #[cfg(not(feature = "native"))]
     let run_browser = args.contains(["-b", "--browser"]) || true;
 
+    #[allow(unused)]
     let disable_audio = args.contains(["-m", "--no-audio"]);
 
     #[cfg(feature = "native")]
     let window_config = {
-        let mut config = WindowConfig::default();
+        let mut config = uw8_window::WindowConfig::default();
         if !run_browser {
             config.parse_arguments(&mut args);
         }
@@ -97,8 +98,6 @@ fn run(mut args: Arguments) -> Result<()> {
     let mut watcher = uw8::FileWatcher::new()?;
 
     use std::process::exit;
-
-    use uw8_window::WindowConfig;
 
     let mut runtime: Box<dyn Runtime> = if !run_browser {
         #[cfg(not(feature = "native"))]
