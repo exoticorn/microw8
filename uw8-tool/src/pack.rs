@@ -220,6 +220,11 @@ impl<'a> ParsedModule<'a> {
                     validate_table_section(reader)?;
                     table_section = Some(Section::new(range, ()));
                 }
+                Payload::MemorySection(reader) => {
+                    if reader.get_count() != 0 {
+                        bail!("Found non-empty MemorySection. Memory has to be imported!");
+                    }
+                }
                 Payload::ElementSection(mut reader) => {
                     let mut elements = Vec::with_capacity(reader.get_count() as usize);
                     for _ in 0..reader.get_count() {
