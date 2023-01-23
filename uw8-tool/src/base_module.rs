@@ -167,6 +167,7 @@ impl BaseModule {
         add_function(&mut functions, &type_map, "exp", &[F32], Some(F32));
 
         add_function(&mut functions, &type_map, "playNote", &[I32, I32], None);
+        add_function(&mut functions, &type_map, "sndGes", &[I32], Some(F32));
 
         for i in functions.len()..64 {
             add_function(

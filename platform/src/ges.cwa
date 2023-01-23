@@ -10,7 +10,7 @@ const GesState.Size = GesState.Filter + 8*4;
 const GesStateOffset = 32;
 const GesBufferOffset = 32 + GesState.Size;
 
-export fn gesSnd(t: i32) -> f32 {
+export fn sndGes(t: i32) -> f32 {
     let baseAddr = 0!0x12c78;
     if !(t & 127) {
         let i: i32;

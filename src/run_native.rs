@@ -314,7 +314,7 @@ fn init_sound(
 
     let snd = instance
         .get_typed_func::<(i32,), f32, _>(&mut store, "snd")
-        .or_else(|_| platform_instance.get_typed_func::<(i32,), f32, _>(&mut store, "gesSnd"))?;
+        .or_else(|_| platform_instance.get_typed_func::<(i32,), f32, _>(&mut store, "sndGes"))?;
 
     let host = cpal::default_host();
     let device = host

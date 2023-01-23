@@ -34,6 +34,7 @@
 (import "env" "circle_outline" (func $circle_outline (param f32) (param f32) (param f32) (param i32)))
 (import "env" "exp" (func $exp (param f32) (result f32)))
 (import "env" "playNote" (func $playNote (param i32) (param i32)))
+(import "env" "sndGes" (func $sndGes (param i32) (result f32)))
 
 ;; to use defines, include this file with a preprocessor
 ;; like gpp (https://logological.org/gpp).
