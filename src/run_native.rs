@@ -93,7 +93,7 @@ impl super::Runtime for MicroW8 {
         linker.define("env", "memory", memory)?;
 
         let loader_instance = linker.instantiate(&mut store, &self.loader_module)?;
-        let load_uw8 = loader_instance.get_typed_func::<i32, i32, _>(&mut store, "load_uw8")?;
+        let load_uw8 = loader_instance.get_typed_func::<i32, i32>(&mut store, "load_uw8")?;
 
         let platform_data = include_bytes!("../platform/bin/platform.uw8");
         memory.data_mut(&mut store)[..platform_data.len()].copy_from_slice(platform_data);
@@ -131,8 +131,8 @@ impl super::Runtime for MicroW8 {
         }
 
         let instance = linker.instantiate(&mut store, &module)?;
-        let end_frame = platform_instance.get_typed_func::<(), (), _>(&mut store, "endFrame")?;
-        let update = instance.get_typed_func::<(), (), _>(&mut store, "upd").ok();
+        let end_frame = platform_instance.get_typed_func::<(), ()>(&mut store, "endFrame")?;
+        let update = instance.get_typed_func::<(), ()>(&mut store, "upd").ok();
 
         let (sound_tx, stream) = if self.disable_audio {
             (None, None)
@@ -313,8 +313,8 @@ fn init_sound(
     let instance = linker.instantiate(&mut store, module)?;
 
     let snd = instance
-        .get_typed_func::<(i32,), f32, _>(&mut store, "snd")
-        .or_else(|_| platform_instance.get_typed_func::<(i32,), f32, _>(&mut store, "sndGes"))?;
+        .get_typed_func::<(i32,), f32>(&mut store, "snd")
+        .or_else(|_| platform_instance.get_typed_func::<(i32,), f32>(&mut store, "sndGes"))?;
 
     let host = cpal::default_host();
     let device = host
