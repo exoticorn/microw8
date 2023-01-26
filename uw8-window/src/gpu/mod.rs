@@ -53,8 +53,8 @@ impl Window {
 
             window.set_cursor_visible(false);
 
-            let instance = wgpu::Instance::new(wgpu::Backends::all());
-            let surface = unsafe { instance.create_surface(&window) };
+            let instance = wgpu::Instance::new(Default::default());
+            let surface = unsafe { instance.create_surface(&window) }?;
             let adapter = instance
                 .request_adapter(&wgpu::RequestAdapterOptions {
                     power_preference: wgpu::PowerPreference::LowPower,
@@ -71,11 +71,8 @@ impl Window {
             let palette_screen_mode = PaletteScreenMode::new(&device);
 
             let surface_config = wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: surface.get_supported_formats(&adapter)[0],
-                width: window.inner_size().width,
-                height: window.inner_size().height,
                 present_mode: wgpu::PresentMode::AutoNoVsync,
+                ..surface.get_default_config(&adapter, window.inner_size().width, window.inner_size().height).expect("Surface incompatible with adapter")
             };
 
             let filter: Box<dyn Filter> = create_filter(
@@ -357,6 +354,7 @@ impl PaletteScreenMode {
             format: wgpu::TextureFormat::R8Uint,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             label: None,
+            view_formats: &[]
         });
 
         let palette_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -371,6 +369,7 @@ impl PaletteScreenMode {
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             label: None,
+            view_formats: &[]
         });
 
         let screen_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -385,6 +384,7 @@ impl PaletteScreenMode {
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
             label: None,
+            view_formats: &[]
         });
 
         let framebuffer_texture_view =

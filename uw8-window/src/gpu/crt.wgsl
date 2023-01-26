@@ -36,36 +36,36 @@ fn sample_pixel(coords: vec2<i32>, offset: vec4<f32>) -> vec3<f32> {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let pixel = floor(in.tex_coords);
-    let o = vec2<f32>(0.5) - (in.tex_coords - pixel);
-    let pixel = vec2<i32>(pixel);
+    let pixelf = floor(in.tex_coords);
+    let o = vec2<f32>(0.5) - (in.tex_coords - pixelf);
+    let pixel = vec2<i32>(pixelf);
     
     let offset_x = o.xxxx + vec4<f32>(-0.125, 0.375, 0.125, -0.375) * uniforms.texture_scale.z;
     let offset_y = o.yyyy + vec4<f32>(-0.375, -0.125, 0.375, 0.125) * uniforms.texture_scale.z;
     
-    let offset_x0 = max(abs(offset_x + vec4<f32>(-1.0)) - vec4<f32>(0.5), vec4<f32>(0.0));
-    let offset_x1 = max(abs(offset_x) - vec4<f32>(0.5), vec4<f32>(0.0));
-    let offset_x2 = max(abs(offset_x + vec4<f32>(1.0)) - vec4<f32>(0.5), vec4<f32>(0.0));
+    var offset_x0 = max(abs(offset_x + vec4<f32>(-1.0)) - vec4<f32>(0.5), vec4<f32>(0.0));
+    var offset_x1 = max(abs(offset_x) - vec4<f32>(0.5), vec4<f32>(0.0));
+    var offset_x2 = max(abs(offset_x + vec4<f32>(1.0)) - vec4<f32>(0.5), vec4<f32>(0.0));
     
-    let offset_x0 = offset_x0 * offset_x0;
-    let offset_x1 = offset_x1 * offset_x1;
-    let offset_x2 = offset_x2 * offset_x2;
+    offset_x0 = offset_x0 * offset_x0;
+    offset_x1 = offset_x1 * offset_x1;
+    offset_x2 = offset_x2 * offset_x2;
     
-    let offset_yr = offset_y + vec4<f32>(-1.0);
-    let offset_yr = vec4<f32>(0.02) + offset_yr * offset_yr;
+    var offset_yr = offset_y + vec4<f32>(-1.0);
+    offset_yr = vec4<f32>(0.02) + offset_yr * offset_yr;
     
     var acc = sample_pixel(pixel + vec2<i32>(-1, -1), offset_x0 + offset_yr);
     acc = acc + sample_pixel(pixel + vec2<i32>(0, -1), offset_x1 + offset_yr);
     acc = acc + sample_pixel(pixel + vec2<i32>(1, -1), offset_x2 + offset_yr);
 
-    let offset_yr = vec4<f32>(0.02) + offset_y * offset_y;
+    offset_yr = vec4<f32>(0.02) + offset_y * offset_y;
     
     acc = acc + sample_pixel(pixel + vec2<i32>(-1, 0), offset_x0 + offset_yr);
     acc = acc + sample_pixel(pixel, offset_x1 + offset_yr);
     acc = acc + sample_pixel(pixel + vec2<i32>(1, 0), offset_x2 + offset_yr);
 
-    let offset_yr = offset_y + vec4<f32>(1.0);
-    let offset_yr = vec4<f32>(0.02) + offset_yr * offset_yr;
+    offset_yr = offset_y + vec4<f32>(1.0);
+    offset_yr = vec4<f32>(0.02) + offset_yr * offset_yr;
     
     acc = acc + sample_pixel(pixel + vec2<i32>(-1, 1), offset_x0 + offset_yr);
     acc = acc + sample_pixel(pixel + vec2<i32>(0, 1), offset_x1 + offset_yr);
