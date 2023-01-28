@@ -11,6 +11,7 @@ use warp::{http::Response, Filter};
 pub struct RunWebServer {
     cart: Arc<Mutex<Vec<u8>>>,
     tx: broadcast::Sender<()>,
+    socket_addr: SocketAddr,
 }
 
 impl RunWebServer {
@@ -18,8 +19,13 @@ impl RunWebServer {
         let cart = Arc::new(Mutex::new(Vec::new()));
         let (tx, _) = broadcast::channel(1);
 
+        let socket_addr = "127.0.0.1:3030"
+            .parse::<SocketAddr>()
+            .expect("Failed to parse socket address");
+
         let server_cart = cart.clone();
         let server_tx = tx.clone();
+        let server_addr = socket_addr.clone();
         thread::spawn(move || {
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_io()
@@ -47,24 +53,26 @@ impl RunWebServer {
                     warp::sse::reply(warp::sse::keep_alive().stream(event_stream(&server_tx)))
                 });
 
-                let socket_addr = "127.0.0.1:3030"
-                    .parse::<SocketAddr>()
-                    .expect("Failed to parse socket address");
-
-                let server_future = warp::serve(html.or(cart).or(events)).bind(socket_addr);
-                println!("Point browser at http://{}", socket_addr);
-                let _ignore_result = webbrowser::open(&format!("http://{}", socket_addr));
+                let server_future = warp::serve(html.or(cart).or(events)).bind(server_addr);
                 server_future.await
             });
         });
 
-        RunWebServer { cart, tx }
+        RunWebServer {
+            cart,
+            tx,
+            socket_addr,
+        }
     }
 }
 
 impl super::Runtime for RunWebServer {
     fn load(&mut self, module_data: &[u8]) -> Result<()> {
         if let Ok(mut lock) = self.cart.lock() {
+            if lock.is_empty() && !module_data.is_empty() {
+                println!("Point browser at http://{}", self.socket_addr);
+                let _ignore_result = webbrowser::open(&format!("http://{}", self.socket_addr));
+            }
             lock.clear();
             lock.extend_from_slice(module_data);
         }
