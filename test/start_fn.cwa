@@ -1,0 +1,5 @@
+include "../examples/include/microw8-api.cwa"
+
+export fn start() {
+	printChar('Test');
+}

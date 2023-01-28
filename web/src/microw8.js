@@ -263,6 +263,10 @@ export default function MicroW8(screen, config = {}) {
             window.addEventListener('blur', () => updateVisibility(false), { signal: abortController.signal });
             updateVisibility(document.hasFocus());
 
+            if (instance.exports.start) {
+                instance.exports.start();
+            }
+
             function mainloop() {
                 if (!keepRunning) {
                     return;
