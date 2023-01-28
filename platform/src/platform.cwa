@@ -372,16 +372,7 @@ export fn printChar(char: i32) {
 global mut controlCodeLength = 0;
 
 fn printSingleChar(char: i32) {
-    if char >= 4 & char <= 6 {
-        outputChannel = char - 4;
-        if !outputChannel {
-            textCursorX = 0;
-            textCursorY = 0;
-        }
-        return;
-    }
-
-    if outputChannel >= 2 {
+    if outputChannel >= 2 & (char < 4 | char > 6) {
         logChar(char);
         return;
     }
@@ -396,6 +387,15 @@ fn printSingleChar(char: i32) {
 
     if char == 1 {
         drawChar(0x12d20?1);
+        return;
+    }
+
+    if char >= 4 & char <= 6 {
+        outputChannel = char - 4;
+        if !outputChannel {
+            textCursorX = 0;
+            textCursorY = 0;
+        }
         return;
     }
 
