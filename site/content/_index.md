@@ -14,6 +14,8 @@ The initial motivation behind MicroW8 was to explore whether there was a way to 
 * Memory: 256KB
 * Gamepad input (D-Pad + 4 Buttons)
 
+For detailed [documentation see here](docs).
+
 ## Examples
 * [Skip Ahead](v0.2.0#AgVfq24KI2Ok2o8qVtPYj27fSuGnfeSKgbOkIOsaEQMov8TDYQ6UjdjwkZrYcM1i9alo4/+Bhm1PRFEa0YHJlJAk/PGoc2K41rejv9ZSqJqIHNjr7cappqhOR2jT+jk+0b0+U6hO+geRCTP2aufWs7L+f/Z27NFY8LKlqPSv+C6Rd6+ohoKi6sYl5Kcrlf1cyTinV7jTTnmbcXWVDBA5rRKxAGMUTDS8rHxqSztRITOaQVP1pSdYgi/BDdOJOxSOIkeaId84S+Ycls5na7EgwSfVIpgqF+tcfkUecb8t2mQrXA7pyKrh/wzHn5N6Oe5aOgmzY2YpTIct) (249 bytes): A port of my [TIC-80 256byte game](http://tic80.com/play?cart=1735) from LoveByte'21, now with sound
 * [Fireworks](v0.2.0#AgwvgP+M59snqjl4CMKw5sqm1Zw9yJCbSviMjeLUdHus2a3yl/a99+uiBeqZgP/2jqSjrLjRk73COMM6OSLpsxK8ugT1kuk/q4hQUqqPpGozHoa0laulzGGcahzdfdJsYaK1sIdeIYS9M5PnJx/Wk9H+PvWEPy2Zvv7I6IW7Fg==) (127 bytes): Some fireworks to welcome 2022.
@@ -28,6 +30,20 @@ Examplers for older versions:
 * [CircleWorm](v0.1pre2#AQp7AXkCAX8CfUEgEA0DQCABskEEspUiAkECspUgALJBiCeylSIDQQWylJIQAEEBspJBoAGylCACQQOylSADQQSylJIQAEEBspJB+ACylCADQRGylCACQQKylJIQAEECspJBELKUIAFBAmxBP2oQEiABQQFqIgFBP0gNAAsL) (126 bytes uncompressed): Just a test for the circle fill function.
 
 ## Versions
+
+### v0.2.2
+
+* [Web runtime](v0.2.2)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.2.2/microw8-0.2.2-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.2.2/microw8-0.2.2-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.2.2/microw8-0.2.2-windows.zip)
+
+Changes:
+
+* call `start` function after loading cart if the cart exports one
+* fix `sndGes` having the wrong name and not being included in the auto imports
+* fix control codes 4-6 (change text output mode) being invoked when used as parameters in other control sequences
+* only open browser window once a cart was compiled sucessfully when running with `-b`
 
 ### v0.2.1
 

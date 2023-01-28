@@ -12,6 +12,9 @@ at offset 120 in memory with the 32bpp palette located at 0x13000.
 
 The memory has to be imported as `env` `memory` and has a maximum size of 256kb (4 pages).
 
+If the module exports a function called `start`, it will be called once after the module is
+loaded.
+
 # Memory map
 
 ```
