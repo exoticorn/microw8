@@ -134,6 +134,10 @@ impl super::Runtime for MicroW8 {
         let end_frame = platform_instance.get_typed_func::<(), (), _>(&mut store, "endFrame")?;
         let update = instance.get_typed_func::<(), (), _>(&mut store, "upd").ok();
 
+        if let Some(start) = instance.get_typed_func::<(), (), _>(&mut store, "start").ok() {
+            start.call(&mut store, ())?;
+        }
+
         let (sound_tx, stream) = if self.disable_audio {
             (None, None)
         } else {
