@@ -3,7 +3,7 @@ use std::{collections::HashMap, fs::File, path::Path};
 use anyhow::{bail, Result};
 use std::io::prelude::*;
 use wasm_encoder::{
-    CodeSection, EntityType, Export, ExportSection, Function, FunctionSection, ImportSection,
+    CodeSection, EntityType, ExportKind, ExportSection, Function, FunctionSection, ImportSection,
     Instruction, MemoryType, Module, TypeSection, ValType,
 };
 use ValType::*;
@@ -218,13 +218,13 @@ impl BaseModule {
             let mut imports = ImportSection::new();
 
             for (module, name, type_) in &self.function_imports {
-                imports.import(*module, Some(name.as_str()), EntityType::Function(*type_));
+                imports.import(*module, name.as_str(), EntityType::Function(*type_));
             }
 
             for (module, name, import) in &self.global_imports {
                 imports.import(
                     *module,
-                    Some(name.as_str()),
+                    name.as_str(),
                     EntityType::Global(wasm_encoder::GlobalType {
                         val_type: import.type_,
                         mutable: import.mutable,
@@ -234,11 +234,12 @@ impl BaseModule {
 
             imports.import(
                 "env",
-                Some("memory"),
+                "memory",
                 MemoryType {
                     minimum: self.memory as u64,
                     maximum: None,
                     memory64: false,
+                    shared: false,
                 },
             );
 
@@ -259,7 +260,7 @@ impl BaseModule {
             let mut exports = ExportSection::new();
 
             for (name, fnc) in &self.exports {
-                exports.export(*name, Export::Function(*fnc));
+                exports.export(*name, ExportKind::Func, *fnc);
             }
 
             module.section(&exports);
@@ -287,7 +288,7 @@ impl BaseModule {
 
     pub fn create_binary(path: &Path) -> Result<()> {
         let base1 = BaseModule::for_format_version(1)?.to_wasm();
-        let data = upkr::pack(&base1, 4, false, None);
+        let data = upkr::pack(&base1, 4, &upkr::Config::default(), None);
         File::create(path)?.write_all(&data)?;
         Ok(())
     }

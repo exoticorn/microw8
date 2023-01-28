@@ -10,7 +10,7 @@ use std::{
 use wasm_encoder as enc;
 use wasmparser::{
     BinaryReader, ExportSectionReader, ExternalKind, FunctionBody, FunctionSectionReader,
-    ImportSectionEntryType, ImportSectionReader, TableSectionReader, TypeSectionReader,
+    ImportSectionReader, TableSectionReader, TypeRef, TypeSectionReader,
 };
 
 pub struct PackConfig {
@@ -63,7 +63,7 @@ pub fn pack(data: &[u8], config: &PackConfig) -> Result<Vec<u8>> {
         uw8.extend_from_slice(&upkr::pack(
             &result[8..],
             level,
-            false,
+            &upkr::Config::default(),
             Some(&mut |pos| {
                 pb.set(pos as u64);
             }),
@@ -90,7 +90,10 @@ pub fn unpack(data: Vec<u8>) -> Result<Vec<u8>> {
     let (version, data) = match data[0] {
         0 => return Ok(data),
         1 => (1, data[1..].to_vec()),
-        2 => (1, upkr::unpack(&data[1..], false)),
+        2 => (
+            1,
+            upkr::unpack(&data[1..], &upkr::Config::default(), 4 * 1024 * 1024)?,
+        ),
         other => bail!("Uknown format version {}", other),
     };
 
@@ -133,8 +136,8 @@ pub fn unpack(data: Vec<u8>) -> Result<Vec<u8>> {
     Ok(dest)
 }
 
-fn to_val_type(type_: &wasmparser::Type) -> Result<ValType> {
-    use wasmparser::Type::*;
+fn to_val_type(type_: &wasmparser::ValType) -> Result<ValType> {
+    use wasmparser::ValType::*;
     Ok(match *type_ {
         I32 => ValType::I32,
         I64 => ValType::I64,
@@ -144,7 +147,7 @@ fn to_val_type(type_: &wasmparser::Type) -> Result<ValType> {
     })
 }
 
-fn to_val_type_vec(types: &[wasmparser::Type]) -> Result<Vec<ValType>> {
+fn to_val_type_vec(types: &[wasmparser::ValType]) -> Result<Vec<ValType>> {
     types.into_iter().map(to_val_type).collect()
 }
 
@@ -202,7 +205,7 @@ impl<'a> ParsedModule<'a> {
                     import_section = Some(Section::new(range, ImportSection::parse(reader)?));
                 }
                 Payload::GlobalSection(reader) => {
-                    global_section = Some(Section::new(range, reader.get_count()));
+                    global_section = Some(Section::new(range, reader.count()));
                 }
                 Payload::FunctionSection(reader) => {
                     function_section = Some(Section::new(range, read_function_section(reader)?));
@@ -221,21 +224,21 @@ impl<'a> ParsedModule<'a> {
                     table_section = Some(Section::new(range, ()));
                 }
                 Payload::MemorySection(reader) => {
-                    if reader.get_count() != 0 {
+                    if reader.count() != 0 {
                         bail!("Found non-empty MemorySection. Memory has to be imported!");
                     }
                 }
-                Payload::ElementSection(mut reader) => {
-                    let mut elements = Vec::with_capacity(reader.get_count() as usize);
-                    for _ in 0..reader.get_count() {
-                        elements.push(Element::parse(reader.read()?)?);
+                Payload::ElementSection(reader) => {
+                    let mut elements = Vec::with_capacity(reader.count() as usize);
+                    for element in reader {
+                        elements.push(Element::parse(element?)?);
                     }
                     element_section = Some(elements);
                 }
                 Payload::CodeSectionStart { .. } => (),
                 Payload::CodeSectionEntry(body) => function_bodies.push(body),
                 Payload::CustomSection { .. } => (),
-                Payload::End => break,
+                Payload::End(..) => break,
                 other => bail!("Unsupported section: {:?}", other),
             }
 
@@ -463,7 +466,7 @@ impl<'a> ParsedModule<'a> {
             {
                 let mut export_section = enc::ExportSection::new();
                 for (name, fnc) in my_exports {
-                    export_section.export(&name, enc::Export::Function(fnc));
+                    export_section.export(&name, enc::ExportKind::Func, fnc);
                 }
                 module.section(&export_section);
             }
@@ -486,7 +489,7 @@ impl<'a> ParsedModule<'a> {
                 }
                 element_section.active(
                     None,
-                    &wasm_encoder::Instruction::I32Const(element.start_index as i32),
+                    &wasm_encoder::ConstExpr::i32_const(element.start_index as i32),
                     ValType::FuncRef,
                     wasm_encoder::Elements::Functions(&functions),
                 );
@@ -535,28 +538,27 @@ fn read_type_section(reader: TypeSectionReader) -> Result<Vec<base_module::Funct
 
     for type_def in reader {
         match type_def? {
-            wasmparser::TypeDef::Func(fnc) => {
-                if fnc.returns.len() > 1 {
+            wasmparser::Type::Func(fnc) => {
+                if fnc.results().len() > 1 {
                     bail!("Multi-value not supported");
                 }
-                let params = to_val_type_vec(&fnc.params)?;
-                let result = to_val_type_vec(&fnc.returns)?.into_iter().next();
+                let params = to_val_type_vec(fnc.params())?;
+                let result = to_val_type_vec(fnc.results())?.into_iter().next();
                 function_types.push(FunctionType { params, result });
             }
-            t => bail!("Unsupported type def {:?}", t),
         }
     }
 
     Ok(function_types)
 }
 
-fn validate_table_section(mut reader: TableSectionReader) -> Result<()> {
-    if reader.get_count() != 1 {
+fn validate_table_section(reader: TableSectionReader) -> Result<()> {
+    if reader.count() != 1 {
         bail!("Only up to one table supported");
     }
 
-    let type_ = reader.read()?;
-    if type_.element_type != wasmparser::Type::FuncRef {
+    let type_ = reader.into_iter().next().unwrap()?;
+    if type_.element_type != wasmparser::ValType::FuncRef {
         bail!("Only one funcref table is supported");
     }
 
@@ -590,45 +592,38 @@ impl ImportSection {
 
         for import in reader {
             let import = import?;
-            if let Some(field) = import.field {
-                match import.ty {
-                    ImportSectionEntryType::Function(type_) => {
-                        functions.push(FunctionImport {
-                            module: import.module.to_string(),
-                            field: field.to_string(),
-                            type_,
-                        });
-                    }
-                    ImportSectionEntryType::Memory(mem) => {
-                        if import.module != "env" || field != "memory" {
-                            bail!(
-                                "Wrong name of memory import {}.{}, should be env.memory",
-                                import.module,
-                                field
-                            );
-                        }
-                        if mem.memory64 || mem.shared {
-                            bail!("Wrong memory import options: {:?}", import.ty);
-                        }
-                        memory = mem.maximum.unwrap_or(mem.initial) as u32;
-                    }
-                    ImportSectionEntryType::Global(glbl) => {
-                        globals.push(GlobalImport {
-                            module: import.module.to_string(),
-                            field: field.to_string(),
-                            type_: GlobalType {
-                                type_: to_val_type(&glbl.content_type)?,
-                                mutable: glbl.mutable,
-                            },
-                        });
-                    }
-                    _ => bail!("Unsupported import item {:?}", import.ty),
+            match import.ty {
+                TypeRef::Func(type_) => {
+                    functions.push(FunctionImport {
+                        module: import.module.to_string(),
+                        field: import.name.to_string(),
+                        type_,
+                    });
                 }
-            } else {
-                bail!(
-                    "Found import without field, only module '{}'",
-                    import.module
-                );
+                TypeRef::Memory(mem) => {
+                    if import.module != "env" || import.name != "memory" {
+                        bail!(
+                            "Wrong name of memory import {}.{}, should be env.memory",
+                            import.module,
+                            import.name
+                        );
+                    }
+                    if mem.memory64 || mem.shared {
+                        bail!("Wrong memory import options: {:?}", import.ty);
+                    }
+                    memory = mem.maximum.unwrap_or(mem.initial) as u32;
+                }
+                TypeRef::Global(glbl) => {
+                    globals.push(GlobalImport {
+                        module: import.module.to_string(),
+                        field: import.name.to_string(),
+                        type_: GlobalType {
+                            type_: to_val_type(&glbl.content_type)?,
+                            mutable: glbl.mutable,
+                        },
+                    });
+                }
+                _ => bail!("Unsupported import item {:?}", import.ty),
             }
         }
 
@@ -648,40 +643,37 @@ struct Element {
 
 impl Element {
     fn parse(element: wasmparser::Element) -> Result<Element> {
-        if element.ty != wasmparser::Type::FuncRef {
-            bail!("Table element type is not FuncRef");
-        }
+        match element.items {
+            wasmparser::ElementItems::Functions(funcs_reader) => {
+                let start_index = if let wasmparser::ElementKind::Active {
+                    offset_expr,
+                    table_index: 0,
+                } = element.kind
+                {
+                    let mut init_reader = offset_expr.get_operators_reader();
+                    if let wasmparser::Operator::I32Const { value: start_index } =
+                        init_reader.read()?
+                    {
+                        start_index as u32
+                    } else {
+                        bail!("Table element start index is not a integer constant");
+                    }
+                } else {
+                    bail!("Unsupported table element kind");
+                };
 
-        let start_index = if let wasmparser::ElementKind::Active {
-            init_expr,
-            table_index: 0,
-        } = element.kind
-        {
-            let mut init_reader = init_expr.get_operators_reader();
-            if let wasmparser::Operator::I32Const { value: start_index } = init_reader.read()? {
-                start_index as u32
-            } else {
-                bail!("Table element start index is not a integer constant");
+                let mut functions = Vec::with_capacity(funcs_reader.count() as usize);
+                for index in funcs_reader {
+                    functions.push(index?);
+                }
+
+                Ok(Element {
+                    start_index,
+                    functions,
+                })
             }
-        } else {
-            bail!("Unsupported table element kind");
-        };
-
-        let mut items_reader = element.items.get_items_reader()?;
-
-        let mut functions = Vec::with_capacity(items_reader.get_count() as usize);
-        for _ in 0..items_reader.get_count() {
-            if let wasmparser::ElementItem::Func(index) = items_reader.read()? {
-                functions.push(index);
-            } else {
-                bail!("Table element item is not a function");
-            }
+            _ => bail!("Table element type is not FuncRef"),
         }
-
-        Ok(Element {
-            start_index,
-            functions,
-        })
     }
 }
 
@@ -712,8 +704,8 @@ fn read_export_section(reader: ExportSectionReader) -> Result<Vec<(String, u32)>
     for export in reader {
         let export = export?;
         match export.kind {
-            ExternalKind::Function => {
-                function_exports.push((export.field.to_string(), export.index));
+            ExternalKind::Func => {
+                function_exports.push((export.name.to_string(), export.index));
             }
             _ => (), // just ignore all other kinds since MicroW8 doesn't expect any exports other than functions
         }
@@ -734,13 +726,11 @@ fn remap_function(
     }
     let mut function = enc::Function::new(locals);
 
-    let block_type = |ty: wasmparser::TypeOrFuncType| -> Result<enc::BlockType> {
+    let block_type = |ty: wasmparser::BlockType| -> Result<enc::BlockType> {
         Ok(match ty {
-            wasmparser::TypeOrFuncType::Type(wasmparser::Type::EmptyBlockType) => {
-                enc::BlockType::Empty
-            }
-            wasmparser::TypeOrFuncType::Type(ty) => enc::BlockType::Result(to_val_type(&ty)?),
-            wasmparser::TypeOrFuncType::FuncType(ty) => enc::BlockType::FunctionType(
+            wasmparser::BlockType::Empty => enc::BlockType::Empty,
+            wasmparser::BlockType::Type(ty) => enc::BlockType::Result(to_val_type(&ty)?),
+            wasmparser::BlockType::FuncType(ty) => enc::BlockType::FunctionType(
                 *type_map
                     .get(&ty)
                     .ok_or_else(|| anyhow!("Function type index out of range: {}", ty))?,
@@ -754,7 +744,7 @@ fn remap_function(
             .ok_or_else(|| anyhow!("Global index out of range: {}", idx))?)
     };
 
-    fn mem(m: wasmparser::MemoryImmediate) -> enc::MemArg {
+    fn mem(m: wasmparser::MemArg) -> enc::MemArg {
         enc::MemArg {
             offset: m.offset,
             align: m.align as u32,
@@ -769,9 +759,9 @@ fn remap_function(
         function.instruction(&match op? {
             De::Unreachable => En::Unreachable,
             De::Nop => En::Nop,
-            De::Block { ty } => En::Block(block_type(ty)?),
-            De::Loop { ty } => En::Loop(block_type(ty)?),
-            De::If { ty } => En::If(block_type(ty)?),
+            De::Block { blockty } => En::Block(block_type(blockty)?),
+            De::Loop { blockty } => En::Loop(block_type(blockty)?),
+            De::If { blockty } => En::If(block_type(blockty)?),
             De::Else => En::Else,
             De::Try { .. } | De::Catch { .. } | De::Throw { .. } | De::Rethrow { .. } => todo!(),
             De::End => En::End,
@@ -784,9 +774,13 @@ fn remap_function(
                     .get(&function_index)
                     .ok_or_else(|| anyhow!("Function index out of range: {}", function_index))?,
             ),
-            De::CallIndirect { index, table_index } => En::CallIndirect {
+            De::CallIndirect {
+                type_index,
+                table_index,
+                table_byte: _, // what is this supposed to be?
+            } => En::CallIndirect {
                 ty: *type_map
-                    .get(&index)
+                    .get(&type_index)
                     .ok_or_else(|| anyhow!("Unknown function type in call indirect"))?,
                 table: table_index,
             },
@@ -806,16 +800,16 @@ fn remap_function(
             De::I64Load { memarg } => En::I64Load(mem(memarg)),
             De::F32Load { memarg } => En::F32Load(mem(memarg)),
             De::F64Load { memarg } => En::F64Load(mem(memarg)),
-            De::I32Load8S { memarg } => En::I32Load8_S(mem(memarg)),
-            De::I32Load8U { memarg } => En::I32Load8_U(mem(memarg)),
-            De::I32Load16S { memarg } => En::I32Load16_S(mem(memarg)),
-            De::I32Load16U { memarg } => En::I32Load16_U(mem(memarg)),
-            De::I64Load8S { memarg } => En::I64Load8_S(mem(memarg)),
-            De::I64Load8U { memarg } => En::I64Load8_U(mem(memarg)),
-            De::I64Load16S { memarg } => En::I64Load16_S(mem(memarg)),
-            De::I64Load16U { memarg } => En::I64Load16_U(mem(memarg)),
-            De::I64Load32S { memarg } => En::I64Load32_S(mem(memarg)),
-            De::I64Load32U { memarg } => En::I64Load32_U(mem(memarg)),
+            De::I32Load8S { memarg } => En::I32Load8S(mem(memarg)),
+            De::I32Load8U { memarg } => En::I32Load8U(mem(memarg)),
+            De::I32Load16S { memarg } => En::I32Load16S(mem(memarg)),
+            De::I32Load16U { memarg } => En::I32Load16U(mem(memarg)),
+            De::I64Load8S { memarg } => En::I64Load8S(mem(memarg)),
+            De::I64Load8U { memarg } => En::I64Load8U(mem(memarg)),
+            De::I64Load16S { memarg } => En::I64Load16S(mem(memarg)),
+            De::I64Load16U { memarg } => En::I64Load16U(mem(memarg)),
+            De::I64Load32S { memarg } => En::I64Load32S(mem(memarg)),
+            De::I64Load32U { memarg } => En::I64Load32U(mem(memarg)),
             De::I32Store { memarg } => En::I32Store(mem(memarg)),
             De::I64Store { memarg } => En::I64Store(mem(memarg)),
             De::F32Store { memarg } => En::F32Store(mem(memarg)),
@@ -834,7 +828,7 @@ fn remap_function(
             De::RefNull { .. } | De::RefIsNull { .. } | De::RefFunc { .. } => todo!(),
             De::I32Eqz => En::I32Eqz,
             De::I32Eq => En::I32Eq,
-            De::I32Ne => En::I32Neq,
+            De::I32Ne => En::I32Ne,
             De::I32LtS => En::I32LtS,
             De::I32LtU => En::I32LtU,
             De::I32GtS => En::I32GtS,
@@ -845,7 +839,7 @@ fn remap_function(
             De::I32GeU => En::I32GeU,
             De::I64Eqz => En::I64Eqz,
             De::I64Eq => En::I64Eq,
-            De::I64Ne => En::I64Neq,
+            De::I64Ne => En::I64Ne,
             De::I64LtS => En::I64LtS,
             De::I64LtU => En::I64LtU,
             De::I64GtS => En::I64GtS,
@@ -855,13 +849,13 @@ fn remap_function(
             De::I64GeS => En::I64GeS,
             De::I64GeU => En::I64GeU,
             De::F32Eq => En::F32Eq,
-            De::F32Ne => En::F32Neq,
+            De::F32Ne => En::F32Ne,
             De::F32Lt => En::F32Lt,
             De::F32Gt => En::F32Gt,
             De::F32Le => En::F32Le,
             De::F32Ge => En::F32Ge,
             De::F64Eq => En::F64Eq,
-            De::F64Ne => En::F64Neq,
+            De::F64Ne => En::F64Ne,
             De::F64Lt => En::F64Lt,
             De::F64Gt => En::F64Gt,
             De::F64Le => En::F64Le,
@@ -968,7 +962,7 @@ fn remap_function(
             De::I64TruncSatF32U => En::I64TruncSatF32U,
             De::I64TruncSatF64S => En::I64TruncSatF64S,
             De::I64TruncSatF64U => En::I64TruncSatF64U,
-            De::MemoryCopy { src, dst } => En::MemoryCopy { src, dst },
+            De::MemoryCopy { src_mem, dst_mem } => En::MemoryCopy { src_mem, dst_mem },
             De::MemoryFill { mem } => En::MemoryFill(mem),
             other => bail!("Unsupported instruction {:?}", other),
         });

@@ -1693,6 +1693,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "884e2677b40cc8c339eaefcb701c32ef1fd2493d71118dc0ca4b6a736c93bd67"
 
 [[package]]
+name = "lexopt"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "478ee9e62aaeaf5b140bd4138753d1f109765488581444218d3ddda43234f3e8"
+
+[[package]]
 name = "libc"
 version = "0.2.139"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3340,13 +3346,13 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "upkr"
-version = "0.1.0"
-source = "git+https://github.com/exoticorn/upkr.git?rev=d93aec186c9fb91d962c488682a2db125c61306c#d93aec186c9fb91d962c488682a2db125c61306c"
+version = "0.2.1"
+source = "git+https://github.com/exoticorn/upkr.git?rev=080db40d0088bbee2bdf3c5c75288ac7853d6b7a#080db40d0088bbee2bdf3c5c75288ac7853d6b7a"
 dependencies = [
  "anyhow",
  "cdivsufsort",
- "pbr",
- "pico-args 0.4.2",
+ "lexopt",
+ "thiserror",
 ]
 
 [[package]]
@@ -3396,11 +3402,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "pbr",
- "pico-args 0.4.2",
+ "pico-args 0.5.0",
  "upkr",
  "walrus",
- "wasm-encoder 0.8.0",
- "wasmparser 0.81.0",
+ "wasm-encoder 0.22.0",
+ "wasmparser 0.99.0",
 ]
 
 [[package]]
@@ -3595,15 +3601,6 @@ checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
 
 [[package]]
 name = "wasm-encoder"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db0c351632e46cc06a58a696a6c11e4cf90cad4b9f8f07a0b59128d616c29bb0"
-dependencies = [
- "leb128",
-]
-
-[[package]]
-name = "wasm-encoder"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa9d9bf45fc46f71c407837c9b30b1e874197f2dc357588430b21e5017d290ab"
@@ -3628,12 +3625,6 @@ checksum = "b35c86d22e720a07d954ebbed772d01180501afe7d03d464f413bb5f8914a8d6"
 
 [[package]]
 name = "wasmparser"
-version = "0.81.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98930446519f63d00a836efdc22f67766ceae8dbcc1571379f2bcabc6b2b9abc"
-
-[[package]]
-name = "wasmparser"
 version = "0.83.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "718ed7c55c2add6548cca3ddd6383d738cd73b892df400e96b9aa876f0141d7a"
@@ -3643,6 +3634,16 @@ name = "wasmparser"
 version = "0.96.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adde01ade41ab9a5d10ec8ed0bb954238cf8625b5cd5a13093d6de2ad9c2be1a"
+dependencies = [
+ "indexmap",
+ "url",
+]
+
+[[package]]
+name = "wasmparser"
+version = "0.99.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ef3b717afc67f848f412d4f02c127dd3e35a0eecd58c684580414df4fde01d3"
 dependencies = [
  "indexmap",
  "url",
