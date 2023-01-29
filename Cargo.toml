@@ -16,7 +16,7 @@ anyhow = "1"
 env_logger = "0.10"
 log = "0.4"
 uw8-window = { path = "uw8-window", optional = true }
-notify = "5"
+notify-debouncer-mini = { version = "0.2.1", default-features = false }
 pico-args = "0.5"
 curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "0e7ea50" }
 wat = "1"
