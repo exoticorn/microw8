@@ -7,8 +7,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Change Owner of Container Working Directory
-        run: chown root:root .
       - name: checkout
         uses: actions/checkout@v3
       - name: build_and_deploy
