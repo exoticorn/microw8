@@ -9,10 +9,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v3
-      - name: Add safe directory /github/workspace
-        run: git config --global --add safe.directory /github/workspace
       - name: build_and_deploy
-        uses: shalzz/zola-deploy-action@v0.16.1
+        uses: shalzz/zola-deploy-action@70a101a14bbdeed13e7a42a9ed06b35c9e9e826e
         env:
           # Target branch
           PAGES_BRANCH: gh-pages
