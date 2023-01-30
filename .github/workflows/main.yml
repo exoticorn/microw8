@@ -16,4 +16,4 @@ jobs:
           PAGES_BRANCH: gh-pages
           BUILD_DIR: site
           # Provide personal access token
-          TOKEN: $GITHUB_ACTOR:${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
