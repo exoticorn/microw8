@@ -18,7 +18,7 @@ log = "0.4"
 uw8-window = { path = "uw8-window", optional = true }
 notify-debouncer-mini = { version = "0.2.1", default-features = false }
 pico-args = "0.5"
-curlywas = { git = "https://github.com/exoticorn/curlywas.git", rev = "0e7ea50" }
+curlywas = { git = "https://github.com/luchak/curlywas.git", rev = "6110a02" }
 wat = "1"
 uw8-tool = { path = "uw8-tool" }
 same-file = "1"
