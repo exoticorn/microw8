@@ -966,6 +966,7 @@ fn remap_function(
             De::MemoryCopy { src_mem, dst_mem } => En::MemoryCopy { src_mem, dst_mem },
             De::MemoryFill { mem } => En::MemoryFill(mem),
 
+            De::V128Const { value } => En::V128Const(value.i128()),
             De::V128Load { memarg } => En::V128Load(mem(memarg)),
             De::V128Store { memarg } => En::V128Store(mem(memarg)),
             De::V128Load8x8S { memarg } => En::V128Load8x8S(mem(memarg)),
