@@ -767,7 +767,10 @@ fn remap_function(
             De::End => En::End,
             De::Br { relative_depth } => En::Br(relative_depth),
             De::BrIf { relative_depth } => En::BrIf(relative_depth),
-            De::BrTable { .. } => todo!(),
+            De::BrTable { targets } => En::BrTable(
+                targets.targets().collect::<Result<Vec<u32>, _>>()?.into(),
+                targets.default(),
+            ),
             De::Return => En::Return,
             De::Call { function_index } => En::Call(
                 *function_map
