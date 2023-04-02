@@ -352,6 +352,60 @@ export fn line(x1: f32, y1: f32, x2: f32, y2: f32, col: i32) {
     setPixel(i32.trunc_sat_f32_s(x1 + f * dx), i32.trunc_sat_f32_s(y1 + f * dy), col);
 }
 
+export fn blitSprite(sprite: i32, size: i32, x: i32, y: i32, control: i32) {
+    let width = size & 65535;
+    let height = select(size >> 16, size >> 16, width);
+    let trans = (control & 511) - 256;
+    let flip_x = 1 - ((control >> 8) & 2);
+    let flip_y = 1 - ((control >> 9) & 2);
+    if flip_x < 0 {
+        sprite += width - 1;
+    }
+    if flip_y < 0 {
+        sprite += (height - 1) * width;
+    }
+
+    let ly = 0;
+    loop yloop {
+        let lx = 0;
+        loop xloop {
+            let col = (sprite + lx * flip_x + ly * flip_y * height)?0;
+            if col != trans {
+                setPixel(x + lx, y + ly, col);
+            }
+            branch_if (lx +:= 1) < width: xloop;
+        }
+        branch_if (ly +:= 1) < height: yloop;
+    }
+}
+
+export fn grabSprite(sprite: i32, size: i32, x: i32, y: i32, control: i32) {
+    let width = size & 65535;
+    let height = select(size >> 16, size >> 16, width);
+    let trans = (control & 511) - 256;
+    let flip_x = 1 - ((control >> 8) & 2);
+    let flip_y = 1 - ((control >> 9) & 2);
+    if flip_x < 0 {
+        sprite += width - 1;
+    }
+    if flip_y < 0 {
+        sprite += (height - 1) * width;
+    }
+
+    let ly = 0;
+    loop yloop {
+        let lx = 0;
+        loop xloop {
+            let col = getPixel(x + lx, y + ly);
+            if col != trans {
+                (sprite + lx * flip_x + ly * flip_y * height)?0 = col;
+            }
+            branch_if (lx +:= 1) < width: xloop;
+        }
+        branch_if (ly +:= 1) < height: yloop;
+    }
+}
+
 //////////
 // TEXT //
 //////////

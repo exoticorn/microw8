@@ -35,6 +35,8 @@ import "env.circle_outline" fn circle_outline(f32, f32, f32, i32);
 import "env.exp" fn exp(f32) -> f32;
 import "env.playNote" fn playNote(i32, i32);
 import "env.sndGes" fn sndGes(i32) -> f32;
+import "env.blitSprite" fn blitSprite(i32, i32, i32, i32, i32);
+import "env.grabSprite" fn grabSprite(i32, i32, i32, i32, i32);
 
 const TIME_MS = 0x40;
 const GAMEPAD = 0x44;
