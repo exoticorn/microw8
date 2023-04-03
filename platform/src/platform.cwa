@@ -171,7 +171,7 @@ export fn rectangle(x: f32, y: f32, w: f32, h: f32, col: i32) {
     }
 }
 
-export fn rectangle_outline(x: f32, y: f32, w: f32, h: f32, col: i32) {
+export fn rectangleOutline(x: f32, y: f32, w: f32, h: f32, col: i32) {
     let xl = nearest(x) as i32;
     let xr = nearest(x + w) as i32;
     let yt = nearest(y) as i32;
@@ -212,7 +212,7 @@ export fn circle(cx: f32, cy: f32, radius: f32, col: i32) {
     }
 }
 
-export fn circle_outline(cx: f32, cy: f32, radius: f32, col: i32) {
+export fn circleOutline(cx: f32, cy: f32, radius: f32, col: i32) {
     let prev_w: f32;
     let y = clamp(nearest(cy - radius) as i32, -1, 241);
     let maxY = clamp(nearest(cy + radius) as i32, -1, 241);
@@ -377,30 +377,42 @@ export fn blitSprite(sprite: i32, size: i32, x: i32, y: i32, control: i32) {
         sprite += (height - 1) * width;
     }
 
-    let srcRow = sprite + x0 * flip_x + y0 * flip_y * width;
-    let dstRow = x + x0 + (y + y0) * 320;
+    let spriteRow = sprite + x0 * flip_x + y0 * flip_y * width;
+    let screenRow = x + x0 + (y + y0) * 320;
 
     loop yloop {
         let lx = 0;
         loop xloop {
-            let lazy col = (srcRow + lx * flip_x)?0;
+            let lazy col = (spriteRow + lx * flip_x)?0;
             if col != trans {
-                (dstRow + lx)?120 = col;
+                (screenRow + lx)?120 = col;
             }
             branch_if (lx +:= 1) < numCols: xloop;
         }
-        srcRow += width * flip_y;
-        dstRow += 320;
+        spriteRow += width * flip_y;
+        screenRow += 320;
         branch_if numRows -:= 1: yloop;
     }
 }
 
 export fn grabSprite(sprite: i32, size: i32, x: i32, y: i32, control: i32) {
-    let width = size & 65535;
-    let height = select(size >> 16, size >> 16, width);
+    let lazy width = size & 65535;
+    let lazy height = select(size >> 16, size >> 16, width);
+
+    let lazy x0 = select(x < 0, -x, 0);
+    let lazy x1 = select(x + width > 320, 320 - x, width);
+    let lazy y0 = select(y < 0, -y, 0);
+    let lazy y1 = select(y + height > 240, 240 - y, height);
+
+    let lazy numRows = y1 - y0;
+    let lazy numCols = x1 - x0;
+    if numRows <= 0 | numCols <= 0 {
+        return;
+    }
+
     let trans = (control & 511) - 256;
-    let flip_x = 1 - ((control >> 8) & 2);
-    let flip_y = 1 - ((control >> 9) & 2);
+    let lazy flip_x = 1 - ((control >> 8) & 2);
+    let lazy flip_y = 1 - ((control >> 9) & 2);
     if flip_x < 0 {
         sprite += width - 1;
     }
@@ -408,17 +420,21 @@ export fn grabSprite(sprite: i32, size: i32, x: i32, y: i32, control: i32) {
         sprite += (height - 1) * width;
     }
 
-    let ly = 0;
+    let spriteRow = sprite + x0 * flip_x + y0 * flip_y * width;
+    let screenRow = x + x0 + (y + y0) * 320;
+
     loop yloop {
         let lx = 0;
         loop xloop {
-            let col = getPixel(x + lx, y + ly);
+            let lazy col = (screenRow + lx)?120;
             if col != trans {
-                (sprite + lx * flip_x + ly * flip_y * height)?0 = col;
+                (spriteRow + lx * flip_x)?0 = col;
             }
-            branch_if (lx +:= 1) < width: xloop;
+            branch_if (lx +:= 1) < numCols: xloop;
         }
-        branch_if (ly +:= 1) < height: yloop;
+        spriteRow += width * flip_y;
+        screenRow += 320;
+        branch_if numRows -:= 1: yloop;
     }
 }
 

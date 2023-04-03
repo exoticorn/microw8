@@ -152,14 +152,14 @@ impl BaseModule {
         add_function(
             &mut functions,
             &type_map,
-            "rectangle_outline",
+            "rectangleOutline",
             &[F32, F32, F32, F32, I32],
             None,
         );
         add_function(
             &mut functions,
             &type_map,
-            "circle_outline",
+            "circleOutline",
             &[F32, F32, F32, I32],
             None,
         );

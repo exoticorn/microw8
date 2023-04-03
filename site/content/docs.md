@@ -146,13 +146,13 @@ Fills the circle at `cx, cy` and with `radius` with the given color index.
 
 (Sets all pixels where the pixel center lies inside the circle.)
 
-### fn rectangle_outline(x: f32, y: f32, w: f32, h: f32, color: i32)
+### fn rectangleOutline(x: f32, y: f32, w: f32, h: f32, color: i32)
 
 Draws a one pixel outline on the inside of the given rectangle.
 
 (Draws the outermost pixels that are still inside the rectangle area.)
 
-### fn circle_outline(cx: f32, cy: f32, radius: f32, color: i32)
+### fn circleOutline(cx: f32, cy: f32, radius: f32, color: i32)
 
 Draws a one pixel outline on the inside of the given circle.
 
@@ -161,6 +161,21 @@ Draws a one pixel outline on the inside of the given circle.
 ### fn line(x1: f32, y1: f32, x2: f32, y2: f32, color: i32)
 
 Draws a line from `x1,y1` to `x2,y2` in the given color index.
+
+### fn blitSprite(spriteData: i32, size: i32, x: i32, y: i32, control: i32)
+
+Copies the pixel data at `spriteData` onto the screen at `x`, `y`. The size of the sprite is passed as `width | (height << 16)`.
+If the height is given as 0, the sprite is is treated as square (width x width).
+
+The control parameter controls masking and flipping of the sprite:
+* bits 0-7: color mask index
+* bit 8: switch on masked blit (pixel with color mask index are treated as transparent)
+* bit 9: flip sprite x
+* bit 10: flip sprite y
+
+### fn grabSprite(spriteData: i32, size: i32, x: i32, y: i32, control: i32)
+
+Copies the pixel data on the screen at `x`, `y` to `spriteData`. Parameters are exactly the same as `blitSprite`.
 
 ## Input
 
