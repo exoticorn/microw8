@@ -181,10 +181,12 @@ impl super::Runtime for MicroW8 {
         if let Some(mut instance) = self.instance.take() {
             let time = (now - instance.start_time).as_millis() as i32;
             let next_frame = {
-                let offset = ((time as u32 as i64 * 6) % 100 - 50) / 6;
-                let max = now + Duration::from_millis(17);
-                let next_center = now + Duration::from_millis((16 - offset) as u64);
-                next_center.min(max)
+                let frame = (time as u32 as u64 * 6 / 100) as u32;
+                let cur_offset = (time as u32).wrapping_sub((frame as u64 * 100 / 6) as u32);
+                let next_time =
+                    ((frame as u64 + 1) * 100 / 6 + cur_offset.max(1).min(4) as u64) as u32;
+                let offset = next_time.wrapping_sub(time as u32);
+                now + Duration::from_millis(offset as u64)
             };
 
             {
