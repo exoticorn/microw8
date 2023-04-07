@@ -274,7 +274,7 @@ export default function MicroW8(screen, config = {}) {
     
                 try {
                     let restart = false;
-                    let thisFrame;
+                    let nextFrame = 0;
                     if (!isPaused) {
                         let gamepads = navigator.getGamepads();
                         let gamepad = 0;
@@ -321,13 +321,12 @@ export default function MicroW8(screen, config = {}) {
                         }
                         canvasCtx.putImageData(imageData, 0, 0);
 
-                        let timeOffset = ((time * 6) % 100 - 50) / 6;
-                        thisFrame = startTime + time - timeOffset / 8;
-                    } else {
-                        thisFrame = Date.now();
+                        let thisFrame = Math.floor(time * 6 / 100);
+                        let timeOffset = time - thisFrame * 100 / 6;
+                        nextFrame = Math.ceil(startTime + (thisFrame + 1) * 100 / 6 + Math.min(4, timeOffset));
                     }
                     let now = Date.now();
-                    let nextFrame = Math.max(thisFrame + timePerFrame, now);
+                    nextFrame = Math.max(nextFrame, now);
     
                     if (restart) {
                         runModule(currentData);
