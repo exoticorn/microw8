@@ -1,0 +1,10 @@
+pub extern fn random() u32;
+pub extern fn randomf() f32;
+pub extern fn time() f32;
+pub extern fn cls(color: u8) void;
+pub extern fn circle(x: f32, y: f32, radiu: f32, color: u8) void;
+pub extern fn blitSprite(spriteData: [*]u8, size: u32, x: i32, y: i32, ctrl: u32) void;
+pub extern fn grabSprite(spriteData: [*]u8, size: u32, x: i32, y: i32, ctrl: u32) void;
+pub extern fn printString(str: [*:0]u8) void;
+pub extern fn printInt(value: i32) void;
+pub extern fn printChar(char: u32) void;
