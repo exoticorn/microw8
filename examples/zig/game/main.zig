@@ -89,7 +89,54 @@ export fn upd() void {
         }
     }
 
-    uw8.blitSprite(&redBallSprite, 16, 100, 100, 0x100);
-    uw8.blitSprite(&greenBallSprite, 16, 130, 100, 0x100);
-    uw8.blitSprite(&blueBallSprite, 16, 160, 100, 0x100);
+    updateEnemy(&enemies[0], &redBallSprite);
+    updateEnemy(&enemies[1], &greenBallSprite);
+    updateEnemy(&enemies[2], &blueBallSprite);
+}
+
+const EntityState = struct { x: i32, y: i32, dir: u2 };
+var enemies: [3]EntityState = .{
+    .{ .x = 16, .y = 16, .dir = 1 },
+    .{ .x = 16 * 18, .y = 16, .dir = 3 },
+    .{ .x = 16, .y = 16 * 12, .dir = 1 },
+};
+
+fn updateEnemy(enemy: *EntityState, sprite: [*]u8) void {
+    switch (enemy.dir) {
+        0 => enemy.y -= 1,
+        1 => enemy.x += 1,
+        2 => enemy.y += 1,
+        3 => enemy.x -= 1,
+    }
+    if (((enemy.x | enemy.y) & 15) == 0) {
+        const tx = @intCast(usize, enemy.x) / 16;
+        const ty = @intCast(usize, enemy.y) / 16;
+        var dir = enemy.dir;
+        var count: u32 = 0;
+        if (enemy.dir != 2 and levelData[ty - 1][tx] == ' ') {
+            dir = 0;
+            count += 1;
+        }
+        if (enemy.dir != 3 and levelData[ty][tx + 1] == ' ') {
+            count += 1;
+            if (uw8.random() % count == 0) {
+                dir = 1;
+            }
+        }
+        if (enemy.dir != 0 and levelData[ty + 1][tx] == ' ') {
+            count += 1;
+            if (uw8.random() % count == 0) {
+                dir = 2;
+            }
+        }
+        if (enemy.dir != 1 and levelData[ty][tx - 1] == ' ') {
+            count += 1;
+            if (uw8.random() % count == 0) {
+                dir = 3;
+            }
+        }
+        enemy.dir = dir;
+    }
+
+    uw8.blitSprite(sprite, 16, 8 + enemy.x, enemy.y, 0x100);
 }
