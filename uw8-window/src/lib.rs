@@ -15,7 +15,7 @@ struct FpsCounter {
 }
 
 impl Window {
-    pub fn new(config: WindowConfig) -> Result<Window> {
+    pub fn new(mut config: WindowConfig) -> Result<Window> {
         let fps_counter = if config.fps_counter {
             Some(FpsCounter {
                 start: Instant::now(),
@@ -24,6 +24,7 @@ impl Window {
         } else {
             None
         };
+        config.scale = config.scale.max(1.).min(20.);
         if config.enable_gpu {
             match gpu::Window::new(config) {
                 Ok(window) => {
@@ -71,6 +72,7 @@ pub struct WindowConfig {
     filter: u32,
     fullscreen: bool,
     fps_counter: bool,
+    scale: f32,
 }
 
 impl Default for WindowConfig {
@@ -80,6 +82,7 @@ impl Default for WindowConfig {
             filter: 5,
             fullscreen: false,
             fps_counter: false,
+            scale: 2.,
         }
     }
 }
@@ -102,6 +105,10 @@ impl WindowConfig {
         }
         self.fullscreen = args.contains("--fullscreen");
         self.fps_counter = args.contains("--fps");
+        self.scale = args
+            .opt_value_from_str("--scale")
+            .unwrap()
+            .unwrap_or(self.scale);
     }
 }
 

@@ -41,7 +41,10 @@ impl Window {
         async fn create(window_config: WindowConfig) -> Result<Window> {
             let event_loop = EventLoop::new();
             let window = WindowBuilder::new()
-                .with_inner_size(PhysicalSize::new(640u32, 480))
+                .with_inner_size(PhysicalSize::new(
+                    (320. * window_config.scale).round() as u32,
+                    (240. * window_config.scale).round() as u32,
+                ))
                 .with_min_inner_size(PhysicalSize::new(320u32, 240))
                 .with_title("MicroW8")
                 .with_fullscreen(if window_config.fullscreen {
@@ -72,7 +75,13 @@ impl Window {
 
             let surface_config = wgpu::SurfaceConfiguration {
                 present_mode: wgpu::PresentMode::AutoNoVsync,
-                ..surface.get_default_config(&adapter, window.inner_size().width, window.inner_size().height).expect("Surface incompatible with adapter")
+                ..surface
+                    .get_default_config(
+                        &adapter,
+                        window.inner_size().width,
+                        window.inner_size().height,
+                    )
+                    .expect("Surface incompatible with adapter")
             };
 
             let filter: Box<dyn Filter> = create_filter(
@@ -354,7 +363,7 @@ impl PaletteScreenMode {
             format: wgpu::TextureFormat::R8Uint,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             label: None,
-            view_formats: &[]
+            view_formats: &[],
         });
 
         let palette_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -369,7 +378,7 @@ impl PaletteScreenMode {
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             label: None,
-            view_formats: &[]
+            view_formats: &[],
         });
 
         let screen_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -384,7 +393,7 @@ impl PaletteScreenMode {
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
             label: None,
-            view_formats: &[]
+            view_formats: &[],
         });
 
         let framebuffer_texture_view =
