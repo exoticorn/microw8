@@ -62,7 +62,6 @@ export fn sndGes(t: i32) -> f32 {
             let phase = channelState!GesChannelState.Phase;
 
             let inline pulseWidth = channelReg?1;
-            let phaseShift = (pulseWidth - 128) * 255;
             let invPhaseInc = 1 as f32 / phaseInc as f32;
 
             i = 0;
@@ -131,7 +130,7 @@ export fn sndGes(t: i32) -> f32 {
                 let phaseInc = (freq * (65536.0 / 44100.0)) as i32;
 
                 let phase = channelState!GesChannelState.Phase;
-                if modSrc > ch {
+                if modSrc < ch {
                     phase = phase - (phaseInc << 6);
                 }
 

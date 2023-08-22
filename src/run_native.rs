@@ -423,6 +423,14 @@ fn init_sound(
                     mem[64..68].copy_from_slice(&current_time.to_le_bytes());
                 }
 
+                fn clamp_sample(s: f32) -> f32 {
+                    if s.is_nan() {
+                        0.0
+                    } else {
+                        s.max(-1.0).min(1.0)
+                    }
+                }
+
                 if let Some(ref mut resampler) = resampler {
                     while !buffer.is_empty() {
                         let copy_size = resampler.output_buffers[0]
@@ -433,10 +441,12 @@ fn init_sound(
                             resampler.input_buffers[0].clear();
                             resampler.input_buffers[1].clear();
                             for _ in 0..resampler.resampler.input_frames_next() {
-                                resampler.input_buffers[0]
-                                    .push(snd.call(&mut store, (sample_index,)).unwrap_or(0.0));
-                                resampler.input_buffers[1]
-                                    .push(snd.call(&mut store, (sample_index + 1,)).unwrap_or(0.0));
+                                resampler.input_buffers[0].push(clamp_sample(
+                                    snd.call(&mut store, (sample_index,)).unwrap_or(0.0),
+                                ));
+                                resampler.input_buffers[1].push(clamp_sample(
+                                    snd.call(&mut store, (sample_index + 1,)).unwrap_or(0.0),
+                                ));
                                 sample_index = sample_index.wrapping_add(2);
                             }
 
@@ -462,7 +472,7 @@ fn init_sound(
                     }
                 } else {
                     for v in buffer {
-                        *v = snd.call(&mut store, (sample_index,)).unwrap_or(0.0);
+                        *v = clamp_sample(snd.call(&mut store, (sample_index,)).unwrap_or(0.0));
                         sample_index = sample_index.wrapping_add(1);
                     }
                 }
