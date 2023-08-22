@@ -16,16 +16,14 @@ pub struct FileWatcher {
 impl FileWatcher {
     pub fn new() -> Result<FileWatcher> {
         let (tx, rx) = mpsc::channel();
-        let debouncer = new_debouncer(Duration::from_millis(100), None, move |res| match res {
+        let debouncer = new_debouncer(Duration::from_millis(100), move |res| match res {
             Ok(events) => {
                 for event in events {
                     let _ = tx.send(event);
                 }
             }
-            Err(errs) => {
-                for err in errs {
-                    eprintln!("Error watching for file changes: {err}");
-                }
+            Err(err) => {
+                eprintln!("Error watching for file changes: {err}");
             }
         })?;
         Ok(FileWatcher {

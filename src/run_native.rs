@@ -7,7 +7,7 @@ use cpal::traits::*;
 use rubato::Resampler;
 use uw8_window::{Window, WindowConfig};
 use wasmtime::{
-    Engine, GlobalType, Memory, MemoryType, Module, Mutability, Store, TypedFunc, ValType,
+    Engine, Func, GlobalType, Memory, MemoryType, Module, Mutability, Store, TypedFunc, ValType,
 };
 
 pub struct MicroW8 {
@@ -90,7 +90,7 @@ impl super::Runtime for MicroW8 {
         let memory = wasmtime::Memory::new(&mut store, MemoryType::new(4, Some(4)))?;
 
         let mut linker = wasmtime::Linker::new(&self.engine);
-        linker.define("env", "memory", memory)?;
+        linker.define(&store, "env", "memory", memory)?;
 
         let loader_instance = linker.instantiate(&mut store, &self.loader_module)?;
         let load_uw8 = loader_instance.get_typed_func::<i32, i32>(&mut store, "load_uw8")?;
@@ -255,15 +255,12 @@ fn add_native_functions(
         }
     })?;
     for i in 0..16 {
-        linker.define(
-            "env",
-            &format!("g_reserved{}", i),
-            wasmtime::Global::new(
-                &mut *store,
-                GlobalType::new(ValType::I32, Mutability::Const),
-                0.into(),
-            )?,
+        let global = wasmtime::Global::new(
+            &mut *store,
+            GlobalType::new(ValType::I32, Mutability::Const),
+            0.into(),
         )?;
+        linker.define(&store, "env", &format!("g_reserved{}", i), global)?;
     }
 
     Ok(())
@@ -276,14 +273,18 @@ fn instantiate_platform(
 ) -> Result<wasmtime::Instance> {
     let platform_instance = linker.instantiate(&mut *store, &platform_module)?;
 
-    for export in platform_instance.exports(&mut *store) {
-        linker.define(
-            "env",
-            export.name(),
-            export
-                .into_func()
-                .expect("platform surely only exports functions"),
-        )?;
+    let exports: Vec<(String, Func)> = platform_instance
+        .exports(&mut *store)
+        .map(|e| {
+            (
+                e.name().to_owned(),
+                e.into_func()
+                    .expect("platform surely only exports functions"),
+            )
+        })
+        .collect();
+    for (name, func) in exports {
+        linker.define(&store, "env", &name, func)?;
     }
 
     Ok(platform_instance)
@@ -310,7 +311,7 @@ fn init_sound(
     let memory = wasmtime::Memory::new(&mut store, MemoryType::new(4, Some(4)))?;
 
     let mut linker = wasmtime::Linker::new(engine);
-    linker.define("env", "memory", memory)?;
+    linker.define(&store, "env", "memory", memory)?;
     add_native_functions(&mut linker, &mut store)?;
 
     let platform_instance = instantiate_platform(&mut linker, &mut store, platform_module)?;
@@ -373,8 +374,8 @@ fn init_sound(
         None
     } else {
         let rs = rubato::FftFixedIn::new(44100, sample_rate, 128, 1, 2)?;
-        let input_buffers = rs.input_buffer_allocate();
-        let output_buffers = rs.output_buffer_allocate();
+        let input_buffers = rs.input_buffer_allocate(true);
+        let output_buffers = rs.output_buffer_allocate(true);
         Some(Resampler {
             resampler: rs,
             input_buffers,
@@ -485,6 +486,7 @@ fn init_sound(
         move |err| {
             dbg!(err);
         },
+        None,
     )?;
 
     Ok(Uw8Sound { stream, tx })

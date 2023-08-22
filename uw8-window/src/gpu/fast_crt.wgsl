@@ -30,8 +30,8 @@ fn row_factor(offset: f32) -> f32 {
 }
 
 fn col_factor(offset: f32) -> f32 {
-    let offset = max(0.0, abs(offset) - 0.4);
-    return 1.0 / (1.0 + offset * offset * 16.0);
+    let o = max(0.0, abs(offset) - 0.4);
+    return 1.0 / (1.0 + o * o * 16.0);
 }
 
 fn sample_screen(tex_coords: vec2<f32>) -> vec4<f32> {

@@ -1,6 +1,6 @@
 use crate::{Input, WindowConfig, WindowImpl};
 use anyhow::{anyhow, Result};
-use std::{num::NonZeroU32, time::Instant};
+use std::time::Instant;
 
 use winit::{
     dpi::PhysicalSize,
@@ -500,7 +500,7 @@ impl PaletteScreenMode {
             &bytemuck::cast_slice(pixels),
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: NonZeroU32::new(320),
+                bytes_per_row: Some(320),
                 rows_per_image: None,
             },
             wgpu::Extent3d {
@@ -522,7 +522,7 @@ impl PaletteScreenMode {
             &bytemuck::cast_slice(palette),
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: NonZeroU32::new(256 * 4),
+                bytes_per_row: Some(256 * 4),
                 rows_per_image: None,
             },
             wgpu::Extent3d {
