@@ -328,23 +328,26 @@ fn init_sound(
     let mut configs: Vec<_> = device
         .supported_output_configs()?
         .filter(|config| {
-            config.channels() == 2 && config.sample_format() == cpal::SampleFormat::F32
+            config.channels() == 2
+                && (config.sample_format() == cpal::SampleFormat::F32
+                    || config.sample_format() == cpal::SampleFormat::I16)
         })
         .collect();
     configs.sort_by_key(|config| {
         let rate = 44100
             .max(config.min_sample_rate().0)
             .min(config.max_sample_rate().0);
-        if rate >= 44100 {
+        let prio = if rate >= 44100 {
             rate - 44100
         } else {
             (44100 - rate) * 1000
-        }
+        };
+        prio + (config.sample_format() == cpal::SampleFormat::I16) as u32
     });
     let config = configs
         .into_iter()
         .next()
-        .ok_or_else(|| anyhow!("Could not find float output config"))?;
+        .ok_or_else(|| anyhow!("Could not find float or 16bit signed output config"))?;
     let sample_rate = cpal::SampleRate(44100)
         .max(config.min_sample_rate())
         .min(config.max_sample_rate());
@@ -355,6 +358,7 @@ fn init_sound(
             cpal::BufferSize::Fixed(256.max(min).min(max))
         }
     };
+    let sample_format = config.sample_format();
     let config = cpal::StreamConfig {
         buffer_size,
         ..config.config()
@@ -384,110 +388,135 @@ fn init_sound(
         })
     };
 
+    dbg!(sample_format);
+
     let mut sample_index = 0;
     let mut pending_updates: Vec<RegisterUpdate> = Vec::with_capacity(30);
     let mut current_time = 0;
-    let stream = device.build_output_stream(
-        &config,
-        move |mut outer_buffer: &mut [f32], _| {
-            let mut first_update = true;
-            while let Ok(update) = rx.try_recv() {
-                if first_update {
-                    current_time += update.time.wrapping_sub(current_time) / 8;
-                    first_update = false;
-                }
-                pending_updates.push(update);
+
+    let mut callback = move |mut outer_buffer: &mut [f32], _: &_| {
+        let mut first_update = true;
+        while let Ok(update) = rx.try_recv() {
+            if first_update {
+                current_time += update.time.wrapping_sub(current_time) / 8;
+                first_update = false;
+            }
+            pending_updates.push(update);
+        }
+
+        while !outer_buffer.is_empty() {
+            store.set_epoch_deadline(30);
+            while pending_updates
+                .first()
+                .into_iter()
+                .any(|u| u.time.wrapping_sub(current_time) <= 0)
+            {
+                let update = pending_updates.remove(0);
+                memory.write(&mut store, 80, &update.data).unwrap();
             }
 
-            while !outer_buffer.is_empty() {
-                store.set_epoch_deadline(30);
-                while pending_updates
-                    .first()
-                    .into_iter()
-                    .any(|u| u.time.wrapping_sub(current_time) <= 0)
-                {
-                    let update = pending_updates.remove(0);
-                    memory.write(&mut store, 80, &update.data).unwrap();
-                }
+            let duration = if let Some(update) = pending_updates.first() {
+                ((update.time.wrapping_sub(current_time) as usize) * sample_rate + 999) / 1000
+            } else {
+                outer_buffer.len()
+            };
+            let step_size = (duration.max(64) * 2).min(outer_buffer.len());
 
-                let duration = if let Some(update) = pending_updates.first() {
-                    ((update.time.wrapping_sub(current_time) as usize) * sample_rate + 999) / 1000
+            let mut buffer = &mut outer_buffer[..step_size];
+
+            {
+                let mem = memory.data_mut(&mut store);
+                mem[64..68].copy_from_slice(&current_time.to_le_bytes());
+            }
+
+            fn clamp_sample(s: f32) -> f32 {
+                if s.is_nan() {
+                    0.0
                 } else {
-                    outer_buffer.len()
-                };
-                let step_size = (duration.max(64) * 2).min(outer_buffer.len());
-
-                let mut buffer = &mut outer_buffer[..step_size];
-
-                {
-                    let mem = memory.data_mut(&mut store);
-                    mem[64..68].copy_from_slice(&current_time.to_le_bytes());
+                    s.max(-1.0).min(1.0)
                 }
+            }
 
-                fn clamp_sample(s: f32) -> f32 {
-                    if s.is_nan() {
-                        0.0
-                    } else {
-                        s.max(-1.0).min(1.0)
-                    }
-                }
-
-                if let Some(ref mut resampler) = resampler {
-                    while !buffer.is_empty() {
-                        let copy_size = resampler.output_buffers[0]
-                            .len()
-                            .saturating_sub(resampler.output_index)
-                            .min(buffer.len() / 2);
-                        if copy_size == 0 {
-                            resampler.input_buffers[0].clear();
-                            resampler.input_buffers[1].clear();
-                            for _ in 0..resampler.resampler.input_frames_next() {
-                                resampler.input_buffers[0].push(clamp_sample(
-                                    snd.call(&mut store, (sample_index,)).unwrap_or(0.0),
-                                ));
-                                resampler.input_buffers[1].push(clamp_sample(
-                                    snd.call(&mut store, (sample_index + 1,)).unwrap_or(0.0),
-                                ));
-                                sample_index = sample_index.wrapping_add(2);
-                            }
-
-                            resampler
-                                .resampler
-                                .process_into_buffer(
-                                    &resampler.input_buffers,
-                                    &mut resampler.output_buffers,
-                                    None,
-                                )
-                                .unwrap();
-                            resampler.output_index = 0;
-                        } else {
-                            for i in 0..copy_size {
-                                buffer[i * 2] =
-                                    resampler.output_buffers[0][resampler.output_index + i];
-                                buffer[i * 2 + 1] =
-                                    resampler.output_buffers[1][resampler.output_index + i];
-                            }
-                            resampler.output_index += copy_size;
-                            buffer = &mut buffer[copy_size * 2..];
+            if let Some(ref mut resampler) = resampler {
+                while !buffer.is_empty() {
+                    let copy_size = resampler.output_buffers[0]
+                        .len()
+                        .saturating_sub(resampler.output_index)
+                        .min(buffer.len() / 2);
+                    if copy_size == 0 {
+                        resampler.input_buffers[0].clear();
+                        resampler.input_buffers[1].clear();
+                        for _ in 0..resampler.resampler.input_frames_next() {
+                            resampler.input_buffers[0].push(clamp_sample(
+                                snd.call(&mut store, (sample_index,)).unwrap_or(0.0),
+                            ));
+                            resampler.input_buffers[1].push(clamp_sample(
+                                snd.call(&mut store, (sample_index + 1,)).unwrap_or(0.0),
+                            ));
+                            sample_index = sample_index.wrapping_add(2);
                         }
-                    }
-                } else {
-                    for v in buffer {
-                        *v = clamp_sample(snd.call(&mut store, (sample_index,)).unwrap_or(0.0));
-                        sample_index = sample_index.wrapping_add(1);
+
+                        resampler
+                            .resampler
+                            .process_into_buffer(
+                                &resampler.input_buffers,
+                                &mut resampler.output_buffers,
+                                None,
+                            )
+                            .unwrap();
+                        resampler.output_index = 0;
+                    } else {
+                        for i in 0..copy_size {
+                            buffer[i * 2] = resampler.output_buffers[0][resampler.output_index + i];
+                            buffer[i * 2 + 1] =
+                                resampler.output_buffers[1][resampler.output_index + i];
+                        }
+                        resampler.output_index += copy_size;
+                        buffer = &mut buffer[copy_size * 2..];
                     }
                 }
-
-                outer_buffer = &mut outer_buffer[step_size..];
-                current_time =
-                    current_time.wrapping_add((step_size * 500 / sample_rate).max(1) as i32);
+            } else {
+                for v in buffer {
+                    *v = clamp_sample(snd.call(&mut store, (sample_index,)).unwrap_or(0.0));
+                    sample_index = sample_index.wrapping_add(1);
+                }
             }
-        },
-        move |err| {
-            dbg!(err);
-        },
-        None,
-    )?;
+
+            outer_buffer = &mut outer_buffer[step_size..];
+            current_time = current_time.wrapping_add((step_size * 500 / sample_rate).max(1) as i32);
+        }
+    };
+    let stream = if sample_format == cpal::SampleFormat::F32 {
+        device.build_output_stream(
+            &config,
+            callback,
+            move |err| {
+                dbg!(err);
+            },
+            None,
+        )?
+    } else {
+        device.build_output_stream(
+            &config,
+            move |mut buffer: &mut [i16], info| {
+                let mut float_buffer = [0f32; 256];
+
+                while !buffer.is_empty() {
+                    let step_size = buffer.len().min(float_buffer.len());
+                    let step_buffer = &mut float_buffer[..step_size];
+                    callback(step_buffer, info);
+                    for (dest, src) in buffer.iter_mut().take(step_size).zip(step_buffer.iter()) {
+                        *dest = (src.max(-1.0).min(1.0) * 32767.0) as i16;
+                    }
+                    buffer = &mut buffer[step_size..];
+                }
+            },
+            move |err| {
+                dbg!(err);
+            },
+            None,
+        )?
+    };
 
     Ok(Uw8Sound { stream, tx })
 }
