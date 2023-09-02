@@ -388,8 +388,6 @@ fn init_sound(
         })
     };
 
-    dbg!(sample_format);
-
     let mut sample_index = 0;
     let mut pending_updates: Vec<RegisterUpdate> = Vec::with_capacity(30);
     let mut current_time = 0;
