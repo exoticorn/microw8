@@ -1,15 +1,15 @@
 use crate::{Input, WindowConfig, WindowImpl};
 use anyhow::{anyhow, Result};
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 use winit::{
     dpi::PhysicalSize,
-    event::{Event, VirtualKeyCode, WindowEvent},
+    event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
+    keyboard::{Key, KeyCode, NamedKey, PhysicalKey},
+    platform::pump_events::{EventLoopExtPumpEvents, PumpStatus},
     window::{Fullscreen, WindowBuilder},
 };
-
-use winit::platform::run_return::EventLoopExtRunReturn;
 
 mod crt;
 mod fast_crt;
@@ -21,7 +21,7 @@ use square::SquareFilter;
 
 pub struct Window {
     _instance: wgpu::Instance,
-    surface: wgpu::Surface,
+    surface: wgpu::Surface<'static>,
     _adapter: wgpu::Adapter,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -29,7 +29,7 @@ pub struct Window {
     surface_config: wgpu::SurfaceConfiguration,
     filter: Box<dyn Filter>,
     event_loop: EventLoop<()>,
-    window: winit::window::Window,
+    window: Arc<winit::window::Window>,
     gamepads: [u8; 4],
     next_frame: Instant,
     is_fullscreen: bool,
@@ -39,7 +39,7 @@ pub struct Window {
 impl Window {
     pub fn new(window_config: WindowConfig) -> Result<Window> {
         async fn create(window_config: WindowConfig) -> Result<Window> {
-            let event_loop = EventLoop::new();
+            let event_loop = EventLoop::new()?;
             let window = WindowBuilder::new()
                 .with_inner_size(PhysicalSize::new(
                     (320. * window_config.scale).round() as u32,
@@ -56,8 +56,10 @@ impl Window {
 
             window.set_cursor_visible(false);
 
+            let window = Arc::new(window);
+
             let instance = wgpu::Instance::new(Default::default());
-            let surface = unsafe { instance.create_surface(&window) }?;
+            let surface = instance.create_surface(window.clone())?;
             let adapter = instance
                 .request_adapter(&wgpu::RequestAdapterOptions {
                     power_preference: wgpu::PowerPreference::LowPower,
@@ -119,88 +121,93 @@ impl Window {
 impl WindowImpl for Window {
     fn begin_frame(&mut self) -> Input {
         let mut reset = false;
-        self.event_loop.run_return(|event, _, control_flow| {
-            *control_flow = ControlFlow::WaitUntil(self.next_frame);
-            let mut new_filter = None;
-            match event {
-                Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::Resized(new_size) => {
-                        self.surface_config.width = new_size.width;
-                        self.surface_config.height = new_size.height;
-                        self.surface.configure(&self.device, &self.surface_config);
-                        self.filter.resize(&self.queue, new_size);
-                    }
-                    WindowEvent::CloseRequested => {
-                        self.is_open = false;
-                        *control_flow = ControlFlow::Exit;
-                    }
-                    WindowEvent::KeyboardInput { input, .. } => {
-                        fn gamepad_button(input: &winit::event::KeyboardInput) -> u8 {
-                            match input.scancode {
-                                44 => 16,
-                                45 => 32,
-                                30 => 64,
-                                31 => 128,
-                                _ => match input.virtual_keycode {
-                                    Some(VirtualKeyCode::Up) => 1,
-                                    Some(VirtualKeyCode::Down) => 2,
-                                    Some(VirtualKeyCode::Left) => 4,
-                                    Some(VirtualKeyCode::Right) => 8,
-                                    _ => 0,
-                                },
-                            }
+        self.event_loop
+            .set_control_flow(ControlFlow::WaitUntil(self.next_frame));
+        while self.is_open {
+            let timeout = self.next_frame.saturating_duration_since(Instant::now());
+            let status = self.event_loop.pump_events(Some(timeout), |event, elwt| {
+                let mut new_filter = None;
+                match event {
+                    Event::WindowEvent { event, .. } => match event {
+                        WindowEvent::Resized(new_size) => {
+                            self.surface_config.width = new_size.width;
+                            self.surface_config.height = new_size.height;
+                            self.surface.configure(&self.device, &self.surface_config);
+                            self.filter.resize(&self.queue, new_size);
                         }
-                        if input.state == winit::event::ElementState::Pressed {
-                            match input.virtual_keycode {
-                                Some(VirtualKeyCode::Escape) => {
-                                    self.is_open = false;
-                                    *control_flow = ControlFlow::Exit;
+                        WindowEvent::CloseRequested => {
+                            elwt.exit();
+                        }
+                        WindowEvent::KeyboardInput { event, .. } => {
+                            fn gamepad_button(input: &winit::event::KeyEvent) -> u8 {
+                                match input.physical_key {
+                                    PhysicalKey::Code(KeyCode::KeyZ) => 16,
+                                    PhysicalKey::Code(KeyCode::KeyX) => 32,
+                                    PhysicalKey::Code(KeyCode::KeyA) => 64,
+                                    PhysicalKey::Code(KeyCode::KeyS) => 128,
+                                    _ => match input.logical_key {
+                                        Key::Named(NamedKey::ArrowUp) => 1,
+                                        Key::Named(NamedKey::ArrowDown) => 2,
+                                        Key::Named(NamedKey::ArrowLeft) => 4,
+                                        Key::Named(NamedKey::ArrowRight) => 8,
+                                        _ => 0,
+                                    },
                                 }
-                                Some(VirtualKeyCode::F) => {
-                                    let fullscreen = if self.window.fullscreen().is_some() {
-                                        None
-                                    } else {
-                                        Some(Fullscreen::Borderless(None))
-                                    };
-                                    self.is_fullscreen = fullscreen.is_some();
-                                    self.window.set_fullscreen(fullscreen);
-                                }
-                                Some(VirtualKeyCode::R) => reset = true,
-                                Some(VirtualKeyCode::Key1) => new_filter = Some(1),
-                                Some(VirtualKeyCode::Key2) => new_filter = Some(2),
-                                Some(VirtualKeyCode::Key3) => new_filter = Some(3),
-                                Some(VirtualKeyCode::Key4) => new_filter = Some(4),
-                                Some(VirtualKeyCode::Key5) => new_filter = Some(5),
-                                _ => (),
                             }
+                            if event.state == winit::event::ElementState::Pressed {
+                                match event.logical_key {
+                                    Key::Named(NamedKey::Escape) => {
+                                        elwt.exit();
+                                    }
+                                    Key::Character(ref c) => match c.as_str() {
+                                        "f" => {
+                                            let fullscreen = if self.window.fullscreen().is_some() {
+                                                None
+                                            } else {
+                                                Some(Fullscreen::Borderless(None))
+                                            };
+                                            self.is_fullscreen = fullscreen.is_some();
+                                            self.window.set_fullscreen(fullscreen);
+                                        }
+                                        "r" => reset = true,
+                                        "1" => new_filter = Some(1),
+                                        "2" => new_filter = Some(2),
+                                        "3" => new_filter = Some(3),
+                                        "4" => new_filter = Some(4),
+                                        "5" => new_filter = Some(5),
+                                        _ => (),
+                                    },
+                                    _ => (),
+                                }
 
-                            self.gamepads[0] |= gamepad_button(&input);
-                        } else {
-                            self.gamepads[0] &= !gamepad_button(&input);
+                                self.gamepads[0] |= gamepad_button(&event);
+                            } else {
+                                self.gamepads[0] &= !gamepad_button(&event);
+                            }
                         }
-                    }
+                        _ => (),
+                    },
                     _ => (),
-                },
-                Event::RedrawEventsCleared => {
-                    if Instant::now() >= self.next_frame
-                        // workaround needed on Wayland until the next winit release
-                        && self.window.fullscreen().is_some() == self.is_fullscreen
-                    {
-                        *control_flow = ControlFlow::Exit
-                    }
                 }
+                if let Some(new_filter) = new_filter {
+                    self.filter = create_filter(
+                        &self.device,
+                        &self.palette_screen_mode.screen_view,
+                        self.window.inner_size(),
+                        self.surface_config.format,
+                        new_filter,
+                    );
+                }
+            });
+            match status {
+                PumpStatus::Exit(_) => self.is_open = false,
                 _ => (),
             }
-            if let Some(new_filter) = new_filter {
-                self.filter = create_filter(
-                    &self.device,
-                    &self.palette_screen_mode.screen_view,
-                    self.window.inner_size(),
-                    self.surface_config.format,
-                    new_filter,
-                );
+
+            if Instant::now() >= self.next_frame {
+                break;
             }
-        });
+        }
         Input {
             gamepads: self.gamepads,
             reset,
@@ -236,10 +243,12 @@ impl WindowImpl for Window {
                             b: 0.0,
                             a: 1.0,
                         }),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
             self.filter.render(&mut render_pass);
@@ -541,10 +550,12 @@ impl PaletteScreenMode {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
-                    store: true,
+                    store: wgpu::StoreOp::Store,
                 },
             })],
             depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
         });
 
         render_pass.set_pipeline(&self.pipeline);
