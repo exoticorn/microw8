@@ -152,14 +152,14 @@ impl BaseModule {
         add_function(
             &mut functions,
             &type_map,
-            "rectangle_outline",
+            "rectangleOutline",
             &[F32, F32, F32, F32, I32],
             None,
         );
         add_function(
             &mut functions,
             &type_map,
-            "circle_outline",
+            "circleOutline",
             &[F32, F32, F32, I32],
             None,
         );
@@ -168,6 +168,21 @@ impl BaseModule {
 
         add_function(&mut functions, &type_map, "playNote", &[I32, I32], None);
         add_function(&mut functions, &type_map, "sndGes", &[I32], Some(F32));
+
+        add_function(
+            &mut functions,
+            &type_map,
+            "blitSprite",
+            &[I32, I32, I32, I32, I32],
+            None,
+        );
+        add_function(
+            &mut functions,
+            &type_map,
+            "grabSprite",
+            &[I32, I32, I32, I32, I32],
+            None,
+        );
 
         for i in functions.len()..64 {
             add_function(
