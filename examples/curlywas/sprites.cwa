@@ -4,13 +4,13 @@ const SPRITE = 0x20000;
 
 export fn upd() {
 	cls(0);
-	let t = time();
+	let t = time() / 2_f;
 	let i: i32;
 	loop spriteLoop {
-		let inline x = sin(t * -1.3 + i as f32 / 8_f) * 180_f + 160_f;
-		let inline y = sin(t * 1.7 + i as f32 / 9_f) * 140_f + 120_f;
-		blitSprite(SPRITE, 16, x as i32, y as i32, 0x100);
-		branch_if (i +:= 1) < 200: spriteLoop;
+		let inline x = sin(t * -1.3 + i as f32 * (3.141 / 30_f)) * 180_f + 160_f;
+		let inline y = sin(t * 1.7 + i as f32 * (3.141 / 40_f)) * 140_f + 120_f;
+		blitSprite(SPRITE, 16, x as i32, y as i32, (i & 3) * 0x200 + 0x100);
+		branch_if (i +:= 1) < 100: spriteLoop;
 	}
 }
 
