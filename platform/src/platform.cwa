@@ -447,6 +447,7 @@ global mut textCursorY = 0;
 global mut textColor = 15;
 global mut bgColor = 0;
 global mut outputChannel = 0;
+global mut textScale = 1;
 
 export fn printChar(char: i32) {
     loop chars {
@@ -458,6 +459,8 @@ export fn printChar(char: i32) {
 global mut controlCodeLength = 0;
 
 fn printSingleChar(char: i32) {
+    let charSize = 8 * textScale;
+
     if outputChannel >= 2 & (char < 4 | char > 6) {
         logChar(char);
         return;
@@ -491,9 +494,9 @@ fn printSingleChar(char: i32) {
     }
 
     if char == 8 {
-        textCursorX = textCursorX - 8;
+        textCursorX = textCursorX - charSize;
         if !outputChannel & textCursorX < 0 {
-            textCursorX = 320-8;
+            textCursorX = 320-charSize;
             printSingleChar(11);
         }
         return;
@@ -503,34 +506,34 @@ fn printSingleChar(char: i32) {
         if !outputChannel & textCursorX >= 320 {
             printChar(0xd0a);
         }
-        textCursorX = textCursorX + 8;
+        textCursorX = textCursorX + charSize;
         return;
     }
 
     if char == 10 {
-        textCursorY = textCursorY + 8;
+        textCursorY = textCursorY + charSize;
         if !outputChannel & textCursorY >= 240 {
-            textCursorY = 240 - 8;
+            textCursorY = 240 - charSize;
             let i: i32;
             loop scroll_copy {
-                i!120 = i!(120 + 320 * 8);
-                branch_if (i := i + 4) < 320 * (240 - 8): scroll_copy;
+                i!120 = (i + 320 * charSize)!120;
+                branch_if (i := i + 4) < 320 * (240 - charSize): scroll_copy;
             }
-            rectangle(0 as f32, (240 - 8) as f32, 320 as f32, 8 as f32, bgColor);
+            rectangle(0 as f32, (240 - charSize) as f32, 320 as f32, charSize as f32, bgColor);
         }
         return;
     }
 
     if char == 11 {
-        textCursorY = textCursorY - 8;
+        textCursorY = textCursorY - charSize;
         if !outputChannel & textCursorY < 0 {
             textCursorY = 0;
-            let i = 320 * (240 - 8);
+            let i = 320 * (240 - charSize);
             loop scroll_copy {
-                i!(116 + 320 * 8) = i!116;
+                (i + 320 * charSize)!116 = i!116;
                 branch_if (i := i - 4): scroll_copy;
             }
-            rectangle(0 as f32, 0 as f32, 320 as f32, 8 as f32, bgColor);
+            rectangle(0 as f32, 0 as f32, 320 as f32, charSize as f32, bgColor);
         }
         return;
     }
@@ -562,6 +565,12 @@ fn printSingleChar(char: i32) {
         return;
     }
 
+    if char == 30 {
+        let scale = 0x12d20?1;
+        textScale = select(scale > 0 & scale <= 16, scale, 1);
+        return;
+    }
+
     if char == 31 {
         textCursorX = 0x12d20?1 * (8 - outputChannel * 6);
         textCursorY = 0x12d20?2 * (8 - outputChannel * 7);
@@ -584,7 +593,7 @@ data(0x12d00) {
     1, 1, 1, 1, // 16-19,
     1, 1, 1, 1, // 20-23,
     1, 1, 1, 1, // 24-27,
-    1, 1, 1, 3 // 28-31
+    1, 1, 2, 3 // 28-31
   )
 }
 
@@ -593,26 +602,28 @@ fn drawChar(char: i32) {
         printChar(0xd0a);
     }
 
+    let charSize = 8 * textScale;
+
     let y: i32;
     loop rows {
-        let bits = (char * 8 + y)?0x13400;
+        let bits = (char * 8 + y / textScale)?0x13400;
         let x = 0;
         if outputChannel {
             loop pixels {
-                if (bits := bits << 1) & 256 {
+                if (bits << (x / textScale)) & 128 {
                     setPixel(textCursorX + x, textCursorY + y, textColor);
                 }
-                branch_if (x := x + 1) < 8: pixels;
+                branch_if (x := x + 1) < charSize: pixels;
             }
         } else {
             loop pixels {
-                setPixel(textCursorX + x, textCursorY + y, select((bits := bits << 1) & 256, textColor, bgColor));
-                branch_if (x := x + 1) < 8: pixels;
+                setPixel(textCursorX + x, textCursorY + y, select((bits << (x / textScale)) & 128, textColor, bgColor));
+                branch_if (x := x + 1) < charSize: pixels;
             }
         }
-        branch_if (y := y + 1) < 8: rows;
+        branch_if (y := y + 1) < charSize: rows;
     }
-    textCursorX = textCursorX + 8;
+    textCursorX = textCursorX + charSize;
 }
 
 export fn printString(ptr: i32) {
