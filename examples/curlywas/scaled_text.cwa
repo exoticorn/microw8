@@ -1,0 +1,14 @@
+include "../include/microw8-api.cwa"
+
+export fn upd() {
+	printString(USER_MEM);
+}
+
+data USER_MEM {
+	// clear screen, switch to graphics text mode, text scale 4
+	i8(12, 5, 30, 4)
+	// text color, position, print two lines
+	i8(15, 86, 31, 8, 80) "Hello," i8(8, 8, 8, 8, 8, 10) "MicroW8!"
+	// print same two lines with different color and slight offset 
+	i8(15, 47, 31, 10, 82) "Hello," i8(8, 8, 8, 8, 8, 10) "MicroW8!" i8(0)
+}
