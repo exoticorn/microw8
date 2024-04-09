@@ -62,6 +62,7 @@ export fn cls(col: i32) {
     textCursorX = 0;
     textCursorY = 0;
     outputChannel = 0;
+    textScale = 1;
     memory.fill(120, col, 320*240);
 }
 

@@ -238,6 +238,13 @@ When printing characters only the foreground pixels are set, the background is "
 
 Moving/printing past any border does not cause any special operation, the cursor just goes off-screen.
 
+### Text scale
+
+An integer text scale factor in the range 1x-16x can be set with control char 30. An attempt to
+set a scale outside that range will reset the scale to 1x.
+
+After startup and `cls` the scale is initialized to 1x.
+
 ### Control chars
 
 Characters 0-31 are control characters and don't print by default. They take the next 0-2 following characters as parameters.
@@ -262,7 +269,8 @@ Avoid the reserved control chars, they are currently NOPs but their behavior can
 | 15    | color      | Set the text color                         |
 | 16-23 | -          | Reserved                                   |
 | 24    | -          | Swap text/background colors                |
-| 25-30 | -          | Reserved                                   |
+| 25-29 | -          | Reserved                                   |
+| 30    | scale      | Set text scale (1-16)                      |
 | 31    | x, y       | Set cursor position (*)                    |
 
 (*) In graphics mode, the x coordinate is doubled when using control char 31 to be able to cover the whole screen with one byte.
@@ -271,7 +279,7 @@ Avoid the reserved control chars, they are currently NOPs but their behavior can
 
 Control code 6 switches all text output (except codes 4 and 5 to switch output back to the screen) to the console. Where exactly this ends
 up (if at all) is an implementation detail of the runtimes. The native dev-runtime writes the debug output to `stdout`, the web runtime to
-the debug console using `console.log`. Both implementation buffer the output until they encounter a newline character (10) in the output stream.
+the debug console using `console.log`. Both implementations buffer the output until they encounter a newline character (10) in the output stream.
 
 There may be future runtimes that ignore the debug output completely.
 
