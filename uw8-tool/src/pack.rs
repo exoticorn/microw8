@@ -490,7 +490,6 @@ impl<'a> ParsedModule<'a> {
                 element_section.active(
                     None,
                     &wasm_encoder::ConstExpr::i32_const(element.start_index as i32),
-                    ValType::FuncRef,
                     wasm_encoder::Elements::Functions(&functions),
                 );
             }
@@ -536,15 +535,18 @@ fn copy_section(module: &mut wasm_encoder::Module, data: &[u8]) -> Result<()> {
 fn read_type_section(reader: TypeSectionReader) -> Result<Vec<base_module::FunctionType>> {
     let mut function_types = vec![];
 
-    for type_def in reader {
-        match type_def? {
-            wasmparser::Type::Func(fnc) => {
-                if fnc.results().len() > 1 {
-                    bail!("Multi-value not supported");
+    for rec_group in reader {
+        for sub_type in rec_group?.into_types() {
+            match sub_type.composite_type {
+                wasmparser::CompositeType::Func(fnc) => {
+                    if fnc.results().len() > 1 {
+                        bail!("Multi-value not supported");
+                    }
+                    let params = to_val_type_vec(fnc.params())?;
+                    let result = to_val_type_vec(fnc.results())?.into_iter().next();
+                    function_types.push(FunctionType { params, result });
                 }
-                let params = to_val_type_vec(fnc.params())?;
-                let result = to_val_type_vec(fnc.results())?.into_iter().next();
-                function_types.push(FunctionType { params, result });
+                _ => bail!("Only function types are supported"),
             }
         }
     }
@@ -557,8 +559,8 @@ fn validate_table_section(reader: TableSectionReader) -> Result<()> {
         bail!("Only up to one table supported");
     }
 
-    let type_ = reader.into_iter().next().unwrap()?;
-    if type_.element_type != wasmparser::ValType::FuncRef {
+    let table = reader.into_iter().next().unwrap()?;
+    if !table.ty.element_type.is_func_ref() {
         bail!("Only one funcref table is supported");
     }
 
@@ -647,9 +649,12 @@ impl Element {
             wasmparser::ElementItems::Functions(funcs_reader) => {
                 let start_index = if let wasmparser::ElementKind::Active {
                     offset_expr,
-                    table_index: 0,
+                    table_index,
                 } = element.kind
                 {
+                    if table_index.map(|i| i > 0).unwrap_or(false) {
+                        bail!("Only function table with index 0 is supported");
+                    }
                     let mut init_reader = offset_expr.get_operators_reader();
                     if let wasmparser::Operator::I32Const { value: start_index } =
                         init_reader.read()?

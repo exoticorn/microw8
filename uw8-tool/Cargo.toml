@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wasmparser = "0.99"
-wasm-encoder = "0.22"
-walrus = "0.19"
+wasmparser = "0.201"
+wasm-encoder = "0.201"
+walrus = { version = "0.20.3", default-features = false }
 anyhow = "1"
 pico-args = "0.5"
 upkr = { git = "https://github.com/exoticorn/upkr.git", rev = "080db40d0088bbee2bdf3c5c75288ac7853d6b7a" }
