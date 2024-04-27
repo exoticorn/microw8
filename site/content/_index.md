@@ -31,50 +31,19 @@ Examplers for older versions:
 
 ## Versions
 
-### v0.2.2
+### v0.3.0
 
-* [Web runtime](v0.2.2)
-* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.2.2/microw8-0.2.2-linux.tgz)
-* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.2.2/microw8-0.2.2-macos.tgz)
-* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.2.2/microw8-0.2.2-windows.zip)
-
-Changes:
-
-* call `start` function after loading cart if the cart exports one
-* fix `sndGes` having the wrong name and not being included in the auto imports
-* fix control codes 4-6 (change text output mode) being invoked when used as parameters in other control sequences
-* only open browser window once a cart was compiled sucessfully when running with `-b`
-
-### v0.2.1
-
-* [Web runtime](v0.2.1)
-* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.2.1/microw8-0.2.1-linux.tgz)
-* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.2.1/microw8-0.2.1-macos.tgz)
-* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.2.1/microw8-0.2.1-windows.zip)
+* [Web runtime](v0.3.0)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.3.0-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.3.0-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.3.0-windows.zip)
 
 Changes:
 
-* new gpu accelerated renderer with (optional) crt filter
-* optimized `hline` function, a big speed-up when drawing large filled circles or rectangles
-* print fractional size of packed `uw8` cart
-
-### v0.2.0
-
-* [Web runtime](v0.2.0)
-* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.2.0/microw8-0.2.0-linux.tgz)
-* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.2.0/microw8-0.2.0-macos.tgz)
-* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.2.0/microw8-0.2.0-windows.zip)
-
-Changes:
-
-* [add sound support!](docs#sound)
-* add support to redirect text output to the console for debugging using control code 6
-* update curlywas:
-  * add support for `else if`
-  * add support for escape sequences in strings
-  * add support for char literals
-  * add support for binop-assignment, eg. `+=`, `^=`, `<<=` etc. (also support for the tee operator: `+:=`)
-  * "integer constant cast to float" literal syntax in CurlyWas (ex. `1_f` is equivalent to `1 as f32`)
+* add blitSprite and grabSprite API calls
+* add support for integer scaling up to 16x for printing text
+* fix incompatibility with sound devices only offering 16bit audio formats
+* add support for br_table instruction in packed carts
 
 ### Older versions
 

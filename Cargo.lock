@@ -3278,7 +3278,7 @@ checksum = "a183cf7feeba97b4dd1c0d46788634f6221d87fa961b305bed08c851829efcc0"
 
 [[package]]
 name = "uw8"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "ansi_term",
  "anyhow",
