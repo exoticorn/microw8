@@ -2,7 +2,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
 use std::{thread, time::Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use cpal::traits::*;
 use rubato::Resampler;
 use uw8_window::{Window, WindowConfig};
@@ -328,26 +328,38 @@ fn init_sound(
     let mut configs: Vec<_> = device
         .supported_output_configs()?
         .filter(|config| {
-            config.channels() == 2
+            config.channels() <= 2
                 && (config.sample_format() == cpal::SampleFormat::F32
                     || config.sample_format() == cpal::SampleFormat::I16)
         })
         .collect();
+
+    if configs.is_empty() {
+        eprintln!(
+            "No suitable audio output config found on device \"{}\", available configs:",
+            device.name()?
+        );
+        for config in device.supported_output_configs()? {
+            eprintln!("  {}ch {}", config.channels(), config.sample_format());
+        }
+        bail!("Failed to configure audio out");
+    }
+
     configs.sort_by_key(|config| {
         let rate = 44100
             .max(config.min_sample_rate().0)
             .min(config.max_sample_rate().0);
-        let prio = if rate >= 44100 {
+        let rate_prio = if rate >= 44100 {
             rate - 44100
         } else {
             (44100 - rate) * 1000
         };
-        prio + (config.sample_format() == cpal::SampleFormat::I16) as u32
+        let format_prio = (config.sample_format() == cpal::SampleFormat::I16) as u32;
+        let channels_prio = (config.channels() != 2) as u32 * 16777216;
+        rate_prio + format_prio + channels_prio
     });
-    let config = configs
-        .into_iter()
-        .next()
-        .ok_or_else(|| anyhow!("Could not find float or 16bit signed output config"))?;
+    let config = configs.into_iter().next().unwrap();
+
     let sample_rate = cpal::SampleRate(44100)
         .max(config.min_sample_rate())
         .min(config.max_sample_rate());
@@ -359,6 +371,7 @@ fn init_sound(
         }
     };
     let sample_format = config.sample_format();
+    let num_channels = config.channels();
     let config = cpal::StreamConfig {
         buffer_size,
         ..config.config()
@@ -392,7 +405,7 @@ fn init_sound(
     let mut pending_updates: Vec<RegisterUpdate> = Vec::with_capacity(30);
     let mut current_time = 0;
 
-    let mut callback = move |mut outer_buffer: &mut [f32], _: &_| {
+    let mut callback = move |mut outer_buffer: &mut [f32]| {
         let mut first_update = true;
         while let Ok(update) = rx.try_recv() {
             if first_update {
@@ -484,36 +497,83 @@ fn init_sound(
             current_time = current_time.wrapping_add((step_size * 500 / sample_rate).max(1) as i32);
         }
     };
-    let stream = if sample_format == cpal::SampleFormat::F32 {
-        device.build_output_stream(
-            &config,
-            callback,
-            move |err| {
-                dbg!(err);
-            },
-            None,
-        )?
-    } else {
-        device.build_output_stream(
-            &config,
-            move |mut buffer: &mut [i16], info| {
-                let mut float_buffer = [0f32; 256];
 
-                while !buffer.is_empty() {
-                    let step_size = buffer.len().min(float_buffer.len());
-                    let step_buffer = &mut float_buffer[..step_size];
-                    callback(step_buffer, info);
-                    for (dest, src) in buffer.iter_mut().take(step_size).zip(step_buffer.iter()) {
-                        *dest = (src.max(-1.0).min(1.0) * 32767.0) as i16;
-                    }
-                    buffer = &mut buffer[step_size..];
-                }
-            },
-            move |err| {
-                dbg!(err);
-            },
-            None,
-        )?
+    fn f32_to_i16<F>(mut buffer: &mut [i16], callback: &mut F)
+    where
+        F: FnMut(&mut [f32]),
+    {
+        let mut float_buffer = [0f32; 256];
+
+        while !buffer.is_empty() {
+            let step_size = buffer.len().min(float_buffer.len());
+            let step_buffer = &mut float_buffer[..step_size];
+            callback(step_buffer);
+            for (dest, src) in buffer.iter_mut().take(step_size).zip(step_buffer.iter()) {
+                *dest = (src.max(-1.0).min(1.0) * 32767.0) as i16;
+            }
+            buffer = &mut buffer[step_size..];
+        }
+    }
+
+    fn stereo_to_mono<F>(mut buffer: &mut [f32], callback: &mut F)
+    where
+        F: FnMut(&mut [f32]),
+    {
+        let mut in_buffer = [0f32; 256];
+
+        while !buffer.is_empty() {
+            let step_size = buffer.len().min(in_buffer.len() / 2);
+            let step_buffer = &mut in_buffer[..step_size * 2];
+            callback(step_buffer);
+            for (index, dest) in buffer.iter_mut().take(step_size).enumerate() {
+                *dest = (step_buffer[index * 2] + step_buffer[index * 2 + 1]) * 0.5;
+            }
+            buffer = &mut buffer[step_size..];
+        }
+    }
+
+    let stream = if sample_format == cpal::SampleFormat::F32 {
+        if num_channels == 2 {
+            device.build_output_stream(
+                &config,
+                move |buffer: &mut [f32], _| callback(buffer),
+                move |err| {
+                    dbg!(err);
+                },
+                None,
+            )?
+        } else {
+            device.build_output_stream(
+                &config,
+                move |buffer: &mut [f32], _| stereo_to_mono(buffer, &mut callback),
+                move |err| {
+                    dbg!(err);
+                },
+                None,
+            )?
+        }
+    } else {
+        if num_channels == 2 {
+            device.build_output_stream(
+                &config,
+                move |buffer: &mut [i16], _| f32_to_i16(buffer, &mut callback),
+                move |err| {
+                    dbg!(err);
+                },
+                None,
+            )?
+        } else {
+            device.build_output_stream(
+                &config,
+                move |buffer: &mut [i16], _| {
+                    f32_to_i16(buffer, &mut |b| stereo_to_mono(b, &mut callback))
+                },
+                move |err| {
+                    dbg!(err);
+                },
+                None,
+            )?
+        }
     };
 
     Ok(Uw8Sound { stream, tx })
