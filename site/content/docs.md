@@ -21,7 +21,7 @@ loaded.
 00000-00040: user memory
 00040-00044: time since module start in ms
 00044-0004c: gamepad state
-0004c-00050: reserved
+0004c-00050: number of frames since module start
 00050-00070: sound data (synced to sound thread)
 00070-00078: reserved
 00078-12c78: frame buffer

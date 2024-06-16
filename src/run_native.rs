@@ -27,6 +27,7 @@ struct UW8Instance {
     end_frame: TypedFunc<(), ()>,
     update: Option<TypedFunc<(), ()>>,
     start_time: Instant,
+    frame_counter: u32,
     watchdog: Arc<Mutex<UW8WatchDog>>,
     sound_tx: Option<mpsc::SyncSender<RegisterUpdate>>,
 }
@@ -159,6 +160,7 @@ impl super::Runtime for MicroW8 {
             end_frame,
             update,
             start_time: Instant::now(),
+            frame_counter: 0,
             watchdog,
             sound_tx,
         });
@@ -191,7 +193,10 @@ impl super::Runtime for MicroW8 {
                 let mem = instance.memory.data_mut(&mut instance.store);
                 mem[64..68].copy_from_slice(&time.to_le_bytes());
                 mem[68..72].copy_from_slice(&input.gamepads);
+                mem[72..76].copy_from_slice(&instance.frame_counter.to_le_bytes());
             }
+
+            instance.frame_counter = instance.frame_counter.wrapping_add(1);
 
             instance.store.set_epoch_deadline(self.timeout as u64);
             if let Some(ref update) = instance.update {

@@ -240,6 +240,7 @@ export default function MicroW8(screen, config = {}) {
             await audioReadyPromise;
     
             let startTime = Date.now();
+            let frameCounter = 0;
     
             const timePerFrame = 1000 / 60;
 
@@ -306,6 +307,7 @@ export default function MicroW8(screen, config = {}) {
                         let time = Date.now() - startTime;
                         u32Mem[16] = time;
                         u32Mem[17] = pad | gamepad;
+                        u32Mem[18] = frameCounter++;
                         if(instance.exports.upd) {
                             instance.exports.upd();
                         }
