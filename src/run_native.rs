@@ -328,9 +328,8 @@ fn init_sound(
     let mut configs: Vec<_> = device
         .supported_output_configs()?
         .filter(|config| {
-            config.channels() <= 2
-                && (config.sample_format() == cpal::SampleFormat::F32
-                    || config.sample_format() == cpal::SampleFormat::I16)
+            config.sample_format() == cpal::SampleFormat::F32
+                || config.sample_format() == cpal::SampleFormat::I16
         })
         .collect();
 
@@ -532,6 +531,25 @@ fn init_sound(
         }
     }
 
+    fn stereo_to_surround<F>(mut buffer: &mut [f32], num_channels: usize, callback: &mut F)
+    where
+        F: FnMut(&mut [f32]),
+    {
+        let mut in_buffer = [0f32; 256];
+        buffer.fill(0.);
+
+        while !buffer.is_empty() {
+            let step_size = (buffer.len() / num_channels).min(in_buffer.len() / 2);
+            let step_buffer = &mut in_buffer[..step_size * 2];
+            callback(step_buffer);
+            for index in 0..step_size {
+                buffer[index * num_channels + 0] = step_buffer[index * 2 + 0];
+                buffer[index * num_channels + 1] = step_buffer[index * 2 + 1];
+            }
+            buffer = &mut buffer[step_size * num_channels..];
+        }
+    }
+
     let stream = if sample_format == cpal::SampleFormat::F32 {
         if num_channels == 2 {
             device.build_output_stream(
@@ -542,10 +560,21 @@ fn init_sound(
                 },
                 None,
             )?
-        } else {
+        } else if num_channels == 1 {
             device.build_output_stream(
                 &config,
                 move |buffer: &mut [f32], _| stereo_to_mono(buffer, &mut callback),
+                move |err| {
+                    dbg!(err);
+                },
+                None,
+            )?
+        } else {
+            device.build_output_stream(
+                &config,
+                move |buffer: &mut [f32], _| {
+                    stereo_to_surround(buffer, num_channels as usize, &mut callback)
+                },
                 move |err| {
                     dbg!(err);
                 },
@@ -562,11 +591,24 @@ fn init_sound(
                 },
                 None,
             )?
-        } else {
+        } else if num_channels == 1 {
             device.build_output_stream(
                 &config,
                 move |buffer: &mut [i16], _| {
                     f32_to_i16(buffer, &mut |b| stereo_to_mono(b, &mut callback))
+                },
+                move |err| {
+                    dbg!(err);
+                },
+                None,
+            )?
+        } else {
+            device.build_output_stream(
+                &config,
+                move |buffer: &mut [i16], _| {
+                    f32_to_i16(buffer, &mut |b| {
+                        stereo_to_surround(b, num_channels as usize, &mut callback)
+                    })
                 },
                 move |err| {
                     dbg!(err);
