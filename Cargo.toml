@@ -1,6 +1,6 @@
 [package]
 name = "uw8"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,7 +11,7 @@ native = ["wasmtime", "uw8-window", "cpal", "rubato" ]
 browser = ["warp", "tokio", "tokio-stream", "webbrowser"]
 
 [dependencies]
-wasmtime = { version = "19.0.1", optional = true }
+wasmtime = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "0f48f939b9870036562ca02ff21253547a9f1a5c", optional = true }
 anyhow = "1"
 env_logger = "0.11.3"
 log = "0.4"
