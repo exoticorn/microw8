@@ -1,0 +1,23 @@
+{
+  "llvm-target": "wasm32--wasi",
+  "build-tags": [ "tinygo.wasm" ],
+  "goos": "js",
+  "goarch": "wasm",
+  "linker": "wasm-ld",
+  "libc": "wasi-libc",
+  "cflags": [
+    "--target=wasm32--wasi",
+    "--sysroot={root}/lib/wasi-libc/sysroot",
+    "-Oz"
+  ],
+  "ldflags": [
+    "--no-entry",
+    "--export-all",
+    "--import-memory",
+    "--initial-memory=262144",
+    "--global-base=81920",
+    "-zstack-size=4096",
+    "--strip-all"
+  ],
+  "wasm-abi": "js"
+}
