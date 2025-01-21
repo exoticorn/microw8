@@ -37,7 +37,7 @@ impl BaseModule {
 
         let mut types = vec![];
         let mut type_map = HashMap::new();
-        for num_params in 0..6 {
+        for num_params in 0..8 {
             for num_f32 in 0..=num_params {
                 for &result in &[None, Some(ValType::I32), Some(ValType::F32)] {
                     let mut params = vec![];
