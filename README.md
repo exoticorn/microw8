@@ -15,9 +15,9 @@ See [here](https://exoticorn.github.io/microw8/) for more information and docs.
 
 ## Downloads
 
-* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.3.0-linux.tgz)
-* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.3.0-macos.tgz)
-* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.3.0-windows.zip)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.4.0-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.4.0-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.4.0-windows.zip)
 
 The download includes
 

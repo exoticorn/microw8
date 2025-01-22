@@ -594,7 +594,7 @@ a base module provided by MicroW8.
 
 You can generate this base module yourself using
 `uw8-tool`. As a quick summary, it provides all function
-types with up to 5 parameters (i32 or f32) where the
+types with up to 7 parameters (i32 or f32) where the
 `f32` parameters always preceed the `i32` parameters.
 Then it includes all imports that MicroW8 provides,
 a function section with a single function of type

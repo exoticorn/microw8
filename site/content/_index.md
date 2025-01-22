@@ -31,19 +31,18 @@ Examplers for older versions:
 
 ## Versions
 
-### v0.3.0
+### v0.4.0
 
-* [Web runtime](v0.3.0)
-* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.3.0-linux.tgz)
-* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.3.0-macos.tgz)
-* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.3.0/microw8-0.3.0-windows.zip)
+* [Web runtime](../v0.4.0)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.4.0/microw8-0.4.0-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.4.0/microw8-0.4.0-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.4.0/microw8-0.4.0-windows.zip)
 
 Changes:
 
-* add blitSprite and grabSprite API calls
-* add support for integer scaling up to 16x for printing text
-* fix incompatibility with sound devices only offering 16bit audio formats
-* add support for br_table instruction in packed carts
+* add support for sound on mono- and surround-only devices
+* update wasmtime dependency to fix performance regression in 0.3.0
+* add 6 and 7 parameter function types to base module
 
 ### Older versions
 

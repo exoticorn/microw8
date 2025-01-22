@@ -2,6 +2,19 @@
 description = "Versions"
 +++
 
+### v0.4.0
+
+* [Web runtime](../v0.4.0)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.4.0/microw8-0.4.0-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.4.0/microw8-0.4.0-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.4.0/microw8-0.4.0-windows.zip)
+
+Changes:
+
+* add support for sound on mono- and surround-only devices
+* update wasmtime dependency to fix performance regression in 0.3.0
+* add 6 and 7 parameter function types to base module
+
 ### v0.3.0
 
 * [Web runtime](../v0.3.0)
