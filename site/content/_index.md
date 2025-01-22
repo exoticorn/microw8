@@ -42,6 +42,7 @@ Changes:
 
 * add support for sound on mono- and surround-only devices
 * update wasmtime dependency to fix performance regression in 0.3.0
+* add frame counter since module start at location 72
 * add 6 and 7 parameter function types to base module
 
 ### Older versions
