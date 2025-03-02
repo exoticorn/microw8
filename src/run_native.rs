@@ -395,8 +395,8 @@ fn init_sound(
         None
     } else {
         let rs = rubato::FftFixedIn::new(44100, sample_rate, 128, 1, 2)?;
-        let input_buffers = rs.input_buffer_allocate(true);
-        let output_buffers = rs.output_buffer_allocate(true);
+        let input_buffers = rs.input_buffer_allocate();
+        let output_buffers = rs.output_buffer_allocate();
         Some(Resampler {
             resampler: rs,
             input_buffers,
