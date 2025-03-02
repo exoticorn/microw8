@@ -1,7 +1,7 @@
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 
-use super::Filter;
+use super::{scale_mode::ScaleMode, Filter};
 
 pub struct SquareFilter {
     uniform_buffer: wgpu::Buffer,
@@ -15,9 +15,10 @@ impl SquareFilter {
         screen: &wgpu::TextureView,
         resolution: PhysicalSize<u32>,
         surface_format: wgpu::TextureFormat,
+        scale_mode: ScaleMode,
     ) -> SquareFilter {
         let uniforms = Uniforms {
-            texture_scale: texture_scale_from_resolution(resolution),
+            texture_scale: scale_mode.texture_scale_from_resolution(resolution),
         };
 
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -126,9 +127,9 @@ impl SquareFilter {
 }
 
 impl Filter for SquareFilter {
-    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>) {
+    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>, scale_mode: ScaleMode) {
         let uniforms = Uniforms {
-            texture_scale: texture_scale_from_resolution(new_size),
+            texture_scale: scale_mode.texture_scale_from_resolution(new_size),
         };
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
@@ -138,16 +139,6 @@ impl Filter for SquareFilter {
         render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.draw(0..6, 0..1);
     }
-}
-
-fn texture_scale_from_resolution(res: PhysicalSize<u32>) -> [f32; 4] {
-    let scale = ((res.width as f32) / 160.0).min((res.height as f32) / 120.0);
-    [
-        scale / res.width as f32,
-        scale / res.height as f32,
-        2.0 / scale,
-        0.0,
-    ]
 }
 
 #[repr(C)]

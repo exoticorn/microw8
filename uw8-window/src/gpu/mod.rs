@@ -1,5 +1,6 @@
 use crate::{Input, WindowConfig, WindowImpl};
 use anyhow::{anyhow, Result};
+use scale_mode::ScaleMode;
 use std::time::Instant;
 
 use winit::{
@@ -13,6 +14,7 @@ use winit::platform::run_return::EventLoopExtRunReturn;
 
 mod crt;
 mod fast_crt;
+pub mod scale_mode;
 mod square;
 
 use crt::CrtFilter;
@@ -34,6 +36,7 @@ pub struct Window {
     next_frame: Instant,
     is_fullscreen: bool,
     is_open: bool,
+    scale_mode: ScaleMode,
 }
 
 impl Window {
@@ -90,6 +93,7 @@ impl Window {
                 window.inner_size(),
                 surface_config.format,
                 window_config.filter,
+                window_config.scale_mode,
             );
 
             surface.configure(&device, &surface_config);
@@ -109,6 +113,7 @@ impl Window {
                 next_frame: Instant::now(),
                 is_fullscreen: window_config.fullscreen,
                 is_open: true,
+                scale_mode: window_config.scale_mode,
             })
         }
 
@@ -128,7 +133,7 @@ impl WindowImpl for Window {
                         self.surface_config.width = new_size.width;
                         self.surface_config.height = new_size.height;
                         self.surface.configure(&self.device, &self.surface_config);
-                        self.filter.resize(&self.queue, new_size);
+                        self.filter.resize(&self.queue, new_size, self.scale_mode);
                     }
                     WindowEvent::CloseRequested => {
                         self.is_open = false;
@@ -165,6 +170,20 @@ impl WindowImpl for Window {
                                     self.is_fullscreen = fullscreen.is_some();
                                     self.window.set_fullscreen(fullscreen);
                                 }
+                                Some(VirtualKeyCode::M) => {
+                                    self.scale_mode = match self.scale_mode {
+                                        ScaleMode::Fit => ScaleMode::Fill,
+                                        ScaleMode::Fill => ScaleMode::Fit,
+                                    };
+                                    self.filter.resize(
+                                        &self.queue,
+                                        PhysicalSize {
+                                            width: self.surface_config.width,
+                                            height: self.surface_config.height,
+                                        },
+                                        self.scale_mode,
+                                    );
+                                }
                                 Some(VirtualKeyCode::R) => reset = true,
                                 Some(VirtualKeyCode::Key1) => new_filter = Some(1),
                                 Some(VirtualKeyCode::Key2) => new_filter = Some(2),
@@ -198,6 +217,7 @@ impl WindowImpl for Window {
                     self.window.inner_size(),
                     self.surface_config.format,
                     new_filter,
+                    self.scale_mode,
                 );
             }
         });
@@ -260,6 +280,7 @@ fn create_filter(
     window_size: PhysicalSize<u32>,
     surface_format: wgpu::TextureFormat,
     filter: u32,
+    scale_mode: ScaleMode,
 ) -> Box<dyn Filter> {
     match filter {
         1 => Box::new(SquareFilter::new(
@@ -267,6 +288,7 @@ fn create_filter(
             screen_texture,
             window_size,
             surface_format,
+            scale_mode,
         )),
         2 => Box::new(FastCrtFilter::new(
             device,
@@ -274,12 +296,14 @@ fn create_filter(
             window_size,
             surface_format,
             false,
+            scale_mode,
         )),
         3 => Box::new(CrtFilter::new(
             device,
             screen_texture,
             window_size,
             surface_format,
+            scale_mode,
         )),
         4 => Box::new(FastCrtFilter::new(
             device,
@@ -287,18 +311,20 @@ fn create_filter(
             window_size,
             surface_format,
             true,
+            scale_mode,
         )),
         _ => Box::new(AutoCrtFilter::new(
             device,
             screen_texture,
             window_size,
             surface_format,
+            scale_mode,
         )),
     }
 }
 
 trait Filter {
-    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>);
+    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>, scale_mode: ScaleMode);
     fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>);
 }
 
@@ -314,9 +340,11 @@ impl AutoCrtFilter {
         screen: &wgpu::TextureView,
         resolution: PhysicalSize<u32>,
         surface_format: wgpu::TextureFormat,
+        scale_mode: ScaleMode,
     ) -> AutoCrtFilter {
-        let small = CrtFilter::new(device, screen, resolution, surface_format);
-        let large = FastCrtFilter::new(device, screen, resolution, surface_format, true);
+        let small = CrtFilter::new(device, screen, resolution, surface_format, scale_mode);
+        let large =
+            FastCrtFilter::new(device, screen, resolution, surface_format, true, scale_mode);
         AutoCrtFilter {
             small,
             large,
@@ -326,9 +354,9 @@ impl AutoCrtFilter {
 }
 
 impl Filter for AutoCrtFilter {
-    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>) {
-        self.small.resize(queue, new_size);
-        self.large.resize(queue, new_size);
+    fn resize(&mut self, queue: &wgpu::Queue, new_size: PhysicalSize<u32>, scale_mode: ScaleMode) {
+        self.small.resize(queue, new_size, scale_mode);
+        self.large.resize(queue, new_size, scale_mode);
         self.resolution = new_size;
     }
 

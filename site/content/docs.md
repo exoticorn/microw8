@@ -468,6 +468,7 @@ when using the native runtime:
 * `--no-gpu`:  Force old cpu-only window code
 * `--filter FILTER`:  Select an upscale filter at startup
 * `--fullscreen`:  Start in fullscreen mode
+* `--scale-fill`:  Scale to fill whole screen, potentially cropping parts of the frame buffer.
 
 Note that the cpu-only window does not support fullscreen nor upscale filters.
 
@@ -484,7 +485,7 @@ The upscale filter options are:
 5, auto_crt (default)   : ss_crt below 960x720, chromatic_crt otherwise
 ```
 
-You can switch the upscale filter at any time using the keys 1-5. You can toggle fullscreen with F.
+You can switch the upscale filter at any time using the keys 1-5. You can toggle fullscreen with F. You can toggle between scale modes 'fit' and 'fill' with M.
 
 ## `uw8 pack`
 

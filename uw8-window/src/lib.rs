@@ -1,4 +1,5 @@
 use anyhow::Result;
+use gpu::scale_mode::ScaleMode;
 use std::time::Instant;
 
 mod cpu;
@@ -73,6 +74,7 @@ pub struct WindowConfig {
     fullscreen: bool,
     fps_counter: bool,
     scale: f32,
+    scale_mode: ScaleMode,
 }
 
 impl Default for WindowConfig {
@@ -83,6 +85,7 @@ impl Default for WindowConfig {
             fullscreen: false,
             fps_counter: false,
             scale: 2.,
+            scale_mode: ScaleMode::Fit,
         }
     }
 }
@@ -109,6 +112,9 @@ impl WindowConfig {
             .opt_value_from_str("--scale")
             .unwrap()
             .unwrap_or(self.scale);
+        if args.contains("--scale-fill") {
+            self.scale_mode = ScaleMode::Fill;
+        }
     }
 }
 

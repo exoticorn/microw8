@@ -17,7 +17,7 @@ fn vs_main(
     let i = in_vertex_index / 3u + in_vertex_index % 3u;
     let x = -1.0 + f32(i % 2u) * 322.0;
     let y = -1.0 + f32(i / 2u) * 242.0;
-    out.clip_position = vec4<f32>((vec2<f32>(x, y) - vec2<f32>(160.0, 120.0)) / uniforms.texture_scale.xy, 0.0, 1.0);
+    out.clip_position = vec4<f32>((vec2<f32>(x, y) - vec2<f32>(160.0, 120.0)) * uniforms.texture_scale.xy, 0.0, 1.0);
     out.tex_coords = vec2<f32>(x, y);
     return out;
 }
