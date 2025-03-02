@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Docs |  </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <link rel="icon" type="image/png" href="/favicon.ico">
+    
+    <style>
+    :root {
+        /* Primary theme color */
+        --primary-color: #202024;
+        /* Primary theme text color */
+        --primary-text-color: #808070;
+        /* Primary theme link color */
+        --primary-link-color: #8080a0;
+        /* Secondary color: the background body color */
+        --secondary-color: #e0e0e8;
+        --secondary-text-color: #1a1818;
+        /* Highlight text color of table of content */
+        --toc-highlight-text-color: #d46e13;
+    }
+</style>
+    <link href="https://fonts.googleapis.com/css?family=Alfa+Slab+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Fira+Sans:400,500,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/normalize.css">
+    <link rel="stylesheet" href="https://exoticorn.github.io/microw8/juice.css">
+    
+    
+</head>
+
+<body>
+    
+<header class="box-shadow">
+    
+
+<a href="https:&#x2F;&#x2F;exoticorn.github.io&#x2F;microw8&#x2F;">
+    <div class="logo">
+        <img src="https://exoticorn.github.io/microw8/img/microw8.svg" alt="logo">
+        MicroW8
+    </div>
+</a>
+
+<nav>
+    
+    <a class="nav-item subtitle-text" href="https:&#x2F;&#x2F;exoticorn.github.io&#x2F;microw8&#x2F;docs&#x2F;">Docs</a>
+    
+    <a class="nav-item subtitle-text" href="https:&#x2F;&#x2F;exoticorn.github.io&#x2F;microw8&#x2F;versions&#x2F;"></a>
+    
+    
+        
+        <a class="nav-item subtitle-text" href="https:&#x2F;&#x2F;github.com&#x2F;exoticorn&#x2F;microw8">Github</a>
+        
+    
+</nav>
+
+</header>
+
+
+    <main>
+        
+        
+        
+        
+        
+        <div class="toc">
+            <div class="toc-sticky">
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#overview">Overview</a>
+                </div>
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#memory-map">Memory map</a>
+                </div>
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#api">API</a>
+                </div>
+                
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#math"><small>- Math</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#random"><small>- Random</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#graphics"><small>- Graphics</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#input"><small>- Input</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#text-output"><small>- Text output</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#sound"><small>- Sound</small></a>
+                </div>
+                
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#the-uw8-tool">The uw8 tool</a>
+                </div>
+                
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#uw8-run"><small>- uw8 run</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#uw8-pack"><small>- uw8 pack</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#uw8-unpack"><small>- uw8 unpack</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#uw8-compile"><small>- uw8 compile</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#uw8-filter-exports"><small>- uw8 filter-exports</small></a>
+                </div>
+                
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#other-useful-tools">Other useful tools</a>
+                </div>
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#distribution">Distribution</a>
+                </div>
+                
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#base64-encoded-link"><small>- Base64 encoded link</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#url-parameter"><small>- url parameter</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#html-uw8"><small>- .html + .uw8</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#itch-io"><small>- Itch.io</small></a>
+                </div>
+                
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#uw8-format">.uw8 format</a>
+                </div>
+                
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#format-version-00"><small>- Format version 00:</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#format-version-01"><small>- Format version 01:</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#format-version-02"><small>- Format version 02:</small></a>
+                </div>
+                
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#the-web-runtime">The web runtime</a>
+                </div>
+                
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#input-1"><small>- Input</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#video-recording"><small>- Video recording</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#screenshot"><small>- Screenshot</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/docs/#devkit-mode"><small>- Devkit mode</small></a>
+                </div>
+                
+                
+                
+            </div>
+        </div>
+        
+        
+
+        <div class="content text">
+            
+<div class="heading-text">Docs</div>
+<h1 id="overview">Overview</h1>
+<p>MicroW8 loads WebAssembly modules with a maximum size of 256kb. Your module needs to export
+a function <code>fn upd()</code> which will be called once per frame.
+After calling <code>upd</code> MicroW8 will display the 320x240 8bpp framebuffer located
+at offset 120 in memory with the 32bpp palette located at 0x13000.</p>
+<p>The memory has to be imported as <code>env</code> <code>memory</code> and has a maximum size of 256kb (4 pages).</p>
+<p>If the module exports a function called <code>start</code>, it will be called once after the module is
+loaded.</p>
+<h1 id="memory-map">Memory map</h1>
+<pre style="background-color:#ffffff;color:#202020;"><code><span>00000-00040: user memory
+</span><span>00040-00044: time since module start in ms
+</span><span>00044-0004c: gamepad state
+</span><span>0004c-00050: number of frames since module start
+</span><span>00050-00070: sound data (synced to sound thread)
+</span><span>00070-00078: reserved
+</span><span>00078-12c78: frame buffer
+</span><span>12c78-12c7c: sound registers/work area base address (for sndGes function)
+</span><span>12c7c-13000: reserved
+</span><span>13000-13400: palette
+</span><span>13400-13c00: font
+</span><span>13c00-14000: reserved
+</span><span>14000-40000: user memory
+</span></code></pre>
+<h1 id="api">API</h1>
+<p>All API functions are found in the <code>env</code> module.</p>
+<h2 id="math">Math</h2>
+<p>These all do what you'd expect them to. All angles are in radians.</p>
+<h3 id="fn-asin-x-f32-f32">fn asin(x: f32) -&gt; f32</h3>
+<p>Returns the arcsine of <code>x</code>.</p>
+<h3 id="fn-acos-x-f32-f32">fn acos(x: f32) -&gt; f32</h3>
+<p>Returns the arccosine of <code>x</code>.</p>
+<h3 id="fn-atan-f32-f32">fn atan(f32) -&gt; f32</h3>
+<p>Returns the arctangent of <code>x</code>.</p>
+<h3 id="fn-atan2-y-f32-x-f32-f32">fn atan2(y: f32, x: f32) -&gt; f32</h3>
+<p>Returns the angle between the point <code>(x, y)</code> and the positive x-axis.</p>
+<h3 id="fn-sin-angle-f32-f32">fn sin(angle: f32) -&gt; f32</h3>
+<p>Returns the sine of <code>angle</code>.</p>
+<h3 id="fn-tan-angle-f32-f32">fn tan(angle: f32) -&gt; f32</h3>
+<p>Returns the tangent of <code>angle</code>.</p>
+<h3 id="fn-cos-angle-f32-f32">fn cos(angle: f32) -&gt; f32</h3>
+<p>Returns the cosine of <code>angle</code>.</p>
+<h3 id="fn-exp-x-f32-f32">fn exp(x: f32) -&gt; f32</h3>
+<p>Returns <code>e^x</code>.</p>
+<h3 id="fn-log-x-f32-f32">fn log(x: f32) -&gt; f32</h3>
+<p>Returns the natural logarithmus of <code>x</code>. Ie. <code>e^log(x) == x</code>.</p>
+<h3 id="fn-pow-x-f32-y-f32-f32">fn pow(x: f32, y: f32) -&gt; f32</h3>
+<p>Returns <code>x^y</code>.</p>
+<h3 id="fn-fmod-x-f32-y-f32-f32">fn fmod(x: f32, y: f32) -&gt; f32</h3>
+<p>Returns <code>x</code> modulo <code>y</code>, ie. <code>x - floor(x / y) * y</code>. This means the sign of the result of <code>fmod</code> is the same as <code>y</code>.</p>
+<h2 id="random">Random</h2>
+<p>MicroW8 provides a pretty good PRNG, namely xorshift64*. It is initialized to a constant seed at each startup, so if you
+want to vary the random sequence you'll need to provide a seed yourself.</p>
+<h3 id="fn-random-i32">fn random() -&gt; i32</h3>
+<p>Returns a (pseudo-)random 32bit integer.</p>
+<h3 id="fn-randomf-f32">fn randomf() -&gt; f32</h3>
+<p>Returns a (pseudo-)random float equally distributed in <code>[0,1)</code>.</p>
+<h3 id="fn-randomseed-seed-i32">fn randomSeed(seed: i32)</h3>
+<p>Seeds the PRNG with the given seed. The seed function is reasonably strong so that you can use</p>
+<pre style="background-color:#ffffff;color:#202020;"><code><span>randomSeed(index);
+</span><span>random()
+</span></code></pre>
+<p>as a cheap random-access PRNG (aka noise function).</p>
+<h2 id="graphics">Graphics</h2>
+<p>The default palette can be seen <a href="../v0.1.0#At/p39+IBnj6ry1TRe7jzVy2A4tXgBvmoW2itzoyF2aM28pGy5QDiKxqrk8l9sbWZLtnAb+jgOfU+9QhpuyCAkhN6gPOU481IUL/df96vNe3h288Dqwhd3sfFpothIVFsMwRK72kW2hiR7zWsaXyy5pNmjR6BJk4piWx9ApT1ZwoUajhk6/zij6itq/FD1U3jj/J3MOwqZ2ef8Bv6ZPQlJIYVf62icGa69wS6SI1qBpIFiF14F8PcztRVbKIxLpT4ArCS6nz6FPnyUkqATGSBNPJ">here</a>. (Press Z on the keyboard to switch to palette.)</p>
+<p>The palette can be changed by writing 32bit rgba colors to addresses 0x13000-0x13400.</p>
+<p>The drawing functions are sub-pixel accurate where applicable (line, circle). Pixel centers lie halfway between integer
+coordinates. Ie. the top-left pixel covers the area <code>0,0 - 1,1</code>, with <code>0.5,0.5</code> being the pixel center.</p>
+<h3 id="fn-cls-color-i32">fn cls(color: i32)</h3>
+<p>Clears the screen to the given color index. Also sets the text cursor to <code>0, 0</code> and disables graphical text mode.</p>
+<h3 id="fn-setpixel-x-i32-y-i32-color-i32">fn setPixel(x: i32, y: i32, color: i32)</h3>
+<p>Sets the pixel at <code>x, y</code> to the given color index.</p>
+<h3 id="fn-getpixel-x-i32-y-i32-i32">fn getPixel(x: i32, y: i32) -&gt; i32</h3>
+<p>Returns the color index at <code>x, y</code>. Returns <code>0</code> if the given coordinates are outside the screen.</p>
+<h3 id="fn-hline-left-i32-right-i32-y-i32-color-i32">fn hline(left: i32, right: i32, y: i32, color: i32)</h3>
+<p>Fills the horizontal line <code>[left, right), y</code> with the given color index.</p>
+<h3 id="fn-rectangle-x-f32-y-f32-w-f32-h-f32-color-i32">fn rectangle(x: f32, y: f32, w: f32, h: f32, color: i32)</h3>
+<p>Fills the rectangle <code>x,y - x+w,y+h</code> with the given color index.</p>
+<p>(Sets all pixels where the pixel center lies inside the rectangle.)</p>
+<h3 id="fn-circle-cx-f32-cy-f32-radius-f32-color-i32">fn circle(cx: f32, cy: f32, radius: f32, color: i32)</h3>
+<p>Fills the circle at <code>cx, cy</code> and with <code>radius</code> with the given color index.</p>
+<p>(Sets all pixels where the pixel center lies inside the circle.)</p>
+<h3 id="fn-rectangleoutline-x-f32-y-f32-w-f32-h-f32-color-i32">fn rectangleOutline(x: f32, y: f32, w: f32, h: f32, color: i32)</h3>
+<p>Draws a one pixel outline on the inside of the given rectangle.</p>
+<p>(Draws the outermost pixels that are still inside the rectangle area.)</p>
+<h3 id="fn-circleoutline-cx-f32-cy-f32-radius-f32-color-i32">fn circleOutline(cx: f32, cy: f32, radius: f32, color: i32)</h3>
+<p>Draws a one pixel outline on the inside of the given circle.</p>
+<p>(Draws the outermost pixels that are still inside the circle area.)</p>
+<h3 id="fn-line-x1-f32-y1-f32-x2-f32-y2-f32-color-i32">fn line(x1: f32, y1: f32, x2: f32, y2: f32, color: i32)</h3>
+<p>Draws a line from <code>x1,y1</code> to <code>x2,y2</code> in the given color index.</p>
+<h3 id="fn-blitsprite-spritedata-i32-size-i32-x-i32-y-i32-control-i32">fn blitSprite(spriteData: i32, size: i32, x: i32, y: i32, control: i32)</h3>
+<p>Copies the pixel data at <code>spriteData</code> onto the screen at <code>x</code>, <code>y</code>. The size of the sprite is passed as <code>width | (height &lt;&lt; 16)</code>.
+If the height is given as 0, the sprite is is treated as square (width x width).</p>
+<p>The control parameter controls masking and flipping of the sprite:</p>
+<ul>
+<li>bits 0-7: color mask index</li>
+<li>bit 8: switch on masked blit (pixel with color mask index are treated as transparent)</li>
+<li>bit 9: flip sprite x</li>
+<li>bit 10: flip sprite y</li>
+</ul>
+<h3 id="fn-grabsprite-spritedata-i32-size-i32-x-i32-y-i32-control-i32">fn grabSprite(spriteData: i32, size: i32, x: i32, y: i32, control: i32)</h3>
+<p>Copies the pixel data on the screen at <code>x</code>, <code>y</code> to <code>spriteData</code>. Parameters are exactly the same as <code>blitSprite</code>.</p>
+<h2 id="input">Input</h2>
+<p>MicroW8 provides input from a gamepad with one D-Pad and 4 buttons, or a keyboard emulation thereof.</p>
+<p>The buttons are numbered</p>
+<table><thead><tr><th>Button</th><th>Keyboard</th><th>Index</th></tr></thead><tbody>
+<tr><td>Up</td><td>Arrow-Up</td><td>0</td></tr>
+<tr><td>Down</td><td>Arrow-Down</td><td>1</td></tr>
+<tr><td>Left</td><td>Arrow-Left</td><td>2</td></tr>
+<tr><td>Right</td><td>Arrow-Right</td><td>3</td></tr>
+<tr><td>A</td><td>Z</td><td>4</td></tr>
+<tr><td>B</td><td>X</td><td>5</td></tr>
+<tr><td>X</td><td>A</td><td>6</td></tr>
+<tr><td>Y</td><td>S</td><td>7</td></tr>
+</tbody></table>
+<p>In addition to using the API functions below, the gamepad state can also be read as a bitfield of
+pressed buttons at address 0x44. 0x48 holds the buttons that were pressed last frame.</p>
+<h3 id="fn-isbuttonpressed-btn-i32-i32">fn isButtonPressed(btn: i32) -&gt; i32</h3>
+<p>Returns whether the buttons with the given index is pressed this frame.</p>
+<h3 id="fn-isbuttontriggered-btn-i32-i32">fn isButtonTriggered(btn: i32) -&gt; i32</h3>
+<p>Returns whether the given button is newly pressed this frame.</p>
+<h3 id="fn-time-f32">fn time() -&gt; f32</h3>
+<p>Returns the time in seconds since the start of the cart.</p>
+<p>The integer time in milliseconds can also be read at address 0x40.</p>
+<h2 id="text-output">Text output</h2>
+<p>The default font can be seen <a href="../v0.1.0#At/p39+IBnj6ry1TRe7jzVy2A4tXgBvmoW2itzoyF2aM28pGy5QDiKxqrk8l9sbWZLtnAb+jgOfU+9QhpuyCAkhN6gPOU481IUL/df96vNe3h288Dqwhd3sfFpothIVFsMwRK72kW2hiR7zWsaXyy5pNmjR6BJk4piWx9ApT1ZwoUajhk6/zij6itq/FD1U3jj/J3MOwqZ2ef8Bv6ZPQlJIYVf62icGa69wS6SI1qBpIFiF14F8PcztRVbKIxLpT4ArCS6nz6FPnyUkqATGSBNPJ">here</a>.</p>
+<p>The font can be changed by writing 1bpp 8x8 characters to addresses 0x13400-0x13c00.</p>
+<p>All text printing is done at the cursor position, which is advanced after printing each character.
+The cursor is not visible.</p>
+<p>Text printing can operate in two modes - normal and graphics. After startup and after <code>cls()</code> normal mode is active.</p>
+<h3 id="normal-mode">Normal mode</h3>
+<p>In normal mode, text printing is constrained to an 8x8 character grid. Setting the cursor position to <code>2,3</code> will start printing at pixel coordinates <code>16,24</code>.</p>
+<p>When printing characters, the full 8x8 pixels are painted with the text and background colors according to the character graphics in the font.</p>
+<p>When moving/printing past the left or right border the cursor will automatically wrap to the previous/next line. When moving/printing past the upper/lower border, the screen will be scrolled down/up 8 pixels, filling the fresh line with the background color.</p>
+<h3 id="graphics-mode">Graphics mode</h3>
+<p>In graphics mode, text can be printed to any pixel position, the cursor position is set in pixel coordinates.</p>
+<p>When printing characters only the foreground pixels are set, the background is &quot;transparent&quot;.</p>
+<p>Moving/printing past any border does not cause any special operation, the cursor just goes off-screen.</p>
+<h3 id="text-scale">Text scale</h3>
+<p>An integer text scale factor in the range 1x-16x can be set with control char 30. An attempt to
+set a scale outside that range will reset the scale to 1x.</p>
+<p>After startup and <code>cls</code> the scale is initialized to 1x.</p>
+<h3 id="control-chars">Control chars</h3>
+<p>Characters 0-31 are control characters and don't print by default. They take the next 0-2 following characters as parameters.
+Avoid the reserved control chars, they are currently NOPs but their behavior can change in later MicroW8 versions.</p>
+<table><thead><tr><th>Code</th><th>Parameters</th><th>Operation</th></tr></thead><tbody>
+<tr><td>0</td><td>-</td><td>Nop</td></tr>
+<tr><td>1</td><td>char</td><td>Print char (including control chars)</td></tr>
+<tr><td>2-3</td><td>-</td><td>Reserved</td></tr>
+<tr><td>4</td><td>-</td><td>Switch to normal mode, reset cursor to 0,0</td></tr>
+<tr><td>5</td><td>-</td><td>Switch to graphics mode</td></tr>
+<tr><td>6</td><td>-</td><td>Switch output to (debug) console</td></tr>
+<tr><td>7</td><td>-</td><td>Bell / trigger sound channel 0</td></tr>
+<tr><td>8</td><td>-</td><td>Move cursor left</td></tr>
+<tr><td>9</td><td>-</td><td>Move cursor right</td></tr>
+<tr><td>10</td><td>-</td><td>Move cursor down</td></tr>
+<tr><td>11</td><td>-</td><td>Move cursor up</td></tr>
+<tr><td>12</td><td>-</td><td>do <code>cls(background_color)</code></td></tr>
+<tr><td>13</td><td>-</td><td>Move cursor to the left border</td></tr>
+<tr><td>14</td><td>color</td><td>Set the background color</td></tr>
+<tr><td>15</td><td>color</td><td>Set the text color</td></tr>
+<tr><td>16-23</td><td>-</td><td>Reserved</td></tr>
+<tr><td>24</td><td>-</td><td>Swap text/background colors</td></tr>
+<tr><td>25-29</td><td>-</td><td>Reserved</td></tr>
+<tr><td>30</td><td>scale</td><td>Set text scale (1-16)</td></tr>
+<tr><td>31</td><td>x, y</td><td>Set cursor position (*)</td></tr>
+</tbody></table>
+<p>(*) In graphics mode, the x coordinate is doubled when using control char 31 to be able to cover the whole screen with one byte.</p>
+<h4 id="debug-output">Debug output</h4>
+<p>Control code 6 switches all text output (except codes 4 and 5 to switch output back to the screen) to the console. Where exactly this ends
+up (if at all) is an implementation detail of the runtimes. The native dev-runtime writes the debug output to <code>stdout</code>, the web runtime to
+the debug console using <code>console.log</code>. Both implementations buffer the output until they encounter a newline character (10) in the output stream.</p>
+<p>There may be future runtimes that ignore the debug output completely.</p>
+<p>In CurlyWas, a simple way to log some value might look like this:</p>
+<pre style="background-color:#ffffff;color:#202020;"><code><span>printChar(&#39;\06V: &#39;); // switch to console out, print some prefix
+</span><span>printInt(some_value);
+</span><span>printChar(&#39;\n\4&#39;); // newline and switch back to screen
+</span></code></pre>
+<h3 id="fn-printchar-char-i32">fn printChar(char: i32)</h3>
+<p>Prints the character in the lower 8 bits of <code>char</code>. If the upper 24 bits are non-zero, right-shifts <code>char</code> by 8 bits and loops back to the beginning.</p>
+<h3 id="fn-printstring-ptr-i32">fn printString(ptr: i32)</h3>
+<p>Prints the zero-terminated string at the given memory address.</p>
+<h3 id="fn-printint-num-i32">fn printInt(num: i32)</h3>
+<p>Prints <code>num</code> as a signed decimal number.</p>
+<h3 id="fn-settextcolor-color-i32">fn setTextColor(color: i32)</h3>
+<p>Sets the text color.</p>
+<h3 id="fn-setbackgroundcolor-color-i32">fn setBackgroundColor(color: i32)</h3>
+<p>Sets the background color.</p>
+<h3 id="fn-setcursorposition-x-i32-y-i32">fn setCursorPosition(x: i32, y: i32)</h3>
+<p>Sets the cursor position. In normal mode <code>x</code> and <code>y</code> are multiplied by 8 to get the pixel position, in graphics mode they are used as is.</p>
+<h2 id="sound">Sound</h2>
+<h3 id="low-level-operation">Low level operation</h3>
+<p>MicroW8 actually runs two instances of your module. On the first instance, it calls <code>upd</code> and displays the framebuffer found in its memory. On the
+second instance, it calls <code>snd</code> instead with an incrementing sample index and expects that function to return sound samples for the left and right
+channel at 44100 Hz. If your module does not export a <code>snd</code> function, it calls the api function <code>sndGes</code> instead.</p>
+<p>As the only means of communication, 32 bytes starting at address 0x00050 are copied from main to sound memory after <code>upd</code> returns.</p>
+<p>By default, the <code>sndGes</code> function generates sound based on the 32 bytes at 0x00050. This means that in the default configuration those 32 bytes act
+as sound registers. See the <code>sndGes</code> function for the meaning of those registers.</p>
+<h3 id="export-fn-snd-sampleindex-i32-f32">export fn snd(sampleIndex: i32) -&gt; f32</h3>
+<p>If the module exports a <code>snd</code> function, it is called 88200 times per second to provide PCM sample data for playback (44.1kHz stereo).
+The <code>sampleIndex</code> will start at 0 and increments by 1 for each call. On even indices the function is expected to return a sample value for
+the left channel, on odd indices for the right channel.</p>
+<h3 id="fn-playnote-channel-i32-note-i32">fn playNote(channel: i32, note: i32)</h3>
+<p>Triggers a note (1-127) on the given channel (0-3). Notes are semitones with 69 being A4 (same as MIDI). A note value of 0 stops the
+sound playing on that channel. A note value 128-255 will trigger note-128 and immediately stop it (playing attack+release parts of envelope).</p>
+<p>This function assumes the default setup, with the <code>sndGes</code> registers located at 0x00050.</p>
+<h3 id="fn-sndges-sampleindex-i32-f32">fn sndGes(sampleIndex: i32) -&gt; f32</h3>
+<p>This implements a sound chip, generating sound based on 32 bytes of sound registers.</p>
+<p>The spec of this sound chip are:</p>
+<ul>
+<li>4 channels with individual volume control (0-15)</li>
+<li>rect, saw, tri, noise wave forms selectable per channel</li>
+<li>each wave form supports some kind of pulse width modulation</li>
+<li>each channel has an optional automatic low pass filter, or can be sent to one of two manually controllable filters</li>
+<li>each channel can select between a narrow and a wide stereo positioning. The two stereo positions of each channel are fixed.</li>
+<li>optional ring modulation</li>
+</ul>
+<p>This function requires 1024 bytes of working memory, the first 32 bytes of which are interpreted as the sound registers.
+The base address of its working memory can be configured by writing the address to 0x12c78. It defaults to 0x00050.</p>
+<p>Here is a short description of the 32 sound registers.</p>
+<pre style="background-color:#ffffff;color:#202020;"><code><span>00 - CTRL0
+</span><span>06 - CTRL1
+</span><span>0c - CTRL2
+</span><span>12 - CTRL3
+</span><span>  | 7  6 |   5  |   4  |  3  2  |    1    |    0    |
+</span><span>  | wave | ring | wide | filter | trigger | note on |
+</span><span>
+</span><span>  note on: stay in decay/sustain part of envelope
+</span><span>  trigger: the attack part of the envlope is triggered when either this changes
+</span><span>           or note on is changed from 0 to 1.
+</span><span>  filter : 0 - no filter
+</span><span>           1 - fixed 6db 1-pole filter with cutoff two octaves above note
+</span><span>           2 - programmable filter 0
+</span><span>           3 - programmable filter 1
+</span><span>  wide   : use wide stereo panning
+</span><span>  ring   : ring modulate with triangle wave at frequency of previous channel
+</span><span>  wave   : 0 - rectangle
+</span><span>           1 - saw
+</span><span>           2 - triangle
+</span><span>           3 - noise
+</span><span>
+</span><span>01 - PULS0
+</span><span>07 - PULS1
+</span><span>0d - PULS2
+</span><span>13 - PULS3
+</span><span>  Pulse width 0-255, with 0 being the plain version of each wave form.
+</span><span>  rectangle - 50%-100% pulse width
+</span><span>  saw       - inverts 0%-100% of the saw wave form around the center
+</span><span>  triangle  - morphs into an octave up triangle wave
+</span><span>  noise     - blends into a decimated saw wave (just try it out)
+</span><span>
+</span><span>02 - FINE0
+</span><span>08 - FINE1
+</span><span>0e - FINE2
+</span><span>14 - FINE3
+</span><span>  Fractional note
+</span><span>
+</span><span>03 - NOTE0
+</span><span>09 - NOTE1
+</span><span>0f - NOTE2
+</span><span>15 - NOTE3
+</span><span>  Note, 69 = A4
+</span><span>
+</span><span>04 - ENVA0
+</span><span>0a - ENVA1
+</span><span>10 - ENVA2
+</span><span>16 - ENVA3
+</span><span>  | 7 6 5 4 | 3 2 1 0 |
+</span><span>  | decay   | attack  |
+</span><span>
+</span><span>05 - ENVB0
+</span><span>0b - ENVB1
+</span><span>11 - ENVB2
+</span><span>17 - ENVB3
+</span><span>  | 7 6 5 4 | 3 2 1 0 |
+</span><span>  | release | sustain |
+</span><span>
+</span><span>18 - VO01
+</span><span>  | 7 6 5 4  | 3 2 1 0  |
+</span><span>  | volume 1 | volume 0 |
+</span><span>
+</span><span>19 - VO23
+</span><span>  | 7 6 5 4  | 3 2 1 0  |
+</span><span>  | volume 3 | volume 2 |
+</span><span>
+</span><span>1a - FCTR0
+</span><span>1b - FCTR1
+</span><span>  | 7 6 5 4   | 3 | 2    | 1    | 0   |
+</span><span>  | resonance | 0 | band | high | low |
+</span><span>
+</span><span>1c - FFIN0
+</span><span>1e - FFIN1
+</span><span>  cutoff frequency - fractional note
+</span><span>
+</span><span>1d - FNOT0
+</span><span>1f - FNOT1
+</span><span>  cutoff frequency - note
+</span></code></pre>
+<h1 id="the-uw8-tool">The <code>uw8</code> tool</h1>
+<p>The <code>uw8</code> tool included in the MicroW8 download includes a number of useful tools for developing MicroW8 carts. For small productions written in
+wat or CurlyWas you don't need anything apart from <code>uw8</code> and a text editor of your choice.</p>
+<h2 id="uw8-run"><code>uw8 run</code></h2>
+<p>Usage:</p>
+<p><code>uw8 run [&lt;options&gt;] &lt;file&gt;</code></p>
+<p>Runs <code>&lt;file&gt;</code> which can be a binary WebAssembly module, an <code>.uw8</code> cart, a wat (WebAssembly text format) source file or a <a href="https://github.com/exoticorn/curlywas">CurlyWas</a> source file.</p>
+<p>Options:</p>
+<ul>
+<li><code>-b</code>, <code>--browser</code>: Run in browser instead of using native runtime</li>
+<li><code>-t FRAMES</code>, <code>--timeout FRAMES</code>: Sets the timeout in frames (1/60s). If the start or update function runs longer than this it is forcibly interupted
+and execution of the cart is stopped. Defaults to 30 (0.5s)</li>
+<li><code>-w</code>, <code>--watch</code>: Reloads the given file every time it changes on disk.</li>
+<li><code>-p</code>, <code>--pack</code>: Pack the file into an <code>.uw8</code> cart before running it and print the resulting size.</li>
+<li><code>-u</code>, <code>--uncompressed</code>: Use the uncompressed <code>uw8</code> format for packing.</li>
+<li><code>-l LEVEL</code>, <code>--level LEVEL</code>: Compression level (0-9). Higher compression levels are really slow.</li>
+<li><code>-o FILE</code>, <code>--output FILE</code>: Write the loaded and optionally packed cart back to disk.</li>
+</ul>
+<p>when using the native runtime:</p>
+<ul>
+<li><code>-m</code>, <code>--no-audio</code>: Disable audio, also reduces cpu load a bit</li>
+<li><code>--no-gpu</code>:  Force old cpu-only window code</li>
+<li><code>--filter FILTER</code>:  Select an upscale filter at startup</li>
+<li><code>--fullscreen</code>:  Start in fullscreen mode</li>
+<li><code>--scale-fill</code>:  Scale to fill whole screen, potentially cropping parts of the frame buffer.</li>
+</ul>
+<p>Note that the cpu-only window does not support fullscreen nor upscale filters.</p>
+<p>Unless --no-gpu is given, uw8 will first try to open a gpu accelerated window, falling back to the old cpu-only window if that fails.
+Therefore you should rarely need to manually pass --no-gpu. If you prefer the old pixel doubling look to the now default crt filter,
+you can just pass <code>--filter nearest</code> or <code>--filter 1</code>.</p>
+<p>The upscale filter options are:</p>
+<pre style="background-color:#ffffff;color:#202020;"><code><span>1, nearest              : Anti-aliased nearest filter
+</span><span>2, fast_crt             : Very simple, cheap crt filter, not very good below a window size of 960x720
+</span><span>3, ss_crt               : Super sampled crt filter, a little more demanding on the GPU but scales well to smaller window sizes
+</span><span>4, chromatic_crt        : Variant of fast_crt with a slight offset of the three color dots of a pixel, still pretty cheap
+</span><span>5, auto_crt (default)   : ss_crt below 960x720, chromatic_crt otherwise
+</span></code></pre>
+<p>You can switch the upscale filter at any time using the keys 1-5. You can toggle fullscreen with F. You can toggle between scale modes 'fit' and 'fill' with M.</p>
+<h2 id="uw8-pack"><code>uw8 pack</code></h2>
+<p>Usage:</p>
+<p><code>uw8 pack [&lt;options&gt;] &lt;infile&gt; &lt;outfile&gt;</code></p>
+<p>Packs the WebAssembly module or text file, or <a href="https://github.com/exoticorn/curlywas">CurlyWas</a> source file into a <code>.uw8</code> cart.</p>
+<p>Options:</p>
+<ul>
+<li><code>-u</code>, <code>--uncompressed</code>: Use the uncompressed <code>uw8</code> format for packing.</li>
+<li><code>-l LEVEL</code>, <code>--level LEVEL</code>: Compression level (0-9). Higher compression levels are really slow.</li>
+</ul>
+<h2 id="uw8-unpack"><code>uw8 unpack</code></h2>
+<p>Usage:</p>
+<p><code>uw8 unpack &lt;infile&gt; &lt;outfile&gt;</code></p>
+<p>Unpacks a MicroW8 module into a standard WebAssembly module.</p>
+<h2 id="uw8-compile"><code>uw8 compile</code></h2>
+<p>Usage:</p>
+<p><code>uw8 compile [&lt;options&gt;] &lt;infile&gt; &lt;outfile&gt;</code></p>
+<p>Compiles a <a href="https://github.com/exoticorn/curlywas">CurlyWas</a> source file to a standard WebAssembly module. Most useful together with
+the <code>--debug</code> option to get a module that works well in the Chrome debugger.</p>
+<p>Options:</p>
+<ul>
+<li><code>-d</code>, <code>--debug</code>: Generate a name section to help debugging</li>
+</ul>
+<h2 id="uw8-filter-exports"><code>uw8 filter-exports</code></h2>
+<p>Usage:</p>
+<p><code>uw8 filter-exports &lt;infile&gt; &lt;outfile&gt;</code></p>
+<p>Reads a binary WebAssembly module, removes all exports not used by the MicroW8 platform + everything that is unreachable without those exports and writes the resulting module to <code>outfile</code>.</p>
+<p>When compiling C code (or Rust, zig or others) to WebAssembly, you end up with a few exported global variables that are used for managing the heap and C stack, even if the code doesn't actually use those features. You can use this command to automatically remove them and gain a few bytes. See the C, Rust and zig examples in the MicroW8 repository.</p>
+<h1 id="other-useful-tools">Other useful tools</h1>
+<p>The <a href="https://github.com/WebAssembly/wabt">Web Assembly Binary Toolkit</a> includes
+a few useful tools, eg. <code>wat2wasm</code> to compile the WebAssemby text format to binary
+wasm and <code>wasm2wat</code> to disassemble wasm binaries.</p>
+<p><a href="https://github.com/WebAssembly/binaryen">Binaryen</a> includes <code>wasm-opt</code> which enable additional optimizations over what LLVM (the backend that is used by most compilers that target WebAssembly) can do.</p>
+<h1 id="distribution">Distribution</h1>
+<p>The classical distribution option is just to put the <code>.uw8</code> cart into a zip file, let people run it themselves, either in the <code>uw8</code> tool or in the web runtime.</p>
+<p>If you want to go this way, you might consider including <code>microw8.html</code> in your download. It's specifically designed to be a small (~10KB at the moment), self-contained HTML file for just this reason. That way, anyone who has downloaded you production can run it, even when offline, provided they have a modern web browser at hand. Also, should future versions of MicroW8 ever introduce any kind of incompatibilities, they'd still have a compatible version right there without hunting arround for an old version.</p>
+<h2 id="base64-encoded-link">Base64 encoded link</h2>
+<p>For small productions (&lt;= 1024 bytes), when you load them in the web runtime, the URL is automatically updated to include the cart as base64 encoded data. You can just give that URL to others for them to run your prod.</p>
+<h2 id="url-parameter">url parameter</h2>
+<p>Another option is to put the cart on a webserver and add <code>#url=url/to/the/cart.uw8</code> to the end of the web runtime URL. (<a href="../v0.1pre5#url=../uw8/skipahead.uw8">Like this</a>)</p>
+<p>If the cart and the web runtime are on different domains, you'll have to make sure that <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#the_http_response_headers">CORS header</a> are enabled for the cart, otherwise the web runtime won't be able to load it.</p>
+<p>Feel free to put the web runtime on your own server if it makes sense to you, its <a href="https://unlicense.org/">license</a> allows you to do anything you want with it.</p>
+<h2 id="html-uw8"><code>.html</code> + <code>.uw8</code></h2>
+<p>At startup the web runtime will try to load a cart in the same directory as the <code>.html</code> file. If the URL of the web runtime ends in <code>.html</code> it will try to load a cart with the same name and the extension <code>.uw8</code>. If the URL of the web runtime ends in a <code>/</code> it will try to load a <code>cart.uw8</code> at that location.</p>
+<p>So, you could for example serve the web runtime as <code>https://example.org/mytunnel.html</code> and the cart as <code>https://example.org/mytunnel.uw8</code> and send people to the HTML page to run the cart. Or you could put them up as <code>https://example.org/mytunnel/index.html</code> and <code>https://example.org/mytunnel/cart.uw8</code> and send people to <code>https://example.org/mytunnel</code>.</p>
+<p>If a cart is found and loaded in this way, the load button is hidden.</p>
+<h2 id="itch-io">Itch.io</h2>
+<p>The above <code>.html</code> + <code>.uw8</code> option works great on <a href="https://itch.io">Itch.io</a> as well. Put these two files into a zip archive:</p>
+<ul>
+<li><code>index.html</code>: a copy of the web runtime (<code>microw8.html</code> in the MicroW8 download)</li>
+<li><code>index.uw8</code>: Your game cart</li>
+</ul>
+<p>Upload the zip file to itch.io and make sure to set the embedded viewport size to exactly (!) 640x480 pixel. At that exact size the web runtime hides everything except for the MicroW8 screen.</p>
+<p>If instead you actually <em>want</em> to display the border around the screen and the byte size you can try a size of about 720x620.</p>
+<p><a href="https://exoticorn.itch.io/skipahead">See here for an example upload.</a></p>
+<h1 id="uw8-format"><code>.uw8</code> format</h1>
+<p>The first byte of the file specifies the format version:</p>
+<h2 id="format-version-00">Format version <code>00</code>:</h2>
+<p>This file is simply a standard WebAssembly module</p>
+<h2 id="format-version-01">Format version <code>01</code>:</h2>
+<p>The rest of this file is the same as a WebAssembly
+module with the 8 byte header removed. This module
+can leave out sections which are then taken from
+a base module provided by MicroW8.</p>
+<p>You can generate this base module yourself using
+<code>uw8-tool</code>. As a quick summary, it provides all function
+types with up to 7 parameters (i32 or f32) where the
+<code>f32</code> parameters always preceed the <code>i32</code> parameters.
+Then it includes all imports that MicroW8 provides,
+a function section with a single function of type
+<code>() -&gt; void</code> and an export section that exports
+the first function in the file under the name <code>upd</code>.</p>
+<h2 id="format-version-02">Format version <code>02</code>:</h2>
+<p>Same as version <code>01</code> except everything after the first byte is compressed
+using a <a href="https://github.com/exoticorn/upkr">custom LZ compression scheme</a>.</p>
+<h1 id="the-web-runtime">The web runtime</h1>
+<p>Load carts into the web runtime either by using the &quot;Load cart...&quot; button, or by dragging the file
+onto the screen area.</p>
+<h2 id="input-1">Input</h2>
+<p>For input, you can either use a standard gamepad or keyboard. On a keyboard use the arrow keys and the keys Z, X, A and S to emulate the A, B, X and Y buttons.</p>
+<h2 id="video-recording">Video recording</h2>
+<p>Press F10 to start recording, press again to stop. Then a download dialog will open for the video file.
+The file might miss some metadata needed to load in some video editing tools, in that case you can run
+it through ffmpeg like this `ffmpeg -i IN_NAME.webm -c copy -o OUT_NAME.webm to fix it up.</p>
+<p>To convert it to 1280x720, for example for a lovebyte upload, you can use:</p>
+<pre style="background-color:#ffffff;color:#202020;"><code><span>ffmpeg -i IN.webm -vf &quot;scale=960:720:flags=neighbor,pad=1280:720:160:0&quot; -r 60 OUT.mp4
+</span></code></pre>
+<h2 id="screenshot">Screenshot</h2>
+<p>Pressing F9 opens a download dialog with a screenshot.</p>
+<h2 id="devkit-mode">Devkit mode</h2>
+<p>Append <code>#devkit</code> to the web runtime url in order to switch to devkit mode. In devkit mode, standard web assembly modules
+are loaded bypassing the loader, removing all size restrictions. At the same time, the memory limit is increased to 1GB.</p>
+
+
+        </div>
+
+        
+        
+    </main>
+
+    
+
+</body>
+<script>
+    function highlightNav(heading) {
+        let pathname = location.pathname;
+        document.querySelectorAll(".toc a").forEach((item) => {
+            item.classList.remove("active");
+        });
+        document.querySelector(".toc a[href$='" + pathname + "#" + heading + "']").classList.add("active");
+    }
+
+    let currentHeading = "";
+    window.onscroll = function () {
+        let h = document.querySelectorAll("h1,h2,h3,h4,h5,h6");
+        let elementArr = [];
+
+        h.forEach(item => {
+            if (item.id !== "") {
+                elementArr[item.id] = item.getBoundingClientRect().top;
+            }
+        });
+        elementArr.sort();
+        for (let key in elementArr) {
+            if (!elementArr.hasOwnProperty(key)) {
+                continue;
+            }
+            if (elementArr[key] > 0 && elementArr[key] < 300) {
+                if (currentHeading !== key) {
+                    highlightNav(key);
+                    currentHeading = key;
+                }
+                break;
+            }
+        }
+    }
+</script>
+
+</html>
