@@ -31,19 +31,19 @@ Examplers for older versions:
 
 ## Versions
 
-### v0.4.0
+### v0.4.1
 
-* [Web runtime](../v0.4.0)
-* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.4.0/microw8-0.4.0-linux.tgz)
-* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.4.0/microw8-0.4.0-macos.tgz)
-* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.4.0/microw8-0.4.0-windows.zip)
+* [Web runtime](../v0.4.1)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.4.1/microw8-0.4.1-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.4.1/microw8-0.4.1-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.4.1/microw8-0.4.1-windows.zip)
 
 Changes:
 
-* add support for sound on mono- and surround-only devices
-* update wasmtime dependency to fix performance regression in 0.3.0
-* add frame counter since module start at location 72
-* add 6 and 7 parameter function types to base module
+* Windows: fix bad/inconsistent frame rate
+* fix choppy sound on devices with sample rates != 44100 kHz
+* add scale mode 'fill' option
+
 
 ### Older versions
 

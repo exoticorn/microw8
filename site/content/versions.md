@@ -2,6 +2,19 @@
 description = "Versions"
 +++
 
+### v0.4.1
+
+* [Web runtime](../v0.4.1)
+* [Linux](https://github.com/exoticorn/microw8/releases/download/v0.4.1/microw8-0.4.1-linux.tgz)
+* [MacOS](https://github.com/exoticorn/microw8/releases/download/v0.4.1/microw8-0.4.1-macos.tgz)
+* [Windows](https://github.com/exoticorn/microw8/releases/download/v0.4.1/microw8-0.4.1-windows.zip)
+
+Changes:
+
+* Windows: fix bad/inconsistent frame rate
+* fix choppy sound on devices with sample rates != 44100 kHz
+* add scale mode 'fill' option
+
 ### v0.4.0
 
 * [Web runtime](../v0.4.0)
