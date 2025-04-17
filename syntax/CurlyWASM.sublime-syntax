@@ -1,0 +1,231 @@
+%YAML 1.2
+---
+# ==========================================================
+# http://www.sublimetext.com/docs/syntax.html
+# created by: zbyti & various AI
+# ==========================================================
+# For best results, use with Rust-themed color schemes like:
+# - "RustEnhanced"
+# - "Atomized"
+# - "Solarized Rust"
+# ==========================================================
+name: CurlyWASM
+file_extensions: [cwa]
+scope: source.curlywasm
+
+contexts:
+  main:
+    # Comments
+    - match: /\*
+      scope: comment.block.curlywasm
+      push: block_comment
+    - match: //
+      scope: comment.line.curlywasm
+      push: line_comment
+
+    # Module system
+    - match: \b(import|include|export)\b
+      scope: keyword.control.import.curlywasm
+
+    # Declarations and definitions
+    - match: \b(fn)\b
+      scope: keyword.declaration.function.curlywasm
+
+    - match: \b(const)\b
+      scope: storage.modifier.const.curlywasm
+
+    - match: \b(global|mut|let|lazy|inline)\b
+      scope: storage.modifier.curlywasm
+
+    # Control flow
+    - match: \b(return|if|else|loop|block|branch|branch_if|break)\b
+      scope: keyword.control.flow.curlywasm
+
+    # Type conversion
+    - match: \b(as)\b
+      scope: keyword.operator.type.curlywasm
+
+    # WASM memory access operators
+    - match: \b(load|load8_s|store)\b
+      scope: keyword.operator.memory.curlywasm
+
+    # API functions
+    - match: \b(sin|cos|tan|asin|acos|atan|atan2|pow|log|fmod|random|randomf|randomSeed|cls|setPixel|getPixel|hline|rectangle|circle|line|time|isButtonPressed|isButtonTriggered|printChar|printString|printInt|setTextColor|setBackgroundColor|setCursorPosition|rectangleOutline|circleOutline|exp|playNote|sndGes|blitSprite|grabSprite)\b
+      scope: support.function.curlywasm
+
+    # Built-in functions
+    - match: \b(sqrt|min|max|ceil|floor|trunc|nearest|abs|copysign|select|trunc_sat_f32_u)\b
+      scope: support.function.curlywasm
+
+    # Data blocks - Match 'data {' together and push context
+    - match: \b(data)\s*(\{)
+      captures:
+        1: storage.type.data.curlywasm
+        2: punctuation.section.block.begin.curlywasm
+      push: data_content
+
+    # Base types
+    - match: \b(i8|i16|i32|i64|f32|f64)\b
+      scope: storage.type.primitive.curlywasm
+
+    # Memory access operators
+    - match: (\?|\$|\!)
+      scope: keyword.operator.memory.curlywasm
+
+    # Operators
+    - match: (->)
+      scope: keyword.operator.arrow.curlywasm
+
+    # Assignment operators
+    - match: (=|:=|\+=|-=|\*=|/=|%=|&=|\|=|\^=|#/=)
+      scope: keyword.operator.assignment.curlywasm
+
+    # Arithmetic operators
+    - match: (\+|-|\*|/|%|#/|#%)
+      scope: keyword.operator.arithmetic.curlywasm
+
+    # Bitwise operators
+    - match: (\&|\||\^|<<|>>|#>>)
+      scope: keyword.operator.bitwise.curlywasm
+
+    # Comparison operators
+    - match: (<|>|<=|>=|#<|#<=|#>|#>=|==|!=)
+      scope: keyword.operator.comparison.curlywasm
+
+    # Other operators
+    - match: (<\|)
+      scope: keyword.operator.misc.curlywasm
+
+    # Numeric literals
+    - match: \b(0x[0-9a-fA-F]+)\b
+      scope: constant.numeric.hex.curlywasm
+
+    - match: '\b\d+(_f)\b'
+      scope: constant.numeric.float.curlywasm
+
+    - match: \b([0-9]+\.[0-9]+)\b
+      scope: constant.numeric.float.curlywasm
+
+    - match: \b([0-9]+)\b
+      scope: constant.numeric.integer.curlywasm
+
+    # String literals
+    - match: \"
+      scope: punctuation.definition.string.begin.curlywasm
+      push: double_quoted_string
+    - match: \'
+      scope: punctuation.definition.string.begin.curlywasm
+      push: single_quoted_string
+
+    # Function calls
+    - match: \b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(
+      captures:
+        1: entity.name.function.call.curlywasm
+
+    # Function declarations
+    - match: \bfn\s+([a-zA-Z_][a-zA-Z0-9_]*)\b
+      captures:
+        1: entity.name.function.declaration.curlywasm
+
+    # Constants (Upper case convention)
+    - match: \b([A-Z_][A-Z0-9_]*)\b
+      scope: constant.other.curlywasm
+
+    # Variables (Lower case convention)
+    - match: \b([a-z_][a-zA-Z0-9_]*)\b
+      scope: variable.other.curlywasm
+
+    # Punctuation
+    - match: \{
+      scope: punctuation.section.block.begin.curlywasm
+    - match: \}
+      scope: punctuation.section.block.end.curlywasm
+    - match: \(
+      scope: punctuation.section.group.begin.curlywasm
+    - match: \)
+      scope: punctuation.section.group.end.curlywasm
+    - match: \[
+      scope: punctuation.section.brackets.begin.curlywasm
+    - match: \]
+      scope: punctuation.section.brackets.end.curlywasm
+    - match: ;
+      scope: punctuation.terminator.curlywasm
+    - match: \,
+      scope: punctuation.separator.curlywasm
+    - match: ':'
+      scope: punctuation.separator.type.curlywasm
+
+  # Context for /* ... */ block comments
+  block_comment:
+    - meta_scope: comment.block.curlywasm
+    - match: \*/
+      scope: punctuation.definition.comment.end.curlywasm
+      pop: true
+
+  # Context for // ... line comments
+  line_comment:
+    - meta_scope: comment.line.double-slash.curlywasm
+    - match: $ # Pop at the end of the line
+      pop: true
+
+  # Context for "..." strings
+  double_quoted_string:
+    - meta_scope: string.quoted.double.curlywasm
+    - match: \"
+      scope: punctuation.definition.string.end.curlywasm
+      pop: true
+    - match: \\. # Escape sequences
+      scope: constant.character.escape.curlywasm
+
+  # Context for '...' strings
+  single_quoted_string:
+    - meta_scope: string.quoted.single.curlywasm
+    - match: \'
+      scope: punctuation.definition.string.end.curlywasm
+      pop: true
+    - match: \\. # Escape sequences
+      scope: constant.character.escape.curlywasm
+
+  # Context for the content inside data { ... }
+  data_content:
+    - meta_scope: meta.data.content.curlywasm
+    # Match the closing brace to pop the context
+    - match: \}
+      scope: punctuation.section.block.end.curlywasm
+      pop: true
+    # Include rules for literals within the data block
+    - include: literals
+    # Specific types/keywords allowed inside data blocks
+    - match: \b(i8|i16|i32|i64|f32|f64)\b
+      scope: storage.type.primitive.curlywasm
+    - match: \b(file)\b
+      scope: keyword.control.curlywasm
+    # Punctuation inside data blocks
+    - match: \(
+      scope: punctuation.section.group.begin.curlywasm
+    - match: \)
+      scope: punctuation.section.group.end.curlywasm
+    - match: \,
+      scope: punctuation.separator.curlywasm
+    # Potentially allow comments inside data blocks
+    - include: block_comment
+    - include: line_comment
+
+  # Reusable patterns for literals (used via include)
+  literals:
+    # Numeric literals
+    - match: \b(0x[0-9a-fA-F]+)\b
+      scope: constant.numeric.hex.curlywasm
+    - match: '\b\d+(_f)\b'
+      scope: constant.numeric.float.curlywasm
+    - match: \b([0-9]+\.[0-9]+)\b
+      scope: constant.numeric.float.curlywasm
+    - match: \b([0-9]+)\b
+      scope: constant.numeric.integer.curlywasm
+    # String literals
+    - match: \"
+      scope: punctuation.definition.string.begin.curlywasm
+      push: double_quoted_string
+    - match: \'
+      scope: punctuation.definition.string.begin.curlywasm
+      push: single_quoted_string
