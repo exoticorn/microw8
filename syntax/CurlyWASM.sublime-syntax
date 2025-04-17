@@ -54,7 +54,7 @@ contexts:
       scope: support.function.curlywasm
 
     # Built-in functions
-    - match: \b(sqrt|min|max|ceil|floor|trunc|nearest|abs|copysign|select|trunc_sat_f32_u)\b
+    - match: \b(start|upd|sqrt|min|max|ceil|floor|trunc|nearest|abs|copysign|select|trunc_sat_f32_u)\b
       scope: support.function.curlywasm
 
     # Data blocks - Match 'data {' together and push context
