@@ -1,0 +1,543 @@
+{
+    "scope": "source.curlywasm",
+    "completions": [
+        // Keywords
+        {
+            "trigger": "if",
+            "contents": "if (${1:condition}) { ${2:block} }",
+            "details": "if (condition) { block }",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "else",
+            "contents": "else { ${1:block} }",
+            "details": "else { block }",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "loop",
+            "contents": "loop ${1:label} { ${2:block} }",
+            "details": "loop label { block }",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "fn",
+            "contents": "fn ${1:name}(${2:params}) ${3:-> ${4:return_type}} { ${5:block} }",
+            "details": "fn name(params) [-> return_type] { block }",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "let",
+            "contents": "let ${1:variable}${2:: ${3:type}} = ${4:value};",
+            "details": "let variable[: type] = value;",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "const",
+            "contents": "const ${1:name}${2:: ${3:type}} = ${4:value};",
+            "details": "const name[: type] = value;",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "branch_if",
+            "contents": "branch_if (${1:condition}): ${2:label};",
+            "details": "branch_if (condition): label;",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "global",
+            "contents": "global mut ${1:name}${2:: ${3:type}} = ${4:value};",
+            "details": "global mut name[: type] = value;",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "import",
+            "contents": "import \"${1:module.name}\" ${2:|memory(min_pages)|global var_name: type|fn fun_name(param_types) [-> return_type]};",
+            "details": "import \"module.name\" memory(min_pages); import \"module.name\" global var_name: type; import \"module.name\" fn fun_name(param_types) [-> return_type];",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "include",
+            "contents": "include \"${1:path}\"",
+            "details": "include \"path\"",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "export",
+            "contents": "export fn ${1:name}(${2:params}) ${3:-> ${4:return_type}} { ${5:block} }",
+            "details": "export fn name(params) [-> return_type] { block }",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "return",
+            "contents": "return${1: expression}",
+            "details": "return [expression]",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "block",
+            "contents": "block ${1:label} { ${2:block} }",
+            "details": "block label { block }",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "branch",
+            "contents": "branch ${1:label};",
+            "details": "branch label;",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "data",
+            "contents": "data ${1:address} { ${2:content} }",
+            "details": "data address { content }",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "mut",
+            "contents": "mut",
+            "details": "Mutable variable modifier",
+            "kind": "storage.modifier"
+        },
+        {
+            "trigger": "lazy",
+            "contents": "lazy",
+            "details": "Lazy variable modifier",
+            "kind": "storage.modifier"
+        },
+        {
+            "trigger": "inline",
+            "contents": "inline",
+            "details": "Inline variable modifier",
+            "kind": "storage.modifier"
+        },
+        {
+            "trigger": "break",
+            "contents": "break;",
+            "details": "Break from block or loop",
+            "kind": "keyword"
+        },
+
+        // Operators
+        {
+            "trigger": "as",
+            "contents": "as",
+            "details": "Type cast",
+            "kind": "keyword.operator.type"
+        },
+        {
+            "trigger": "?",
+            "contents": "?",
+            "details": "Load byte",
+            "kind": "keyword.operator.memory"
+        },
+        {
+            "trigger": "!",
+            "contents": "!",
+            "details": "Load word",
+            "kind": "keyword.operator.memory"
+        },
+        {
+            "trigger": "$",
+            "contents": "$",
+            "details": "Load float",
+            "kind": "keyword.operator.memory"
+        },
+        {
+            "trigger": "<|",
+            "contents": "<|",
+            "details": "Take first (sequencing operator)",
+            "kind": "keyword.operator.misc"
+        },
+
+        // Memory access intrinsic functions (i32 and f32 only)
+        {
+            "trigger": "i32.load",
+            "contents": "i32.load(${1:base}, ${2:offset}${3:, ${4:align}})",
+            "details": "i32.load(base: i32, offset: i32 = 0, align: i32 = 2) -> i32: Load 32-bit word",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.load8_u",
+            "contents": "i32.load8_u(${1:base}, ${2:offset}${3:, ${4:align}})",
+            "details": "i32.load8_u(base: i32, offset: i32 = 0, align: i32 = 0) -> i32: Load 8-bit unsigned",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.load8_s",
+            "contents": "i32.load8_s(${1:base}, ${2:offset}${3:, ${4:align}})",
+            "details": "i32.load8_s(base: i32, offset: i32 = 0, align: i32 = 0) -> i32: Load 8-bit signed",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.load16_u",
+            "contents": "i32.load16_u(${1:base}, ${2:offset}${3:, ${4:align}})",
+            "details": "i32.load16_u(base: i32, offset: i32 = 0, align: i32 = 1) -> i32: Load 16-bit unsigned",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.load16_s",
+            "contents": "i32.load16_s(${1:base}, ${2:offset}${3:, ${4:align}})",
+            "details": "i32.load16_s(base: i32, offset: i32 = 0, align: i32 = 1) -> i32: Load 16-bit signed",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.store",
+            "contents": "i32.store(${1:value}, ${2:base}, ${3:offset}${4:, ${5:align}});",
+            "details": "i32.store(value: i32, base: i32, offset: i32 = 0, align: i32 = 2): Store 32-bit word",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.store8",
+            "contents": "i32.store8(${1:value}, ${2:base}, ${3:offset}${4:, ${5:align}});",
+            "details": "i32.store8(value: i32, base: i32, offset: i32 = 0, align: i32 = 0): Store 8-bit",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.store16",
+            "contents": "i32.store16(${1:value}, ${2:base}, ${3:offset}${4:, ${5:align}});",
+            "details": "i32.store16(value: i32, base: i32, offset: i32 = 0, align: i32 = 1): Store 16-bit",
+            "kind": "support.function"
+        },
+         {
+            "trigger": "f32.load",
+            "contents": "f32.load(${1:base}, ${2:offset}${3:, ${4:align}})",
+            "details": "f32.load(base: i32, offset: i32 = 0, align: i32 = 2) -> f32: Load 32-bit float",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "f32.store",
+            "contents": "f32.store(${1:value}, ${2:base}, ${3:offset}${4:, ${5:align}});",
+            "details": "f32.store(value: f32, base: i32, offset: i32 = 0, align: i32 = 2): Store 32-bit float",
+            "kind": "support.function"
+        },
+
+
+        // API functions
+        {
+            "trigger": "sin",
+            "contents": "sin(${1:x})",
+            "details": "sin(x: f32) -> f32: Returns the sine of x (radians)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "cos",
+            "contents": "cos(${1:x})",
+            "details": "cos(x: f32) -> f32: Returns the cosine of x (radians)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "tan",
+            "contents": "tan(${1:x})",
+            "details": "tan(x: f32) -> f32: Returns the tangent of x (radians)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "asin",
+            "contents": "asin(${1:x})",
+            "details": "asin(x: f32) -> f32: Returns the arcsine of x (radians)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "acos",
+            "contents": "acos(${1:x})",
+            "details": "acos(x: f32) -> f32: Returns the arccosine of x (radians)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "atan",
+            "contents": "atan(${1:x})",
+            "details": "atan(x: f32) -> f32: Returns the arctangent of x (radians)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "atan2",
+            "contents": "atan2(${1:y}, ${2:x})",
+            "details": "atan2(y: f32, x: f32) -> f32: Returns the angle in radians of the point (x, y)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "pow",
+            "contents": "pow(${1:x}, ${2:y})",
+            "details": "pow(x: f32, y: f32) -> f32: Returns x raised to the power of y",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "log",
+            "contents": "log(${1:x})",
+            "details": "log(x: f32) -> f32: Returns the natural logarithm of x",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "fmod",
+            "contents": "fmod(${1:x}, ${2:y})",
+            "details": "fmod(x: f32, y: f32) -> f32: Returns the remainder of x/y",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "random",
+            "contents": "random()",
+            "details": "random() -> i32: Returns a random 32-bit integer",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "randomf",
+            "contents": "randomf()",
+            "details": "randomf() -> f32: Returns a random float [0, 1)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "randomSeed",
+            "contents": "randomSeed(${1:seed});",
+            "details": "randomSeed(seed: i32): Seeds the random number generator",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "cls",
+            "contents": "cls(${1:color});",
+            "details": "cls(color: i32): Clears the screen with the given color, resets cursor to 0,0, disables graphics mode",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "setPixel",
+            "contents": "setPixel(${1:x}, ${2:y}, ${3:color});",
+            "details": "setPixel(x: i32, y: i32, color: i32): Sets the pixel at (x, y) to color",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "getPixel",
+            "contents": "getPixel(${1:x}, ${2:y})",
+            "details": "getPixel(x: i32, y: i32) -> i32: Gets the color of the pixel at (x, y) (returns 0 if out of bounds)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "hline",
+            "contents": "hline(${1:left}, ${2:right}, ${3:y}, ${4:color});",
+            "details": "hline(left: i32, right: i32, y: i32, color: i32): Fills the horizontal line [left, right), y",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "rectangle",
+            "contents": "rectangle(${1:x}, ${2:y}, ${3:width}, ${4:height}, ${5:color});",
+            "details": "rectangle(x: f32, y: f32, w: f32, h: f32, color: i32): Fills the rectangle x,y - x+w,y+h",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "circle",
+            "contents": "circle(${1:cx}, ${2:cy}, ${3:radius}, ${4:color});",
+            "details": "circle(cx: f32, cy: f32, radius: f32, color: i32): Fills the circle at cx, cy with radius",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "line",
+            "contents": "line(${1:x1}, ${2:y1}, ${3:x2}, ${4:y2}, ${5:color});",
+            "details": "line(x1: f32, y1: f32, x2: f32, y2: f32, color: i32): Draws a line from x1,y1 to x2,y2",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "time",
+            "contents": "time()",
+            "details": "time() -> f32: Returns the current time in seconds",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "isButtonPressed",
+            "contents": "isButtonPressed(${1:button})",
+            "details": "isButtonPressed(button: i32) -> bool: Checks if a button is pressed this frame (returns i32)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "isButtonTriggered",
+            "contents": "isButtonTriggered(${1:button})",
+            "details": "isButtonTriggered(button: i32) -> bool: Checks if a button is newly pressed this frame (returns i32)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "printChar",
+            "contents": "printChar(${1:char});",
+            "details": "printChar(char: i32): Prints the character in the lower 8 bits",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "printString",
+            "contents": "printString(${1:ptr});",
+            "details": "printString(ptr: i32): Prints the zero-terminated string at memory address ptr",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "printInt",
+            "contents": "printInt(${1:value});",
+            "details": "printInt(value: i32): Prints an integer as a signed decimal number",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "setTextColor",
+            "contents": "setTextColor(${1:color});",
+            "details": "setTextColor(color: i32): Sets the text color",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "setBackgroundColor",
+            "contents": "setBackgroundColor(${1:color});",
+            "details": "setBackgroundColor(color: i32): Sets the background color",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "setCursorPosition",
+            "contents": "setCursorPosition(${1:x}, ${2:y});",
+            "details": "setCursorPosition(x: i32, y: i32): Sets the cursor position (character or pixel coords depending on mode)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "rectangleOutline",
+            "contents": "rectangleOutline(${1:x}, ${2:y}, ${3:width}, ${4:height}, ${5:color});",
+            "details": "rectangleOutline(x: f32, y: f32, w: f32, h: f32, color: i32): Draws a rectangle outline",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "circleOutline",
+            "contents": "circleOutline(${1:cx}, ${2:cy}, ${3:radius}, ${4:color});",
+            "details": "circleOutline(cx: f32, cy: f32, radius: f32, color: i32): Draws a circle outline",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "exp",
+            "contents": "exp(${1:x})",
+            "details": "exp(x: f32) -> f32: Returns e raised to the power of x",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "playNote",
+            "contents": "playNote(${1:channel}, ${2:note}${3:, ${4:duration}${5:, ${6:volume}}});",
+            "details": "playNote(channel: i32, note: i32): Triggers a note on the given channel (note 0 stops, 128-255 triggers attack+release)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "sndGes",
+            "contents": "sndGes(${1:sampleIndex})",
+            "details": "sndGes(sampleIndex: i32) -> f32: Sound generator function (uses 32 bytes at 0x50 by default)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "blitSprite",
+            "contents": "blitSprite(${1:spriteData}, ${2:size}, ${3:x}, ${4:y}, ${5:control});",
+            "details": "blitSprite(spriteData: i32, size: i32, x: i32, y: i32, control: i32): Copies sprite data to screen",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "grabSprite",
+            "contents": "grabSprite(${1:spriteData}, ${2:size}, ${3:x}, ${4:y}, ${5:control});",
+            "details": "grabSprite(spriteData: i32, size: i32, x: i32, y: i32, control: i32): Copies screen data to sprite",
+            "kind": "support.function"
+        },
+
+        // Built-in functions (or commonly used intrinsics)
+        {
+            "trigger": "start",
+            "contents": "export fn start() {\n\t${1:// Your start code here}\n}",
+            "details": "export fn start(): Called once after module is loaded",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "upd",
+            "contents": "export fn upd() {\n\t${1:// Your update code here}\n}",
+            "details": "export fn upd(): Called once per frame",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "sqrt",
+            "contents": "sqrt(${1:x})",
+            "details": "sqrt(x: f32) -> f32: Returns the square root of x",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "min",
+            "contents": "min(${1:x}, ${2:y})",
+            "details": "min(x: f32, y: f32) -> f32: Returns the minimum of x and y",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "max",
+            "contents": "max(${1:x}, ${2:y})",
+            "details": "max(x: f32, y: f32) -> f32: Returns the maximum of x and y",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "ceil",
+            "contents": "ceil(${1:x})",
+            "details": "ceil(x: f32) -> f32: Returns the smallest integer >= x",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "floor",
+            "contents": "floor(${1:x})",
+            "details": "floor(x: f32) -> f32: Returns the largest integer <= x",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "trunc",
+            "contents": "trunc(${1:x})",
+            "details": "trunc(x: f32) -> f32: Returns the nearest integer to x toward zero",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "nearest",
+            "contents": "nearest(${1:x})",
+            "details": "nearest(x: f32) -> f32: Returns the nearest integer to x (round to nearest, ties to even)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "abs",
+            "contents": "abs(${1:x})",
+            "details": "abs(x: f32) -> f32: Returns the absolute value of x",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "copysign",
+            "contents": "copysign(${1:x}, ${2:y})",
+            "details": "copysign(x: f32, y: f32) -> f32: Returns x with the sign of y",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "select",
+            "contents": "select(${1:a}, ${2:b}, ${3:c})",
+            "details": "select(a: f32, b: f32, c: f32) -> f32: Selects b if a is non-zero, otherwise selects c (equivalent to a != 0 ? b : c)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.clz",
+            "contents": "i32.clz(${1:value})",
+            "details": "i32.clz(value: i32) -> i32: Count Leading Zeros",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.ctz",
+            "contents": "i32.ctz(${1:value})",
+            "details": "i32.ctz(value: i32) -> i32: Count Trailing Zeros",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.popcnt",
+            "contents": "i32.popcnt(${1:value})",
+            "details": "i32.popcnt(value: i32) -> i32: Population Count (number of set bits)",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.bswap",
+            "contents": "i32.bswap(${1:value})",
+            "details": "i32.bswap(value: i32) -> i32: Byte Swap",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.trunc_sat_f32_u",
+            "contents": "i32.trunc_sat_f32_u(${1:value})",
+            "details": "i32.trunc_sat_f32_u(value: f32) -> i32: Truncate f32 to i32 unsigned, saturating",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "i32.trunc_sat_f32_s",
+            "contents": "i32.trunc_sat_f32_s(${1:value})",
+            "details": "i32.trunc_sat_f32_s(value: f32) -> i32: Truncate f32 to i32 signed, saturating",
+            "kind": "support.function"
+        }
+    ]
+}

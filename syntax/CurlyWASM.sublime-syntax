@@ -46,7 +46,7 @@ contexts:
       scope: keyword.operator.type.curlywasm
 
     # WASM memory access operators
-    - match: \b(load|load8_s|store)\b
+    - match: \b(load|store)\b
       scope: keyword.operator.memory.curlywasm
 
     # API functions
@@ -54,7 +54,7 @@ contexts:
       scope: support.function.curlywasm
 
     # Built-in functions
-    - match: \b(start|upd|sqrt|min|max|ceil|floor|trunc|nearest|abs|copysign|select|trunc_sat_f32_u)\b
+    - match: \b(start|upd|sqrt|min|max|ceil|floor|trunc|nearest|abs|copysign|select)\b
       scope: support.function.curlywasm
 
     # Data blocks - Match 'data {' together and push context
