@@ -4,25 +4,25 @@
         // Keywords
         {
             "trigger": "if",
-            "contents": "if (${1:condition}) { ${2:block} }",
+            "contents": "if (${1:condition}) {\n\t${2:// Your start code here}\n}",
             "details": "if (condition) { block }",
             "kind": "keyword"
         },
         {
             "trigger": "else",
-            "contents": "else { ${1:block} }",
+            "contents": "else {\n\t${1:// Your start code here}\n}",
             "details": "else { block }",
             "kind": "keyword"
         },
         {
             "trigger": "loop",
-            "contents": "loop ${1:label} { ${2:block} }",
+            "contents": "loop ${1:label} {\n\t${2:// Your start code here}\n}",
             "details": "loop label { block }",
             "kind": "keyword"
         },
         {
             "trigger": "fn",
-            "contents": "fn ${1:name}(${2:params}) ${3:-> ${4:return_type}} { ${5:block} }",
+            "contents": "fn ${1:name}(${2:params}) {\n\t${3:// Your start code here}\n}",
             "details": "fn name(params) [-> return_type] { block }",
             "kind": "keyword"
         },
@@ -75,12 +75,6 @@
             "kind": "keyword"
         },
         {
-            "trigger": "block",
-            "contents": "block ${1:label} { ${2:block} }",
-            "details": "block label { block }",
-            "kind": "keyword"
-        },
-        {
             "trigger": "branch",
             "contents": "branch ${1:label};",
             "details": "branch label;",
@@ -88,7 +82,7 @@
         },
         {
             "trigger": "data",
-            "contents": "data ${1:address} { ${2:content} }",
+            "contents": "data ${1:address} {\n\t${2:content}\n}",
             "details": "data address { content }",
             "kind": "keyword"
         },
@@ -109,12 +103,6 @@
             "contents": "inline",
             "details": "Inline variable modifier",
             "kind": "storage.modifier"
-        },
-        {
-            "trigger": "break",
-            "contents": "break;",
-            "details": "Break from block or loop",
-            "kind": "keyword"
         },
 
         // Operators
