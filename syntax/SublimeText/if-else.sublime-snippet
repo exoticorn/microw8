@@ -1,0 +1,11 @@
+<snippet>
+    <content><![CDATA[
+if (${1:condition}) {
+    ${2:// Your if code here}
+} else {
+    ${3:// Your else code here}
+}
+]]></content>
+    <tabTrigger>ifelse</tabTrigger>
+    <description>If-else statement</description>
+</snippet>

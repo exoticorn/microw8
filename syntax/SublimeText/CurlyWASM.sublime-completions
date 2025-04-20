@@ -28,13 +28,13 @@
         },
         {
             "trigger": "let",
-            "contents": "let ${1:variable}${2:: ${3:type}} = ${4:value};",
+            "contents": "let ${1:variable} = ${2:value};",
             "details": "let variable[: type] = value;",
             "kind": "keyword"
         },
         {
             "trigger": "const",
-            "contents": "const ${1:name}${2:: ${3:type}} = ${4:value};",
+            "contents": "const ${1:name} = ${2:value};",
             "details": "const name[: type] = value;",
             "kind": "keyword"
         },
@@ -46,7 +46,7 @@
         },
         {
             "trigger": "global",
-            "contents": "global mut ${1:name}${2:: ${3:type}} = ${4:value};",
+            "contents": "global mut ${1:name} = ${2:value};",
             "details": "global mut name[: type] = value;",
             "kind": "keyword"
         },
@@ -69,9 +69,9 @@
             "kind": "keyword"
         },
         {
-            "trigger": "return",
-            "contents": "return${1: expression}",
-            "details": "return [expression]",
+            "trigger": "block",
+            "contents": "block ${1:label} { ${2:block} }",
+            "details": "block label { block }",
             "kind": "keyword"
         },
         {
@@ -82,7 +82,7 @@
         },
         {
             "trigger": "data",
-            "contents": "data ${1:address} {\n\t${2:content}\n}",
+            "contents": "data ${1:address} {\n\t${2:type}(\n\t\t${3:values}\n\t)\n}",
             "details": "data address { content }",
             "kind": "keyword"
         },
@@ -198,7 +198,6 @@
             "details": "f32.store(value: f32, base: i32, offset: i32 = 0, align: i32 = 2): Store 32-bit float",
             "kind": "support.function"
         },
-
 
         // API functions
         {
@@ -526,6 +525,241 @@
             "contents": "i32.trunc_sat_f32_s(${1:value})",
             "details": "i32.trunc_sat_f32_s(value: f32) -> i32: Truncate f32 to i32 signed, saturating",
             "kind": "support.function"
+        },
+        // Added Constants
+        {
+            "trigger": "TIME_MS",
+            "contents": "TIME_MS",
+            "details": "0x40 Time since module start in ms",
+            "kind": "constant"
+        },
+        {
+            "trigger": "GAMEPAD",
+            "contents": "GAMEPAD",
+            "details": "0x44 Gamepad state",
+            "kind": "constant"
+        },
+        {
+            "trigger": "FRAMEBUFFER",
+            "contents": "FRAMEBUFFER",
+            "details": "0x78 Frame buffer address",
+            "kind": "constant"
+        },
+        {
+            "trigger": "PALETTE",
+            "contents": "PALETTE",
+            "details": "0x13000 Palette address",
+            "kind": "constant"
+        },
+        {
+            "trigger": "FONT",
+            "contents": "FONT",
+            "details": "0x13400 Font address",
+            "kind": "constant"
+        },
+        {
+            "trigger": "USER_MEM",
+            "contents": "USER_MEM",
+            "details": "0x14000 Start of general user memory",
+            "kind": "constant"
+        },
+        {
+            "trigger": "BUTTON_UP",
+            "contents": "BUTTON_UP",
+            "details": "0x00 Gamepad button Up",
+            "kind": "constant"
+        },
+        {
+            "trigger": "BUTTON_DOWN",
+            "contents": "BUTTON_DOWN",
+            "details": "0x01 Gamepad button Down",
+            "kind": "constant"
+        },
+        {
+            "trigger": "BUTTON_LEFT",
+            "contents": "BUTTON_LEFT",
+            "details": "0x02 Gamepad button Left",
+            "kind": "constant"
+        },
+        {
+            "trigger": "BUTTON_RIGHT",
+            "contents": "BUTTON_RIGHT",
+            "details": "0x03 Gamepad button Right",
+            "kind": "constant"
+        },
+        {
+            "trigger": "BUTTON_A",
+            "contents": "BUTTON_A",
+            "details": "0x04 Gamepad button A (Z on keyboard)",
+            "kind": "constant"
+        },
+        {
+            "trigger": "BUTTON_B",
+            "contents": "BUTTON_B",
+            "details": "0x05 Gamepad button B (X on keyboard)",
+            "kind": "constant"
+        },
+        {
+            "trigger": "BUTTON_X",
+            "contents": "BUTTON_X",
+            "details": "0x06 Gamepad button X (A on keyboard)",
+            "kind": "constant"
+        },
+        {
+            "trigger": "BUTTON_Y",
+            "contents": "BUTTON_Y",
+            "details": "0x07 Gamepad button Y (S on keyboard)",
+            "kind": "constant"
+        },
+        {
+            "trigger": "PI",
+            "contents": "PI",
+            "details": "Mathematical constant π",
+            "kind": "constant"
+        },
+        {
+            "trigger": "RAD",
+            "contents": "RAD",
+            "details": "One radian value",
+            "kind": "constant"
+        },
+        {
+            "trigger": "SCR_X",
+            "contents": "SCR_X",
+            "details": "Screen width in pixels",
+            "kind": "constant"
+        },
+        {
+            "trigger": "SCR_Y",
+            "contents": "SCR_Y",
+            "details": "Screen height in pixels",
+            "kind": "constant"
+        },
+        {
+            "trigger": "SCR_W",
+            "contents": "SCR_W",
+            "details": "Screen width in chars (40)",
+            "kind": "constant"
+        },
+        {
+            "trigger": "SCR_H",
+            "contents": "SCR_H",
+            "details": "Screen height in chars (30)",
+            "kind": "constant"
+        },
+        {
+            "trigger": "CENTER_X",
+            "contents": "CENTER_X",
+            "details": "X-coordinate of the screen center (160)",
+            "kind": "constant"
+        },
+        {
+            "trigger": "CENTER_Y",
+            "contents": "CENTER_Y",
+            "details": "Y-coordinate of the screen center (120)",
+            "kind": "constant"
+        },
+        {
+            "trigger": "SCR_SIZE",
+            "contents": "SCR_SIZE",
+            "details": "Total screen size in pixels (76800)",
+            "kind": "constant"
+        },
+        {
+            "trigger": "MEM_END",
+            "contents": "MEM_END",
+            "details": "End of available memory",
+            "kind": "constant"
+        },
+        {
+            "trigger": "CUSTOM_FONT",
+            "contents": "CUSTOM_FONT",
+            "details": "Address for a custom font",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_BLACK",
+            "contents": "COLOR_BLACK",
+            "details": "0x00 Black",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_DARK_BLUE",
+            "contents": "COLOR_DARK_BLUE",
+            "details": "0x17 Dark Blue",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_DARK_PURPLE",
+            "contents": "COLOR_DARK_PURPLE",
+            "details": "0x27 Dark Purple",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_CYAN",
+            "contents": "COLOR_CYAN",
+            "details": "0x37 Cyan",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_BRIGHT_RED",
+            "contents": "COLOR_BRIGHT_RED",
+            "details": "0x47 Bright Red",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_MAGENTA",
+            "contents": "COLOR_MAGENTA",
+            "details": "0x57 Magenta",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_ORANGE",
+            "contents": "COLOR_ORANGE",
+            "details": "0x58 Orange",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_BRIGHT_YELLOW",
+            "contents": "COLOR_BRIGHT_YELLOW",
+            "details": "0x67 Bright Yellow",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_MEDIUM_GREY",
+            "contents": "COLOR_MEDIUM_GREY",
+            "details": "0x78 Medium Grey",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_LIGHT_GREY",
+            "contents": "COLOR_LIGHT_GREY",
+            "details": "0x7C Light Grey",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_WHITE",
+            "contents": "COLOR_WHITE",
+            "details": "0xF8 White",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_BRIGHT_GREEN",
+            "contents": "COLOR_BRIGHT_GREEN",
+            "details": "0x87 Bright Green",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_BROWN",
+            "contents": "COLOR_BROWN",
+            "details": "0xD4 Brown",
+            "kind": "constant"
+        },
+        {
+            "trigger": "COLOR_DARK_GREY",
+            "contents": "COLOR_DARK_GREY",
+            "details": "0xE1 Dark Grey",
+            "kind": "constant"
         }
     ]
 }

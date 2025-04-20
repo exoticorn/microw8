@@ -38,7 +38,7 @@ contexts:
       scope: storage.modifier.curlywasm
 
     # Control flow
-    - match: \b(return|if|else|loop|branch|branch_if)\b
+    - match: \b(if|else|block|loop|branch|branch_if)\b
       scope: keyword.control.flow.curlywasm
 
     # Type conversion

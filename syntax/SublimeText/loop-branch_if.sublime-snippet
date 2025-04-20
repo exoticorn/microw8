@@ -1,0 +1,11 @@
+<snippet>
+    <content><![CDATA[
+${1:label} = 0;
+loop ${1:label} {
+    ${2:// Your loop code here}
+    branch_if (${3:condition}): ${1:label};
+}
+]]></content>
+    <tabTrigger>loopbr</tabTrigger>
+    <description>Loop with branch_if</description>
+</snippet>
