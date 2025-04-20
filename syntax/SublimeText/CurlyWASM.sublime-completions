@@ -4,7 +4,7 @@
         // Keywords
         {
             "trigger": "if",
-            "contents": "if (${1:condition}) {\n\t${2:// Your start code here}\n}",
+            "contents": "if ${1:condition} {\n\t${2:// Your start code here}\n}",
             "details": "if (condition) { block }",
             "kind": "keyword"
         },
@@ -40,7 +40,7 @@
         },
         {
             "trigger": "branch_if",
-            "contents": "branch_if (${1:condition}): ${2:label};",
+            "contents": "branch_if ${1:condition}: ${2:label};",
             "details": "branch_if (condition): label;",
             "kind": "keyword"
         },
@@ -63,6 +63,18 @@
             "kind": "keyword"
         },
         {
+            "trigger": "api",
+            "contents": "include \"../include/microw8-api.cwa\"",
+            "details": "include \"path\"",
+            "kind": "keyword"
+        },
+        {
+            "trigger": "common",
+            "contents": "include \"../include/common.cwa\"",
+            "details": "include \"path\"",
+            "kind": "keyword"
+        },
+        {
             "trigger": "export",
             "contents": "export fn ${1:name}(${2:params}) ${3:-> ${4:return_type}} { ${5:block} }",
             "details": "export fn name(params) [-> return_type] { block }",
@@ -70,7 +82,7 @@
         },
         {
             "trigger": "block",
-            "contents": "block ${1:label} { ${2:block} }",
+            "contents": "block ${1:label} {\n\t${2://content}\n}",
             "details": "block label { block }",
             "kind": "keyword"
         },
