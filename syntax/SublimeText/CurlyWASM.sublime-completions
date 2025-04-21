@@ -443,6 +443,18 @@
             "kind": "support.function"
         },
         {
+            "trigger": "memory.fill",
+            "contents": "memory.fill(${1:dest}, ${2:value}, ${3:size});",
+            "details": "memory.fill(dest: i32, value: i32, size: i32): Fills a memory area",
+            "kind": "support.function"
+        },
+        {
+            "trigger": "memory.copy",
+            "contents": "memory.copy(${1:dest}, ${2:src}, ${3:size});",
+            "details": "memory.copy(dest: i32, src: i32, size: i32): Copies a memory block",
+            "kind": "support.function"
+        },
+        {
             "trigger": "sqrt",
             "contents": "sqrt(${1:x})",
             "details": "sqrt(x: f32) -> f32: Returns the square root of x",
