@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <link rel="icon" type="image/png" href="/favicon.ico">
+    
+    <style>
+    :root {
+        /* Primary theme color */
+        --primary-color: #202024;
+        /* Primary theme text color */
+        --primary-text-color: #808070;
+        /* Primary theme link color */
+        --primary-link-color: #8080a0;
+        /* Secondary color: the background body color */
+        --secondary-color: #e0e0e8;
+        --secondary-text-color: #1a1818;
+        /* Highlight text color of table of content */
+        --toc-highlight-text-color: #d46e13;
+    }
+</style>
+    <link href="https://fonts.googleapis.com/css?family=Alfa+Slab+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Fira+Sans:400,500,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/normalize.css">
+    <link rel="stylesheet" href="https://exoticorn.github.io/microw8/juice.css">
+    
+    
+</head>
+
+<body>
+    
+
+    <header class="pos-absolute" style="background-color: transparent">
+        
+
+<a href="https:&#x2F;&#x2F;exoticorn.github.io&#x2F;microw8&#x2F;">
+    <div class="logo">
+        <img src="https://exoticorn.github.io/microw8/img/microw8.svg" alt="logo">
+        MicroW8
+    </div>
+</a>
+
+<nav>
+    
+    <a class="nav-item subtitle-text" href="https:&#x2F;&#x2F;exoticorn.github.io&#x2F;microw8&#x2F;docs&#x2F;">Docs</a>
+    
+    <a class="nav-item subtitle-text" href="https:&#x2F;&#x2F;exoticorn.github.io&#x2F;microw8&#x2F;versions&#x2F;"></a>
+    
+    
+        
+        <a class="nav-item subtitle-text" href="https:&#x2F;&#x2F;github.com&#x2F;exoticorn&#x2F;microw8">Github</a>
+        
+    
+</nav>
+
+    </header>
+
+    <div class="hero">
+        
+    <div>
+        <section>
+            <h1 class="text-center heading-text">A WebAssembly based fantasy console</h1>
+        </section>
+        <a href="v0.4.1">
+            <img class="demonstration-gif" style="width:640px;height:480px;image-rendering:pixelated" src="img/technotunnel.png"></img>
+        </a>
+    </div>
+    <div class="explore-more text"
+        onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
+        Explore More ⇩
+    </div>
+
+    </div>
+
+    
+
+    <main>
+        
+        
+        
+        
+        
+        <div class="toc">
+            <div class="toc-sticky">
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/#about">About</a>
+                </div>
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/#specs">Specs</a>
+                </div>
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/#examples">Examples</a>
+                </div>
+                
+                
+                <div class="toc-item">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/#versions">Versions</a>
+                </div>
+                
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/#v0-4-1"><small>- v0.4.1</small></a>
+                </div>
+                
+                <div class="toc-item-child">
+                    <a class="subtext" href="https://exoticorn.github.io/microw8/#older-versions"><small>- Older versions</small></a>
+                </div>
+                
+                
+                
+            </div>
+        </div>
+        
+        
+
+        <div class="content text">
+            
+            <div id="features" class="heading-text">Overview</div>
+            <h2 id="about">About</h2>
+<p>MicroW8 is a WebAssembly based fantasy console inspired by the likes of <a href="https://tic80.com/">TIC-80</a>, <a href="https://wasm4.org/">WASM-4</a> and <a href="https://www.lexaloffle.com/pico-8.php">PICO-8</a>.</p>
+<p>The initial motivation behind MicroW8 was to explore whether there was a way to make WebAssembly viable for size-coding. (Size coding being the art of creating tiny (often &lt;= 256 bytes) graphical effects and games.) The available examples so far are all in this space, however, I very carefully made sure that all design decisions make sense from the point of view of bigger projects as well.</p>
+<h2 id="specs">Specs</h2>
+<ul>
+<li>Screen: 320x240, 256 colors, 60Hz</li>
+<li>Modules: Up to 256KB (WASM)</li>
+<li>Memory: 256KB</li>
+<li>Gamepad input (D-Pad + 4 Buttons)</li>
+</ul>
+<p>For detailed <a href="docs">documentation see here</a>.</p>
+<h2 id="examples">Examples</h2>
+<ul>
+<li><a href="v0.2.0#AgVfq24KI2Ok2o8qVtPYj27fSuGnfeSKgbOkIOsaEQMov8TDYQ6UjdjwkZrYcM1i9alo4/+Bhm1PRFEa0YHJlJAk/PGoc2K41rejv9ZSqJqIHNjr7cappqhOR2jT+jk+0b0+U6hO+geRCTP2aufWs7L+f/Z27NFY8LKlqPSv+C6Rd6+ohoKi6sYl5Kcrlf1cyTinV7jTTnmbcXWVDBA5rRKxAGMUTDS8rHxqSztRITOaQVP1pSdYgi/BDdOJOxSOIkeaId84S+Ycls5na7EgwSfVIpgqF+tcfkUecb8t2mQrXA7pyKrh/wzHn5N6Oe5aOgmzY2YpTIct">Skip Ahead</a> (249 bytes): A port of my <a href="http://tic80.com/play?cart=1735">TIC-80 256byte game</a> from LoveByte'21, now with sound</li>
+<li><a href="v0.2.0#AgwvgP+M59snqjl4CMKw5sqm1Zw9yJCbSviMjeLUdHus2a3yl/a99+uiBeqZgP/2jqSjrLjRk73COMM6OSLpsxK8ugT1kuk/q4hQUqqPpGozHoa0laulzGGcahzdfdJsYaK1sIdeIYS9M5PnJx/Wk9H+PvWEPy2Zvv7I6IW7Fg==">Fireworks</a> (127 bytes): Some fireworks to welcome 2022.</li>
+<li><a href="v0.2.0#AgPP1oEFvPzY/rBZwTumtYn37zeMFgpir1Bkn91jsNcp26VzoUpkAOOJTtnzVBfW+/dGnnIdbq/irBUJztY5wuua80DORTYZndgdwZHcSk15ajc4nyO0g1A6kGWyW56oZk0iPYJA9WtUmoj0Plvy1CGwIZrMe57X7QZcdqc3u6zjTA41Tpiqi9vnO3xbhi8o594Vx0XPXwVzpYq1ZCTYenfAGaXKkDmAFJqiVIsiCg==">OhNoAnotherTunnel</a> (175 bytes): A port of my <a href="http://tic80.com/play?cart=1871">entry</a> in the Outline'21 bytebattle final</li>
+<li><a href="v0.2.0#AhPXpq894LaUhp5+HQf39f39/Jc8g5zUrBSc0uyKh36ivskczhY84h55zL8gWpkdvKuRQI+KIt80isKzh8jkM8nILcx0RUvyk8yjE8TgNsgkcORVI0RY5k3qE4ySjaycxa2DVZH61UWZuLsCouuwT7I80TbmmetQSbMywJ/avrrCZIAH0UzQfvOiCJNG48NI0FFY1vjB7a7dcp8Uqg==">Technotunnel</a> (157 bytes): A port of my <a href="https://tic80.com/play?cart=1873">entry</a> in the Outline'21 bytebattle quater final</li>
+<li><a href="v0.2.0#At/p39+IBnj6ry1TRe7jzVy2A4tXgBvmoW2itzoyF2aM28pGy5QDiKxqrk8l9sbWZLtnAb+jgOfU+9QhpuyCAkhN6gPOU481IUL/df96vNe3h288Dqwhd3sfFpothIVFsMwRK72kW2hiR7zWsaXyy5pNmjR6BJk4piWx9ApT1ZwoUajhk6/zij6itq/FD1U3jj/J3MOwqZ2ef8Bv6ZPQlJIYVf62icGa69wS6SI1qBpIFiF14F8PcztRVbKIxLpT4ArCS6nz6FPnyUkqATGSBNPJ">Font &amp; Palette</a>: Just a simple viewer for the default font and palette.</li>
+</ul>
+<p>Examplers for older versions:</p>
+<ul>
+<li><a href="v0.1pre2#AQrDAQHAAQIBfwp9A0AgAUEAsiABQcACb7JDmhkgQ5MiBCAEIASUIAFBwAJtQfgAa7IiBSAFlJKRIgaVIgcgByAAskHQD7KVIgIQAEPNzEw/lCIDlCAHIAeUIAOUIAOUQQGykiADIAOUk5GSIgiUIAOTQQqylCACkiIJqCAFIAaVIAiUQQqylCACkiIKqHMgCEEyspQgBpUiCyACkkEUspSocUEFcbJBArIgC5OUQRaylJeoOgB4IAFBAWoiAUGA2ARIDQALCw==">Technotunnel B/W</a> (199 bytes uncompressed): A port of my <a href="https://tic80.com/play?cart=1873">entry</a> in the Outline'21 bytebattle quater final (older MicroW8 version with monochrome palette)</li>
+<li><a href="v0.1pre2#AQovAS0BAX8DQCABIAFBwAJvIABBCm1qIAFBwAJtczoAeCABQQFqIgFBgNgESA0ACws=">XorScroll</a> (50 bytes uncompressed): A simple scrolling XOR pattern. Fun fact: This is the pre-loaded effect when entering a bytebattle.</li>
+<li><a href="v0.1pre2#AQp7AXkCAX8CfUEgEA0DQCABskEEspUiAkECspUgALJBiCeylSIDQQWylJIQAEEBspJBoAGylCACQQOylSADQQSylJIQAEEBspJB+ACylCADQRGylCACQQKylJIQAEECspJBELKUIAFBAmxBP2oQEiABQQFqIgFBP0gNAAsL">CircleWorm</a> (126 bytes uncompressed): Just a test for the circle fill function.</li>
+</ul>
+<h2 id="versions">Versions</h2>
+<h3 id="v0-4-1">v0.4.1</h3>
+<ul>
+<li><a href="../v0.4.1">Web runtime</a></li>
+<li><a href="https://github.com/exoticorn/microw8/releases/download/v0.4.1/microw8-0.4.1-linux.tgz">Linux</a></li>
+<li><a href="https://github.com/exoticorn/microw8/releases/download/v0.4.1/microw8-0.4.1-macos.tgz">MacOS</a></li>
+<li><a href="https://github.com/exoticorn/microw8/releases/download/v0.4.1/microw8-0.4.1-windows.zip">Windows</a></li>
+</ul>
+<p>Changes:</p>
+<ul>
+<li>Windows: fix bad/inconsistent frame rate</li>
+<li>fix choppy sound on devices with sample rates != 44100 kHz</li>
+<li>add scale mode 'fill' option</li>
+</ul>
+<h3 id="older-versions">Older versions</h3>
+<p><a href="versions">Find older versions here.</a></p>
+
+            
+        </div>
+
+        
+        
+    </main>
+
+    
+
+</body>
+<script>
+    function highlightNav(heading) {
+        let pathname = location.pathname;
+        document.querySelectorAll(".toc a").forEach((item) => {
+            item.classList.remove("active");
+        });
+        document.querySelector(".toc a[href$='" + pathname + "#" + heading + "']").classList.add("active");
+    }
+
+    let currentHeading = "";
+    window.onscroll = function () {
+        let h = document.querySelectorAll("h1,h2,h3,h4,h5,h6");
+        let elementArr = [];
+
+        h.forEach(item => {
+            if (item.id !== "") {
+                elementArr[item.id] = item.getBoundingClientRect().top;
+            }
+        });
+        elementArr.sort();
+        for (let key in elementArr) {
+            if (!elementArr.hasOwnProperty(key)) {
+                continue;
+            }
+            if (elementArr[key] > 0 && elementArr[key] < 300) {
+                if (currentHeading !== key) {
+                    highlightNav(key);
+                    currentHeading = key;
+                }
+                break;
+            }
+        }
+    }
+</script>
+
+</html>
