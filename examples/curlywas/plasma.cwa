@@ -1,0 +1,51 @@
+/*
+    Plasma effect (sizecoding)
+
+    Combines sine waves to create a 2D pixel pattern with intensity-based colors.
+
+    code     : zbyti & Grok 3
+    date     : 2025.04.17
+    platform : MicroW8 0.4.1
+*/
+
+include "../include/microw8-api.cwa"
+
+// Constants for color, math, and screen dimensions
+const BASE_COLOR = 0xF0;            // Base color value for pixel coloring
+const PI         = 3.14159265;      // Mathematical constant π
+const RAD        = PI / 180.0;      // Conversion factor from degrees to radians
+const SCR_X      = 320;             // Screen width in pixels
+const SCR_Y      = 240;             // Screen height in pixels
+const SCR_SIZE   = SCR_X * SCR_Y;   // Screen size in bytes
+
+// Global variables to track animation phases
+global mut phaseX = 0;              // Phase offset for X-axis wave animation
+global mut phaseY = 0;              // Phase offset for Y-axis wave animation
+
+// Update function called each frame to render the plasma effect
+export fn upd() {
+    let i = 0;
+    loop i {
+        // Calculate pixel coordinates from linear index
+        let lazy x = i % SCR_X; // X-coordinate (column)
+        let lazy y = i / SCR_X; // Y-coordinate (row)
+
+        // Compute three sine waves with different frequencies and phases
+        let inline val1 = sin(RAD * 2.25 * (x + phaseX) as f32);     // Wave along X-axis
+        let inline val2 = sin(RAD * 3.25 * (y + phaseY) as f32);     // Wave along Y-axis
+        let inline val3 = sin(RAD * 1.25 * (x + y + phaseX) as f32); // Diagonal wave
+
+        // Combine waves, scale to color range, and convert to integer
+        let inline c = BASE_COLOR + ((val1 + val2 + val3) * 4.75) as i32;
+
+        // Set pixel color based on computed intensity
+        setPixel(x, y, c);
+
+        // Continue loop until all pixels are processed
+        branch_if (i +:= 1) < (SCR_SIZE): i;
+    }
+
+    // Update phase offsets for animation (different speeds for dynamic effect)
+    phaseX += 1; // Increment X-phase for horizontal wave movement
+    phaseY += 2; // Increment Y-phase for vertical wave movement
+}

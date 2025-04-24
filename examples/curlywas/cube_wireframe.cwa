@@ -1,0 +1,254 @@
+/*
+    This program renders a rotating 3D wireframe cube on a 2D screen using the MicroW8 platform.
+
+    code     : zbyti
+    date     : 2025.04.15
+    platform : MicroW8 0.4.1
+
+    https://exoticorn.github.io/microw8/
+    https://exoticorn.github.io/microw8/docs/
+
+    https://github.com/exoticorn/microw8
+    https://github.com/exoticorn/curlywas
+
+    https://developer.mozilla.org/en-US/docs/WebAssembly
+
+    https://en.wikipedia.org/wiki/Rotation_matrix
+*/
+
+//-----------------------------------------------------------------------------
+// MicroW8 API
+//-----------------------------------------------------------------------------
+
+//include "../include/microw8-api.cwa"
+
+// Import memory allocation: 4 pages (64KB) of memory (256KB total)
+import "env.memory" memory(4);
+
+// Import MicroW8 API functions for graphics and math operations
+import "env.cls" fn cls(i32);                       // Clears the screen
+import "env.time" fn time() -> f32;                 // Returns the current time as a float for animation
+import "env.sin" fn sin(f32) -> f32;                // Computes the sine of an angle (in radians)
+import "env.cos" fn cos(f32) -> f32;                // Computes the cosine of an angle (in radians)
+import "env.line" fn line(f32, f32, f32, f32, i32); // Draws a line between two 2D points with a color
+
+// Define the starting address for user memory
+const USER_MEM = 0x14000;
+
+//-----------------------------------------------------------------------------
+// CONSTANTS
+//-----------------------------------------------------------------------------
+
+// Screen and rendering constants
+const CENTER_X      = 320.0 / 2.0;          // X-coordinate of the screen center (320px width)
+const CENTER_Y      = 240.0 / 2.0;          // Y-coordinate of the screen center (240px height)
+const ROTATE_SPEED  = 0.5;                  // Speed at which the cube rotates
+const PI            = 3.14159265;           // Mathematical constant Pi for angle conversions
+const RADIAN        = PI / 180.0;           // Conversion factor from degrees to radians
+const SCALE         = 65.0;                 // Scaling factor to adjust the size of the cube on screen
+const PERSPECTIVE   = SCALE * 0.5;          // Perspective factor
+const LINE_COLOR    = 0xBF;                 // Color value for drawing the cube's edges (hexadecimal)
+
+// Memory layout for vertex data
+const V_BASE        = USER_MEM;             // Base vertices stored as 8-bit integers (i8)
+const V_ROT         = V_BASE + (3 * 8);     // Rotated vertices stored as 32-bit floats (f32), offset after V_BASE
+
+// Offsets for accessing X, Y, Z coordinates in memory (in bytes)
+const X             = 0;                    // Offset for X coordinate
+const Y             = 4;                    // Offset for Y coordinate
+const Z             = 8;                    // Offset for Z coordinate
+
+// Memory offsets for each rotated vertex (8 vertices, 3 floats each, 12 bytes per vertex)
+const VA            = V_ROT + (0 * 3 * 4);  // Vertex A (front-top-left)
+const VB            = V_ROT + (1 * 3 * 4);  // Vertex B (front-top-right)
+const VC            = V_ROT + (2 * 3 * 4);  // Vertex C (front-bottom-right)
+const VD            = V_ROT + (3 * 3 * 4);  // Vertex D (front-bottom-left)
+const VE            = V_ROT + (4 * 3 * 4);  // Vertex E (back-top-left)
+const VF            = V_ROT + (5 * 3 * 4);  // Vertex F (back-top-right)
+const VG            = V_ROT + (6 * 3 * 4);  // Vertex G (back-bottom-right)
+const VH            = V_ROT + (7 * 3 * 4);  // Vertex H (back-bottom-left)
+
+//-----------------------------------------------------------------------------
+// Function to rotate the cube around X, Y, and Z axes based on time
+//-----------------------------------------------------------------------------
+
+fn rotate() {
+    // Calculate the rotation angle using the current time for continuous animation
+    let angle = time() * ROTATE_SPEED;
+
+    // Precompute sine and cosine values once for efficiency
+    let sn = sin(angle);
+    let cs = cos(angle);
+
+    let calc = 0;
+    loop calc { // Iterate over all 8 vertices
+        // Calculate memory offset for current vertex (12 bytes per vertex: 4 bytes each for X, Y, Z)
+        let v = calc * 12;
+        let inline vX = v + X;
+        let inline vY = v + Y;
+        let inline vZ = v + Z;
+
+        // Load original vertex coordinates from V_BASE (stored as i8, converted to f32)
+        let x = i32.load8_s(V_BASE+(calc * 3 + 0)) as f32; // X coordinate
+        let y = i32.load8_s(V_BASE+(calc * 3 + 1)) as f32; // Y coordinate
+        let z = i32.load8_s(V_BASE+(calc * 3 + 2)) as f32; // Z coordinate
+
+        // Rotate around Z-axis: updates X and Y, Z stays the same
+        (vX)$V_ROT = x * cs - y * sn;
+        (vY)$V_ROT = x * sn + y * cs;
+        (vZ)$V_ROT = z;
+
+        // Rotate around Y-axis: updates X and Z, Y stays the same
+        x = (vX)$V_ROT;
+        z = (vZ)$V_ROT;
+        (vX)$V_ROT = x * cs + z * sn;
+        (vZ)$V_ROT = z * cs - x * sn;
+
+        // Rotate around X-axis: updates Y and Z, X stays the same
+        y = (vY)$V_ROT;
+        z = (vZ)$V_ROT;
+        (vY)$V_ROT = y * cs - z * sn;
+        (vZ)$V_ROT = y * sn + z * cs;
+
+        // Move to the next vertex until all 8 are processed
+        branch_if (calc +:= 1) < 8: calc;
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Function to project 3D vertices to 2D screen space and draw the cube's edges
+//-----------------------------------------------------------------------------
+
+fn drawLines() {
+    let scale = 0;
+    loop scale { // Scale and center each vertex for 2D projection
+        // Calculate memory offset for current vertex (12 bytes per vertex: 4 bytes each for X, Y, Z)
+        let v = scale * 12;
+        let inline vX = v + X;
+        let inline vY = v + Y;
+
+        // Load Z coordinate of current vertex (from rotated vertex data)
+        let inline z = (v + Z)$V_ROT;
+
+        // Calculate perspective factor:
+        // - When z=0 (midpoint), factor=1.0 (no scaling)
+        // - Positive z (farther away) → factor<1.0 (objects appear smaller)
+        // - Negative z (closer) → factor>1.0 (objects appear larger)
+        let lazy factor = PERSPECTIVE / (PERSPECTIVE + z) * SCALE;
+
+        // Apply perspective projection, scaling and shift to center for X and Y coordinats:
+        // 1. Multiply by perspective factor
+        // 2. Apply global scaling (SCALE constant)
+        // 3. Center on screen (CENTER_X, CENTER_Y)
+        (vX)$V_ROT = (vX)$V_ROT * factor + CENTER_X; // X
+        (vY)$V_ROT = (vY)$V_ROT * factor + CENTER_Y; // Y
+
+        // Continue until all 8 vertices are scaled
+        branch_if (scale +:= 1) < 8: scale;
+    }
+
+    // Draw the front face of the cube (vertices A-B-C-D)
+    line(VA$X, VA$Y, VB$X, VB$Y, LINE_COLOR);
+    line(VB$X, VB$Y, VC$X, VC$Y, LINE_COLOR);
+    line(VC$X, VC$Y, VD$X, VD$Y, LINE_COLOR);
+    line(VD$X, VD$Y, VA$X, VA$Y, LINE_COLOR);
+
+    // Draw the back face of the cube (vertices E-F-G-H)
+    line(VE$X, VE$Y, VF$X, VF$Y, LINE_COLOR);
+    line(VF$X, VF$Y, VG$X, VG$Y, LINE_COLOR);
+    line(VG$X, VG$Y, VH$X, VH$Y, LINE_COLOR);
+    line(VH$X, VH$Y, VE$X, VE$Y, LINE_COLOR);
+
+    // Draw edges connecting front and back faces
+    line(VA$X, VA$Y, VE$X, VE$Y, LINE_COLOR);
+    line(VB$X, VB$Y, VF$X, VF$Y, LINE_COLOR);
+    line(VC$X, VC$Y, VG$X, VG$Y, LINE_COLOR);
+    line(VD$X, VD$Y, VH$X, VH$Y, LINE_COLOR);
+}
+
+//-----------------------------------------------------------------------------
+// Entry point for INIT type function, starts first
+//-----------------------------------------------------------------------------
+
+/*
+export fn start() {
+    let init = 0;
+    loop init {
+        // Calculate memory offset for current vertex (12 bytes per vertex: 4 bytes each for X, Y, Z)
+        let v = init * 12;
+
+        (v + X)$V_ROT = i32.load8_s(V_BASE+(init * 3) + 0) as f32;
+        (v + Y)$V_ROT = i32.load8_s(V_BASE+(init * 3) + 1) as f32;
+        (v + Z)$V_ROT = i32.load8_s(V_BASE+(init * 3) + 2) as f32;
+        branch_if (init +:= 1) < 8: init;
+    }
+}
+*/
+
+//-----------------------------------------------------------------------------
+// Main update function called every frame to refresh the screen
+//-----------------------------------------------------------------------------
+
+export fn upd() {
+    cls(0);         // Clear the screen with color 0 (black)
+    rotate();       // Perform cube rotation calculations
+    drawLines();    // Draw the rotated cube on the screen
+}
+
+//-----------------------------------------------------------------------------
+// DATA
+//-----------------------------------------------------------------------------
+
+/*
+    Initial vertex data for the cube (8 vertices, each with X, Y, Z as 8-bit signed integers)
+    Each vertex represents a corner of a unit cube centered at the origin
+
+    F - front, B - back, L - left, R - right, U - up, D - down
+*/
+data V_BASE { // 3 * 8 -> 3 bytes per vertex * 8 vertices = 24 bytes
+    i8(
+    //   X   Y   Z
+        -1, -1,  1, // FLU Vertex A
+         1, -1,  1, // FRU Vertex B
+         1,  1,  1, // FRD Vertex C
+        -1,  1,  1, // FLD Vertex D
+        -1, -1, -1, // BLU Vertex E
+         1, -1, -1, // BRU Vertex F
+         1,  1, -1, // BRD Vertex G
+        -1,  1, -1  // BLD Vertex H
+    )
+}
+
+//-----------------------------------------------------------------------------
+
+/*
+    Storage for rotated vertex data (8 vertices, each with X, Y, Z as 32-bit signed floats)
+    Initialized to zero and updated during rotation
+*/
+data V_ROT { // 4 * 3 * 8 -> 12 bytes per vertex * 8 vertices = 96 bytes
+    f32(
+    //   X    Y    Z
+        0.0, 0.0, 0.0, // VA -> Vertex A
+        0.0, 0.0, 0.0, // VB -> Vertex B
+        0.0, 0.0, 0.0, // VC -> Vertex C
+        0.0, 0.0, 0.0, // VD -> Vertex D
+        0.0, 0.0, 0.0, // VE -> Vertex E
+        0.0, 0.0, 0.0, // VF -> Vertex F
+        0.0, 0.0, 0.0, // VG -> Vertex G
+        0.0, 0.0, 0.0  // VH -> Vertex H
+    )
+}
+
+//-----------------------------------------------------------------------------
+// SNIPPETS
+//-----------------------------------------------------------------------------
+
+/*
+    let tmp: f32;
+    tmp = -123.0;
+    f32.store(tmp, V_ROT);
+    tmp = f32.load(V_ROT);
+    printInt(tmp as i32);
+*/
+
+//-----------------------------------------------------------------------------

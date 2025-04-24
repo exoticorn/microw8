@@ -1,0 +1,11 @@
+<snippet>
+    <content><![CDATA[
+data ${1:address} {
+    ${2:type}(
+        ${3:values}
+    )
+}
+]]></content>
+    <tabTrigger>datatype</tabTrigger>
+    <description>Data block definition</description>
+</snippet>

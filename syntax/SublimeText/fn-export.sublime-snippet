@@ -1,0 +1,9 @@
+<snippet>
+    <content><![CDATA[
+export fn ${1:name}(${2:params}) -> ${3:return_type} {
+    ${4:// Function body}
+}
+]]></content>
+    <tabTrigger>fnexport</tabTrigger>
+    <description>Exported function definition</description>
+</snippet>

@@ -1,0 +1,168 @@
+/*
+    Plasma effect (chars)
+
+    Combines sine waves to create a 2D pattern, maps to custom characters,
+    and renders to the 40x30 character grid with intensity-based colors.
+
+    code     : zbyti (conversion & optimizations)
+    original : https://github.com/tebe6502/Mad-Pascal/blob/origin/samples/a8/demoeffects/plasma_2.pas
+    date     : 2025.04.16
+    platform : MicroW8 0.4.1
+*/
+
+include "../include/microw8-api.cwa"
+
+//-----------------------------------------------------------------------------
+// Constants defining memory layout, screen dimensions, and effect parameters
+//-----------------------------------------------------------------------------
+
+const MEM_END           = 0x40000;
+
+const CUSTOM_FONT       = FONT + 0x100;
+const CHARS             = 0x20;
+const BASE_COLOR        = 0xF0;
+
+const PI                = 3.14159265;
+const RAD               = PI / 180.0;
+
+const SCR_X             = 320;
+const SCR_Y             = 240;
+const SCR_W             = SCR_X / 8; // 40
+const SCR_H             = SCR_Y / 8; // 30
+const SCR_SIZE          = SCR_X * SCR_Y;
+
+const SIN_TABLE_SIZE    = 128;                      // Number of entries in the sine lookup table
+const SIN_TABLE_MASK    = SIN_TABLE_SIZE - 1;
+
+const SIN_TABLE         = MEM_END - SIN_TABLE_SIZE; // Memory address for sine table
+const ROW_BUFFER        = SIN_TABLE - SCR_W;        // Memory address for precomputed row buffer
+
+//-----------------------------------------------------------------------------
+// Global variables to track animation state
+//-----------------------------------------------------------------------------
+
+global mut phaseA = 1; // Phase offset for the first sine wave, controls animation
+global mut phaseB = 5; // Phase offset for the second sine wave, controls animation
+
+//-----------------------------------------------------------------------------
+
+/*
+    Logs a value to the console (STDOUT) with a prefix for debugging purposes
+
+    Args:
+      prefix : 4-character identifier (i32) to label the output
+      log    : Integer value to log (i32)
+
+    Prints to console and returns to screen output
+*/
+fn console(prefix: i32, log: i32) {
+    printChar('\6');    // Switch output to console
+    printChar(prefix);  // Print the prefix
+    printInt(log);      // Print the integer value
+    printChar('\n\4');  // Print newline and switch back to screen output
+}
+
+//-------------------------------------
+
+/*
+    Fills a sine table with precomputed values for fast lookups
+
+    Args:
+      adr  : Memory address where the sine table is stored
+      size : Number of entries in the table
+
+    Computes: sin(i * 180/size * radians) * 255 for i = 0 to size-1, scaled to 0-255
+*/
+fn fillSin(adr: i32, size: i32) {
+    let i = 0;
+    let inline f = 180.00 / size as f32 * RAD;
+    loop i {
+        (adr+i)?0 = (sin(f * i as f32) * 255.0) as i32;
+        branch_if (i +:= 1) < size: i;
+    }
+}
+
+//-----------------------------------------------------------------------------
+
+/*
+    Initialization function called when the program starts
+*/
+export fn start() {
+    // Populate the sine table with values for fast wave calculations
+    fillSin(SIN_TABLE, SIN_TABLE_SIZE);
+}
+
+//-------------------------------------
+
+/*
+    Update function called each frame to render the plasma effect
+*/
+export fn upd() {
+    let pA = phaseA; // Local copy of phaseA to avoid modifying global during frame
+    let pB = phaseB; // Local copy of phaseB for the same reason
+
+    let i = 0;
+    loop i {
+        // Wrap phase values to stay within sine table bounds using bitwise AND
+        pA &= SIN_TABLE_MASK;
+        pB &= SIN_TABLE_MASK;
+
+        // Combine two sine waves and store in row buffer
+        i?ROW_BUFFER = pA?SIN_TABLE + pB?SIN_TABLE;
+
+        pA += 3; // Shift phase for first sine wave (controls wave speed)
+        pB += 7; // Shift phase for second sine wave (different speed for variety)
+
+        branch_if (i +:= 1) < SCR_W: i;
+    }
+
+    i = 0;
+    loop i {
+        let j = 0;
+        loop j {
+            // Combine wave values from row buffer for current position
+            // Use bitwise AND to clamp to 0-255, then scale to 0-15 for character index
+            let c = ((j?ROW_BUFFER + i?ROW_BUFFER) & 255) >> 4;
+
+            // Set text color based on intensity (base color + scaled value)
+            setTextColor(BASE_COLOR + c);
+            // Draw custom character corresponding to intensity
+            printChar(CHARS + c);
+
+            branch_if (j +:= 1) < SCR_W: j;
+        }
+        branch_if (i +:= 1) < SCR_H: i;
+    }
+
+    // Update global phase offsets for the next frame to animate the pattern
+    phaseA += 0; // Increment phaseA to shift the pattern (+/- speed move)
+    phaseB += 1; // Increment phaseB to shift the pattern (+/- right/left move)
+}
+
+//-----------------------------------------------------------------------------
+
+/*
+    Custom font data defining 16 characters (8x8 pixels each)
+    Each character represents a different intensity level for the plasma effect
+    Pixels range from empty (0x00) to nearly full (0xFE or 0x7F) to simulate gradients
+*/
+data CUSTOM_FONT {
+    i8(
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x18, 0x18, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x38, 0x38, 0x38, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x3c, 0x3c, 0x3c, 0x3c, 0x00, 0x00,
+        0x00, 0x7c, 0x7c, 0x7c, 0x7c, 0x7c, 0x00, 0x00,
+        0x00, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x00,
+        0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0x00,
+        0x00, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f,
+        0x00, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x00,
+        0x00, 0x7c, 0x7c, 0x7c, 0x7c, 0x7c, 0x00, 0x00,
+        0x00, 0x00, 0x3c, 0x3c, 0x3c, 0x3c, 0x00, 0x00,
+        0x00, 0x00, 0x38, 0x38, 0x38, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x18, 0x18, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    )
+}
