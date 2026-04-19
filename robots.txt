@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+Allow: /
+Sitemap: https://exoticorn.github.io/microw8/sitemap.xml
